@@ -80,7 +80,8 @@ export function OpponentIntelligence() {
     return teams.filter((t) => !q || t.name.toLowerCase().includes(q) || t.shortName.toLowerCase().includes(q));
   }, [teams, query]);
 
-  const patches = ["16.8", "16.9", "16.10"];
+  // Patches derive from the dataset — no hardcoded values on this screen.
+  const patches = useMemo(() => Array.from(new Set((series ?? []).map((s) => s.patch))).sort(), [series]);
   const filteredSeries = useMemo(() => {
     if (!series) return [];
     return series.filter((s) => (s.teamAId === selected || s.teamBId === selected) && (!filters.tournamentId || s.tournamentId === filters.tournamentId));
@@ -100,12 +101,12 @@ export function OpponentIntelligence() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search teams…"
-            className="w-48 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+            className="min-h-[44px] w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] sm:w-48"
           />
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
         {/* Team directory */}
         <Panel title="Team directory" subtitle={`${filteredTeams.length} teams`}>
           <ul className="flex max-h-[420px] flex-col gap-1 overflow-y-auto" role="listbox" aria-label="Teams">
@@ -134,7 +135,7 @@ export function OpponentIntelligence() {
 
         <div className="flex min-w-0 flex-col gap-6">
           {/* Filters */}
-          <Panel title="Match history filters" subtitle="Denoominators adapt to the filtered eligible games">
+          <Panel title="Match history filters" subtitle="Denominators adapt to the filtered eligible games">
             <div className="flex flex-wrap items-center gap-3">
               <FilterSelect
                 label="Tournament"
@@ -161,7 +162,7 @@ export function OpponentIntelligence() {
                 options={[["", "Any"], ["1", "Game 1"], ["2", "Game 2"], ["3", "Game 3"], ["4", "Game 4"], ["5", "Game 5"]]}
               />
               {(filters.tournamentId || filters.patch || (filters.side && filters.side !== "both") || filters.gameNumber) && (
-                <button type="button" onClick={() => setFilters({ side: "both" })} className="text-xs text-[var(--accent-cyan)] hover:underline">
+                <button type="button" onClick={() => setFilters({ side: "both" })} className="min-h-[44px] px-2 text-xs font-medium text-[var(--accent-cyan)] hover:underline">
                   Clear filters
                 </button>
               )}
@@ -175,7 +176,7 @@ export function OpponentIntelligence() {
           ) : (
             <>
               {/* Team profile */}
-              <section aria-label="Team profile" className="grid grid-cols-2 gap-3 md:grid-cols-6">
+              <section aria-label="Team profile" className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
                 <StatTile label="Series record" value={`${profile.summary.record.wins}–${profile.summary.record.losses}`} detail="within selected dataset" />
                 <StatTile label="Games analyzed" value={profile.summary.gamesAnalyzed} detail={`${profile.summary.eligibleGames} draft-eligible`} tone="accent" />
                 <StatTile label="Blue side" value={profile.sideSplit.BLUE} detail={`${Math.round((profile.sideSplit.BLUE / Math.max(1, profile.summary.gamesAnalyzed)) * 100)}% of games`} />
@@ -197,11 +198,11 @@ export function OpponentIntelligence() {
                 </ul>
               </Panel>
 
-              <div className="grid gap-6 xl:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {/* Champion selection frequency */}
                 <Panel title="Champion selection frequency" subtitle={`Top ${CHAMPION_USAGE_LIMIT} by combined pick+ban weight · denominator = eligible games`}>
-                  <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)]">
-                    <table className="w-full text-left text-xs">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--border-subtle)]">
+                    <table className="w-full min-w-[560px] text-left text-xs">
                       <thead className="bg-[var(--surface-2)] text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                         <tr>
                           <th className="px-3 py-2 font-medium">Champion</th>
@@ -278,7 +279,7 @@ export function OpponentIntelligence() {
               {/* Strategic interpretation */}
               {openInsight && (
                 <Panel title="Strategic interpretation" subtitle="Observed fact separated from interpretation, with alternative responses">
-                  <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 p-4">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-cyan)]">Observed fact</p>
                       <p className="mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">{openInsight.observation}</p>
@@ -308,7 +309,7 @@ export function OpponentIntelligence() {
                 {profile.players.length === 0 ? (
                   <EmptyState title="No attributed player data" message="The filtered games lack player attribution. Player pools remain unavailable rather than estimated." />
                 ) : (
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {profile.players.map((p) => {
                       const total = p.games;
                       const RoleGlyph = ROLE_GLYPHS[p.role as keyof typeof ROLE_GLYPHS] ?? PickGlyph;
@@ -365,7 +366,7 @@ function FilterSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-xs text-[var(--text-primary)]"
+        className="min-h-[44px] rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)]"
       >
         {options.map(([v, l]) => (
           <option key={v} value={v}>{l}</option>

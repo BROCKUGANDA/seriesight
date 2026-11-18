@@ -1,0 +1,2002 @@
+     1→# SERIESIGHT
+     2→## Master Product Requirements Document + Staff/Principal Engineer Implementation Prompt
+     3→
+     4→**Project:** Seriesight  
+     5→**Product:** League of Legends esports coaching intelligence and Fearless Draft management platform  
+     6→**Hackathon:** Cloud9 × JetBrains: Sky's the Limit 2026  
+     7→**Primary submission:** Category 2, LoL Macro Scouting & Draft Management System  
+     8→**Optional bonus:** Best AI-Powered Workflow Story  
+     9→**Version:** 1.0  
+    10→**Build start:** November 2026  
+    11→**Submission deadline:** January 12, 2027, 11:00 AM PST  
+    12→**Product tagline:** The series, in focus.  
+    13→**Engineering standard:** Production-minded, fault-tolerant, observable, accessible and demonstrably functional.
+    14→
+    15→---
+    16→
+    17→# PART A: YOUR ROLE AS THE IMPLEMENTATION AGENT
+    18→
+    19→You are acting as the Staff Software Engineer, Principal Product Architect, Lead Frontend Engineer, Backend Engineer, Data Engineer, Applied AI Engineer, Security Engineer, QA Lead and Product Designer.
+    20→
+    21→Your assignment is to design, implement, test, deploy and document Seriesight as a complete working application.
+    22→
+    23→You are not being asked to produce a design proposal, a collection of mockups, a high-level implementation plan or a static dashboard.
+    24→
+    25→You must build the working product.
+    26→
+    27→## A1. Non-negotiable engineering instructions
+    28→
+    29→1. Inspect the existing repository, files, dependencies, Git history, environment and running application before making changes.
+    30→2. Preserve any useful existing implementation. Do not delete functional features simply to replace them with your preferred architecture.
+    31→3. Create the PRD, architecture specification, design tokens, implementation roadmap and API contracts before introducing major application code.
+    32→4. Implement actual functionality for every visible primary action.
+    33→5. Never substitute a fake metric, fabricated match result or unsupported statistical conclusion for real evidence.
+    34→6. Never label illustrative fixture data as official GRID data or actual Cloud9 performance.
+    35→7. Implement GRID through a dedicated provider adapter. Do not couple the user interface directly to GRID response objects.
+    36→8. Never expose an API key in browser JavaScript, client-side network requests, source control or logs.
+    37→9. Every analytical recommendation must be traceable to an underlying observation and its sample size.
+    38→10. Make the draft engine deterministic and independently testable.
+    39→11. Build failure handling and recovery into every external integration and important workflow.
+    40→12. Do not leave primary functionality behind TODO comments, nonfunctional controls or placeholder buttons.
+    41→13. Do not add complicated infrastructure without demonstrating why it is needed.
+    42→14. Do not make the app dependent on a third-party generative AI service to complete its core workflows.
+    43→15. Run the relevant tests after each implementation phase.
+    44→16. Commit code in small, logically separated changes with useful commit messages.
+    45→17. Use JetBrains WebStorm as the main development environment and Junie as an actual implementation assistant. Use DataGrip where appropriate for inspecting database structures and queries.
+    46→18. Preserve non-secret JetBrains project configuration and relevant Junie workflow evidence in the public repository.
+    47→19. Verify every feature in the running application rather than assuming a successful build means the product works.
+    48→20. Never claim a deployment, data import, test or integration succeeded until it has been verified.
+    49→
+    50→When a decision is uncertain, inspect the official documentation, repository or provider schema. If information is missing, create a safe abstraction and document the limitation instead of inventing facts.
+    51→
+    52→---
+    53→
+    54→# PART B: PRODUCT VISION AND PROBLEM
+    55→
+    56→## B1. Product vision
+    57→
+    58→Professional esports coaching depends on turning large volumes of match data into a small number of decisions that can change the outcome of a series.
+    59→
+    60→Coaches must understand:
+    61→- Which champions an opponent prioritizes.
+    62→- Which champions individual players consistently perform with.
+    63→- How pick and ban preferences change by side.
+    64→- Which strategies become predictable across games.
+    65→- Which match patterns are repeatable and which are isolated.
+    66→- How a Fearless Draft series changes the available champion pool.
+    67→- How to adapt when an opponent changes its strategy.
+    68→- Which conclusions are supported by sufficient evidence.
+    69→
+    70→Seriesight turns these tasks into a unified coaching workflow.
+    71→
+    72→The product should feel like an advanced sports intelligence terminal, not a chatbot, spreadsheet replacement with decorative cards, or generic AI analytics dashboard.
+    73→
+    74→## B2. The problem
+    75→
+    76→Existing preparation processes can involve disconnected spreadsheets, manually assembled reports, fragmented match histories and draft documents.
+    77→
+    78→The result is:
+    79→- Duplicate manual work.
+    80→- Inconsistent statistics.
+    81→- Difficulty recognizing patterns across multiple games.
+    82→- Poor visibility into evidence quality.
+    83→- Draft preparation that does not account for changing restrictions across a series.
+    84→- Limited ability to compare alternative strategies.
+    85→
+    86→## B3. The solution
+    87→
+    88→Seriesight combines five capabilities:
+    89→
+    90→1. Historical match intelligence.
+    91→2. Opponent behavioral profiling.
+    92→3. Macro strategy analysis.
+    93→4. Sequential pick/ban and Fearless Draft simulation.
+    94→5. Evidence-backed coaching recommendations.
+    95→
+    96→The central product principle:
+    97→
+    98→**Every recommendation must answer three questions: What should the coach consider? Why? How strong is the evidence?**
+    99→
+   100→## B4. Target users
+   101→
+   102→### Head Coach
+   103→Needs a high-level opponent overview, strategic priorities, alternative draft plans and a complete preparation workspace.
+   104→
+   105→### Draft Coach
+   106→Needs pick/ban sequencing, champion availability, role flexibility, counter strategies and Fearless Draft simulations.
+   107→
+   108→### Match Analyst
+   109→Needs match ingestion, filters, historical tendencies, source verification, sample sizes and exportable preparation materials where licensing permits.
+   110→
+   111→### Performance Analyst
+   112→Needs trends, macro indicators, objective timing, player-specific aggregate performance and consistency measurements.
+   113→
+   114→### Team Manager
+   115→Needs access to preparation status, completed reports, upcoming series and workspace coordination.
+   116→
+   117→## B5. Product positioning
+   118→
+   119→Seriesight is a pre-match professional coaching and analysis tool.
+   120→
+   121→It does not:
+   122→- Replace the official game client.
+   123→- Execute game actions.
+   124→- Inject information into an active game.
+   125→- Provide cheating functionality.
+   126→- Automatically lock picks or dictate a coach's final decision.
+   127→- Claim access to information not provided by its authorized data sources.
+   128→
+   129→It presents multiple possible strategies and makes the supporting evidence visible.
+   130→
+   131→---
+   132→
+   133→# PART C: PRODUCT SCOPE
+   134→
+   135→## C1. MVP: mandatory features
+   136→
+   137→The application must include:
+   138→
+   139→1. Complete application shell and navigation.
+   140→2. Interactive coaching dashboard.
+   141→3. Opponent scouting workspace.
+   142→4. Historical series ingestion through an authorized GRID integration.
+   143→5. Local demo fixture and demo workspace.
+   144→6. Champion and role metadata.
+   145→7. Historical pick/ban analytics.
+   146→8. Side-specific opponent tendencies.
+   147→9. Macro performance indicators supported by the available data.
+   148→10. Best-of-three and best-of-five draft sessions.
+   149→11. Hard Fearless and Soft Fearless modes.
+   150→12. Configurable tournament draft rules.
+   151→13. Champion pool availability management.
+   152→14. Role assignment and composition visualization.
+   153→15. Draft recommendation engine.
+   154→16. Evidence and confidence explanations.
+   155→17. Draft session undo, redo and reset.
+   156→18. Data source status and import error handling.
+   157→19. Fully functional responsive desktop interface.
+   158→20. Complete README, public demonstration deployment and test suite.
+   159→
+   160→## C2. Advanced features
+   161→
+   162→Implement after the mandatory workflows work:
+   163→
+   164→- Counterfactual draft simulator.
+   165→- Opponent strategy fingerprinting.
+   166→- Patch transition comparisons.
+   167→- Series adaptation analysis.
+   168→- Self-scouting.
+   169→- Multiple saved draft scenarios.
+   170→- Comparison between alternative Game 1 strategies.
+   171→- Printable preparation brief using permitted data.
+   172→- Historical recommendation backtesting.
+   173→- Optional natural-language coaching summaries.
+   174→
+   175→## C3. Explicitly out of scope for the hackathon MVP
+   176→
+   177→- Autonomous draft locking.
+   178→- Live in-game overlays.
+   179→- Automatic game client integration.
+   180→- Unlicensed commercial distribution of GRID data.
+   181→- Betting and gambling functionality.
+   182→- Unverified predictive win-rate claims.
+   183→- Complicated multi-agent architectures that do not contribute to a demonstrated feature.
+   184→
+   185→---
+   186→
+   187→# PART D: APPLICATION INFORMATION ARCHITECTURE
+   188→
+   189→## D1. Global layout
+   190→
+   191→Desktop-first professional coaching workspace.
+   192→
+   193→Target reference viewport: 1440 × 900.
+   194→
+   195→Layout:
+   196→
+   197→- Left navigation: 248 px.
+   198→- Top command bar: 64 px.
+   199→- Main content area: flexible.
+   200→- Optional right contextual panel: 300–340 px.
+   201→- Content spacing: 24 px.
+   202→- Primary content maximum width: 1600 px.
+   203→
+   204→The layout must remain usable at 1280 px, 1024 px, 768 px and 390 px.
+   205→
+   206→### Navigation
+   207→
+   208→1. Command Center
+   209→2. Opponent Intelligence
+   210→3. Macro Atlas
+   211→4. Draft Room
+   212→5. Series Lab
+   213→6. Evidence Ledger
+   214→7. Data Sources
+   215→8. Workspace Settings
+   216→
+   217→Each destination must have a meaningful landing view and an obvious selected navigation state.
+   218→
+   219→## D2. Page 1: Command Center
+   220→
+   221→Route: `/dashboard`
+   222→
+   223→Purpose: The coach should understand the state of preparation within five seconds.
+   224→
+   225→Components:
+   226→
+   227→**A. Header**
+   228→- Greeting and workspace identity.
+   229→- Upcoming preparation session.
+   230→- Dataset status.
+   231→- Current game patch.
+   232→- Quick actions.
+   233→
+   234→**B. Intelligence overview**
+   235→- Total series processed.
+   236→- Total games analyzed.
+   237→- Opponents available.
+   238→- Champion coverage.
+   239→- Dataset freshness.
+   240→
+   241→Display only verified values. Never hardcode impressive-looking live metrics.
+   242→
+   243→**C. Priority intelligence**
+   244→Show the three most relevant discovered opponent tendencies.
+   245→
+   246→Every insight card contains:
+   247→- Insight heading.
+   248→- Opponent.
+   249→- Metric.
+   250→- Sample size.
+   251→- Evidence strength.
+   252→- Relevant side or patch.
+   253→- Link to the underlying analysis.
+   254→
+   255→**D. Series preparation**
+   256→- Opponent selector.
+   257→- Match format selector.
+   258→- Side selection.
+   259→- Active draft session.
+   260→- Preparation completion indicator.
+   261→
+   262→**E. Signal activity**
+   263→Show the most recent completed imports, analyses and draft sessions.
+   264→
+   265→**F. Quick start**
+   266→- Scout an opponent.
+   267→- Start a draft.
+   268→- Open the Fearless Lab.
+   269→- Inspect the data source.
+   270→
+   271→## D3. Page 2: Opponent Intelligence
+   272→
+   273→Route: `/scouting`
+   274→
+   275→Purpose: Turn tournament history into structured opponent profiles.
+   276→
+   277→### Opponent selection
+   278→
+   279→Provide:
+   280→- Searchable team directory.
+   281→- Tournament selector.
+   282→- Patch selector.
+   283→- Date range.
+   284→- Blue/Red side filter.
+   285→- Game number filter.
+   286→- Champion and role filters.
+   287→
+   288→### Team profile
+   289→
+   290→Display:
+   291→- Team metadata.
+   292→- Match record within the selected dataset.
+   293→- Games analyzed.
+   294→- Champion picks.
+   295→- Champion bans.
+   296→- Side distribution.
+   297→- Frequently selected champions.
+   298→- Champion selection frequency.
+   299→- Draft opening preferences.
+   300→- Composition patterns.
+   301→
+   302→### Player profiles
+   303→
+   304→Where player data is authorized and sufficiently attributable:
+   305→
+   306→- Player name.
+   307→- Observed role.
+   308→- Champion pool.
+   309→- Champion selection frequency.
+   310→- Games played.
+   311→- Aggregate statistics.
+   312→- Sample-size warning.
+   313→- Role flexibility evidence.
+   314→
+   315→Never infer a player's role solely from a static champion-role mapping when reliable observed role data is available.
+   316→
+   317→### Signature Tendencies
+   318→
+   319→The engine should detect:
+   320→- Frequent first rotation picks.
+   321→- Repeated high-priority bans.
+   322→- Side-dependent draft differences.
+   323→- Champion priority shifts.
+   324→- Draft pattern changes across games.
+   325→- Repeated compositions, where enough history exists.
+   326→
+   327→### Strategic Interpretation
+   328→
+   329→Provide an automatically organized briefing:
+   330→
+   331→- Most important tendencies.
+   332→- Potentially exploitable patterns.
+   333→- Areas with insufficient evidence.
+   334→- Alternative responses.
+   335→- Supporting observations.
+   336→
+   337→Recommendations must distinguish observed fact from interpretation.
+   338→
+   339→## D4. Page 3: Macro Atlas
+   340→
+   341→Route: `/macro`
+   342→
+   343→Purpose: Show the strategic patterns behind an opponent's gameplay.
+   344→
+   345→### Metrics
+   346→
+   347→Only compute and display a metric when the provider supplies the necessary fields.
+   348→
+   349→Supported analytical modules:
+   350→
+   351→1. First dragon acquisition.
+   352→2. Herald control.
+   353→3. Baron control.
+   354→4. Objective sequence.
+   355→5. Early-game kill patterns.
+   356→6. Early-game economic trends.
+   357→7. Turret progression.
+   358→8. Game duration.
+   359→9. Side-specific macro patterns.
+   360→10. Team performance over time.
+   361→
+   362→Potential breakdowns:
+   363→- 0–10 minutes.
+   364→- 10–20 minutes.
+   365→- 20–30 minutes.
+   366→- 30+ minutes.
+   367→
+   368→The intervals must be configurable and calculations must respect actual game timestamps.
+   369→
+   370→### Macro Timeline
+   371→
+   372→Construct a horizontal match timeline.
+   373→
+   374→Display available events with distinct glyphs:
+   375→- Dragon.
+   376→- Herald.
+   377→- Baron.
+   378→- Kill.
+   379→- Turret.
+   380→- Game start.
+   381→- Game finish.
+   382→
+   383→Each event should open a detail panel showing:
+   384→- Timestamp.
+   385→- Game.
+   386→- Teams involved.
+   387→- Supporting values.
+   388→- Source.
+   389→- Data availability.
+   390→
+   391→### Objective Analysis
+   392→
+   393→Example presentation:
+   394→
+   395→"Team A secured the first recorded dragon in 7 of 10 analyzed games."
+   396→
+   397→Supporting information:
+   398→- 10 eligible games.
+   399→- 7 first-dragon acquisitions.
+   400→- Patch distribution.
+   401→- Tournament selection.
+   402→- Date range.
+   403→- Confidence interval.
+   404→
+   405→This must be produced from imported data, not manually inserted as if it were a real finding.
+   406→
+   407→If an objective metric is unavailable, display an explicit unavailable state rather than a fabricated estimate.
+   408→
+   409→## D5. Page 4: Draft Room
+   410→
+   411→Route: `/draft`
+   412→
+   413→This is the primary interactive product demonstration.
+   414→
+   415→### Layout
+   416→
+   417→Main panel:
+   418→- Draft board.
+   419→- Team selectors.
+   420→- Pick/ban order.
+   421→- Champion availability.
+   422→
+   423→Left panel:
+   424→- Opponent profile.
+   425→- Preferred picks.
+   426→- Ban tendencies.
+   427→- Strategic priorities.
+   428→
+   429→Right panel:
+   430→- Recommended picks.
+   431→- Candidate bans.
+   432→- Role requirements.
+   433→- Composition analysis.
+   434→- Evidence.
+   435→
+   436→Bottom panel:
+   437→- Draft event history.
+   438→- Undo.
+   439→- Redo.
+   440→- Save.
+   441→- Reset.
+   442→- Export where permitted.
+   443→
+   444→### Draft configuration
+   445→
+   446→Before starting, configure:
+   447→
+   448→- Opponent.
+   449→- Tournament.
+   450→- Patch.
+   451→- Best of 1, Best of 3 or Best of 5.
+   452→- Blue side.
+   453→- Red side.
+   454→- Tournament pick/ban sequence.
+   455→- Fearless ruleset.
+   456→- Available champion pool.
+   457→- Role configuration.
+   458→
+   459→### Fearless modes
+   460→
+   461→Support these independently configurable rules:
+   462→
+   463→**Standard Draft**
+   464→Champions are available according to ordinary tournament pick/ban and same-game restrictions.
+   465→
+   466→**Hard/Full Fearless**
+   467→A champion picked by either team in an earlier game is unavailable for either team in subsequent games of the series.
+   468→
+   469→**Soft Fearless**
+   470→A champion picked by one team in an earlier game is unavailable to that same team in later games, while the opposing team's previous picks remain available subject to other rules.
+   471→
+   472→**Custom Tournament Rules**
+   473→Allow the tournament to define:
+   474→- Pick restrictions.
+   475→- Ban restrictions.
+   476→- Whether restrictions apply to both teams or separately.
+   477→- When restrictions reset.
+   478→- Best-of-series format.
+   479→- Draft turn sequence.
+   480→
+   481→Do not assume that a tournament's use of the word Fearless implies identical rules across every competition.
+   482→
+   483→Banned champions, picked champions and previously selected champions must be tracked as separate states. Do not incorrectly treat bans as completed picks.
+   484→
+   485→### Draft state machine
+   486→
+   487→Use an explicit deterministic state machine.
+   488→
+   489→States:
+   490→- CONFIGURATION
+   491→- BAN_PHASE_1
+   492→- PICK_PHASE_1
+   493→- BAN_PHASE_2
+   494→- PICK_PHASE_2
+   495→- FINALIZATION
+   496→- COMPLETED
+   497→- INVALID
+   498→- CANCELLED
+   499→
+   500→Every tournament ruleset must define its valid phase sequence and action order. The draft engine must not assume a fixed sequence without a ruleset configuration.
+   501→
+   502→Validate every action before changing state.
+   503→
+   504→Invalid actions must not partially modify the board.
+   505→
+   506→### Pick and ban actions
+   507→
+   508→Users can:
+   509→- Search champions.
+   510→- Select a champion.
+   511→- Lock a pick.
+   512→- Assign a player or role.
+   513→- Remove or undo the last action if permitted.
+   514→- Inspect champion history.
+   515→- View the reason a champion is unavailable.
+   516→
+   517→The engine must prevent:
+   518→- Duplicate picks where prohibited.
+   519→- Picking a previously restricted champion.
+   520→- Invalid bans.
+   521→- Actions in an incorrect phase.
+   522→- Actions from the wrong side.
+   523→- Actions out of sequence.
+   524→- Completion without required selections.
+   525→
+   526→Every action generates an event with a unique ID, timestamp, actor, team, phase and previous state version.
+   527→
+   528→### Draft analysis
+   529→
+   530→Display:
+   531→
+   532→**Composition Balance**
+   533→- Physical and magic damage distribution where classifiable.
+   534→- Frontline capability.
+   535→- Crowd control.
+   536→- Engage.
+   537→- Disengage.
+   538→- Scaling.
+   539→- Siege.
+   540→- Objective setup.
+   541→- Teamfight profile.
+   542→- Role coverage.
+   543→
+   544→**Champion Relationships**
+   545→- Historical synergies.
+   546→- Opponent matchup information.
+   547→- Flex-pick possibilities.
+   548→- Role alternatives.
+   549→- Historical sample sizes.
+   550→
+   551→**Recommendation ranking**
+   552→
+   553→Recommend:
+   554→- Three potential picks.
+   555→- Three potential bans.
+   556→- Two alternative compositions where sufficient data exists.
+   557→
+   558→Every recommendation includes:
+   559→- Candidate champion.
+   560→- Score.
+   561→- Why it is suggested.
+   562→- Underlying observations.
+   563→- Sample count.
+   564→- Patch relevance.
+   565→- Risks and trade-offs.
+   566→- Alternative.
+   567→
+   568→Never present a recommendation as an instruction to lock a champion.
+   569→
+   570→## D6. Page 5: Series Lab
+   571→
+   572→Route: `/series-lab`
+   573→
+   574→The signature feature.
+   575→
+   576→Purpose: Simulate strategy evolution across an entire best-of-series.
+   577→
+   578→### Five-game visual experience
+   579→
+   580→Create an interactive series board:
+   581→
+   582→Game 1 → Game 2 → Game 3 → Game 4 → Game 5.
+   583→
+   584→Each game has:
+   585→- Draft completion status.
+   586→- Champion selections.
+   587→- Restrictions introduced.
+   588→- Remaining pool.
+   589→- Team compositions.
+   590→- Strategy notes.
+   591→
+   592→### Progressive availability
+   593→
+   594→After a completed game:
+   595→1. Identify the champions actually picked.
+   596→2. Read the configured Fearless rules.
+   597→3. Update champion availability.
+   598→4. Preserve the previous game.
+   599→5. Recalculate possible compositions.
+   600→6. Recalculate opponent tendencies under the reduced pool.
+   601→7. Present strategic alternatives for the next game.
+   602→
+   603→### Counterfactual simulation
+   604→
+   605→Allow the coach to clone a Game 1 or Game 2 session.
+   606→
+   607→Compare:
+   608→- Starting picks.
+   609→- Future champion availability.
+   610→- Remaining role pools.
+   611→- Team composition flexibility.
+   612→- Opponent response options.
+   613→- Series adaptation.
+   614→
+   615→Display differences side by side.
+   616→
+   617→### Series strategy map
+   618→
+   619→Show a visual connection between:
+   620→- Game 1 strategic choices.
+   621→- Game 2 champion restrictions.
+   622→- Game 3 available champion pool.
+   623→- Game 4 adaptation.
+   624→- Game 5 remaining options.
+   625→
+   626→This should be the central visual moment of the demo.
+   627→
+   628→## D7. Page 6: Evidence Ledger
+   629→
+   630→Route: `/evidence`
+   631→
+   632→Purpose: Make Seriesight trustworthy.
+   633→
+   634→Each insight receives a unique evidence identifier.
+   635→
+   636→An evidence record contains:
+   637→- Source provider.
+   638→- Source series ID.
+   639→- Game IDs.
+   640→- Dataset ID.
+   641→- Ingestion timestamp.
+   642→- Tournament.
+   643→- Patch.
+   644→- Sample count.
+   645→- Metric definition.
+   646→- Numerator.
+   647→- Denominator.
+   648→- Computed value.
+   649→- Confidence interval, where appropriate.
+   650→- Analysis version.
+   651→- Limitations.
+   652→
+   653→Provide a detail drawer when a coach selects an insight.
+   654→
+   655→Show which actual observations contributed to the statistic, subject to GRID data access restrictions.
+   656→
+   657→Where licensing does not permit retaining or redistributing underlying data, expose only information explicitly permitted by the applicable agreement.
+   658→
+   659→Never expose raw GRID data in the public repository.
+   660→
+   661→## D8. Page 7: Data Sources
+   662→
+   663→Route: `/data-sources`
+   664→
+   665→### GRID connection panel
+   666→
+   667→Display:
+   668→- Connection status.
+   669→- Credential configuration.
+   670→- Last successful request.
+   671→- Available tournament coverage.
+   672→- Authorized endpoints.
+   673→- Rate-limit status where observable.
+   674→- Last import attempt.
+   675→- Number of successfully parsed series.
+   676→- Failed import count.
+   677→
+   678→States:
+   679→- Connected.
+   680→- Not configured.
+   681→- Authenticating.
+   682→- Importing.
+   683→- Partial success.
+   684→- Rate limited.
+   685→- Temporarily unavailable.
+   686→- Access denied.
+   687→- Schema mismatch.
+   688→
+   689→### Local demo data
+   690→
+   691→A demo dataset must always be available without external API keys.
+   692→
+   693→The dataset must have explicit labels:
+   694→"Illustrative fixture data. Not actual Cloud9 performance and not an official GRID dataset."
+   695→
+   696→It must exercise the entire app:
+   697→- Multiple opponents.
+   698→- Several tournaments.
+   699→- Multiple patches.
+   700→- Several games.
+   701→- Pick and ban sequences.
+   702→- Team and player role data.
+   703→- Objective events.
+   704→- At least one full BO5 example.
+   705→
+   706→Synthetic data must never appear in an official-data view without a visible fixture marker.
+   707→
+   708→---
+   709→
+   710→# PART E: CUSTOM BRAND AND VISUAL IDENTITY
+   711→
+   712→## E1. Brand personality
+   713→
+   714→Seriesight should feel:
+   715→
+   716→- Precise.
+   717→- Intelligent.
+   718→- Competitive.
+   719→- Analytical.
+   720→- Futuristic.
+   721→- Premium.
+   722→- Calm under pressure.
+   723→- Technically sophisticated.
+   724→
+   725→Avoid excessive neon, generic AI gradients, noisy gaming backgrounds and cluttered esports graphics.
+   726→
+   727→The visual metaphor is a strategic signal passing through a five-stage optical system.
+   728→
+   729→## E2. Logo
+   730→
+   731→Create an original vector identity.
+   732→
+   733→### Master logo
+   734→
+   735→Wordmark: `SERIESIGHT`
+   736→
+   737→Icon concept:
+   738→A five-line geometric lens consisting of five vertical signal marks and a central opening that resembles an aperture.
+   739→
+   740→The five marks symbolize the stages of a series.
+   741→
+   742→Logo variants:
+   743→- Primary horizontal.
+   744→- Stacked.
+   745→- Icon only.
+   746→- Monochrome light.
+   747→- Monochrome dark.
+   748→- Small favicon.
+   749→- Application loading mark.
+   750→
+   751→All versions must remain legible in SVG and at small sizes.
+   752→
+   753→Do not use Cloud9, Riot Games or JetBrains logos in the product's own identity.
+   754→
+   755→## E3. Color palette
+   756→
+   757→Use the following exact initial tokens.
+   758→
+   759→### Backgrounds
+   760→
+   761→| Token | Hex | Purpose |
+   762→|---|---|---|
+   763→| `--bg-void` | #080C14 | Application background |
+   764→| `--bg-primary` | #0D1420 | Main interface |
+   765→| `--surface-1` | #121D2B | Primary card |
+   766→| `--surface-2` | #182638 | Elevated card |
+   767→| `--surface-3` | #203247 | Popover and modal |
+   768→| `--border-subtle` | #25364A | Dividers |
+   769→| `--border-active` | #3D5D78 | Focused outlines |
+   770→
+   771→### Text
+   772→
+   773→| Token | Hex | Purpose |
+   774→|---|---|---|
+   775→| `--text-primary` | #F2F6FC | Main headings |
+   776→| `--text-secondary` | #AAB9CB | Body text |
+   777→| `--text-muted` | #728399 | Metadata |
+   778→| `--text-disabled` | #4D6076 | Disabled values |
+   779→
+   780→### Accent colors
+   781→
+   782→| Token | Hex | Purpose |
+   783→|---|---|---|
+   784→| `--accent-cyan` | #42D9FF | Primary actions |
+   785→| `--accent-violet` | #9B8CFF | Intelligence and analysis |
+   786→| `--accent-indigo` | #627DFF | Secondary emphasis |
+   787→| `--accent-amber` | #F3BD69 | Attention and sample warnings |
+   788→| `--accent-green` | #55DBAA | Valid and positive |
+   789→| `--accent-coral` | #FF7488 | Negative and critical |
+   790→| `--accent-white` | #EDF4FF | High-impact contrast |
+   791→
+   792→Never use accent colors as the only way to communicate state. Pair them with labels and glyphs.
+   793→
+   794→## E4. Gradients
+   795→
+   796→Create a restrained gradient library.
+   797→
+   798→**Primary signal**
+   799→
+   800→`linear-gradient(115deg, #42D9FF 0%, #627DFF 50%, #9B8CFF 100%)`
+   801→
+   802→**Series progression**
+   803→
+   804→`linear-gradient(90deg, #42D9FF 0%, #627DFF 45%, #9B8CFF 100%)`
+   805→
+   806→**Critical attention**
+   807→
+   808→`linear-gradient(120deg, #FF7488 0%, #F3BD69 100%)`
+   809→
+   810→**Dark atmospheric background**
+   811→
+   812→`radial-gradient(ellipse at 20% 0%, rgba(66,217,255,0.12), transparent 42%), radial-gradient(ellipse at 85% 20%, rgba(155,140,255,0.10), transparent 38%), #080C14`
+   813→
+   814→Use gradients sparingly. Data density and readability take priority.
+   815→
+   816→## E5. Typography
+   817→
+   818→Primary: Geist Sans or equivalent high-quality modern sans-serif.
+   819→
+   820→Secondary: Geist Mono or IBM Plex Mono.
+   821→
+   822→Rules:
+   823→- Headings: 600–700 weight.
+   824→- Body: 400–500 weight.
+   825→- Metric values: tabular numbers.
+   826→- IDs, timestamps and technical metadata: monospace.
+   827→- Use consistent line-height.
+   828→- Avoid oversized marketing typography inside the analytics workspace.
+   829→
+   830→Suggested scale:
+   831→- Display: 42 px.
+   832→- H1: 32 px.
+   833→- H2: 24 px.
+   834→- H3: 18 px.
+   835→- Body: 14–16 px.
+   836→- Caption: 12 px.
+   837→- Data labels: 11–12 px.
+   838→
+   839→## E6. Spacing and radius
+   840→
+   841→Base spacing unit: 4 px.
+   842→
+   843→Spacing scale:
+   844→4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80.
+   845→
+   846→Radius:
+   847→- Small controls: 6 px.
+   848→- Cards: 12 px.
+   849→- Large surfaces: 16 px.
+   850→- Modals: 20 px.
+   851→- Pills: 999 px.
+   852→
+   853→Use consistent shadows and avoid excessive glassmorphism.
+   854→
+   855→## E7. Custom icons and glyph language
+   856→
+   857→Build a first-party SVG icon library.
+   858→
+   859→All glyphs:
+   860→- 24 × 24 viewBox.
+   861→- Consistent stroke width.
+   862→- Rounded line joins.
+   863→- Accessible labels.
+   864→- Light and dark states.
+   865→- Monochrome base with limited accent variants.
+   866→
+   867→Required original glyphs:
+   868→
+   869→1. Seriesight aperture.
+   870→2. Opponent radar.
+   871→3. Champion selection.
+   872→4. Champion ban.
+   873→5. Hard Fearless.
+   874→6. Soft Fearless.
+   875→7. Top lane.
+   876→8. Jungle.
+   877→9. Mid lane.
+   878→10. Bot lane.
+   879→11. Support.
+   880→12. Objective control.
+   881→13. Dragon.
+   882→14. Herald.
+   883→15. Baron.
+   884→16. Macro timeline.
+   885→17. Evidence source.
+   886→18. Confidence indicator.
+   887→19. Match history.
+   888→20. Counterfactual simulation.
+   889→21. Data import.
+   890→22. Data integrity.
+   891→23. Series progression.
+   892→24. Team composition.
+   893→25. Risk warning.
+   894→
+   895→Use original SVG path designs where necessary. Do not rely on emojis for major navigation elements.
+   896→
+   897→A licensed Lucide icon set may be used for generic UI controls, but key product identity glyphs must be custom.
+   898→
+   899→## E8. Custom champion and role presentation
+   900→
+   901→Use a card-based champion selector.
+   902→
+   903→Each tile contains:
+   904→- Original generated or designed avatar glyph.
+   905→- Champion name.
+   906→- Role indication.
+   907→- Availability status.
+   908→- Selected/locked state.
+   909→- Historical pick information where available.
+   910→
+   911→Use Data Dragon's permitted static data only within applicable license conditions.
+   912→
+   913→Avoid reproducing the League client layout or using copyrighted images without authorization. For the demo video, favor original UI glyphs and owned visuals.
+   914→
+   915→---
+   916→
+   917→# PART F: MOTION, 3D, TRANSITIONS AND HAPTICS
+   918→
+   919→## F1. Motion philosophy
+   920→
+   921→Movement should communicate state changes, not merely decorate the screen.
+   922→
+   923→Every animation must have a reason.
+   924→
+   925→Avoid excessive perpetual movement.
+   926→
+   927→## F2. Timing tokens
+   928→
+   929→| Token | Duration | Use |
+   930→|---|---:|---|
+   931→| `motion-instant` | 80 ms | Press feedback |
+   932→| `motion-fast` | 120 ms | Hover and focus |
+   933→| `motion-base` | 180 ms | Small transitions |
+   934→| `motion-medium` | 280 ms | Cards and drawers |
+   935→| `motion-large` | 420 ms | Page transitions |
+   936→| `motion-hero` | 750 ms | Initial brand sequence |
+   937→
+   938→Use appropriate easing curves:
+   939→- Standard ease-out for entering.
+   940→- Ease-in for exiting.
+   941→- Smooth spring for movable cards.
+   942→- No bouncy motion for analytical numbers.
+   943→
+   944→## F3. Micro animations
+   945→
+   946→Implement:
+   947→
+   948→- Button press compression.
+   949→- Hover illumination.
+   950→- Border tracing for active cards.
+   951→- Metric count-up when a dashboard becomes visible.
+   952→- Champion card selection.
+   953→- Pick confirmation.
+   954→- Ban elimination effect.
+   955→- Confidence indicator expansion.
+   956→- Tooltip fade.
+   957→- Modal entrance.
+   958→- Navigation underline movement.
+   959→- Skeleton shimmer.
+   960→- Evidence drawer expansion.
+   961→- Notification appearance.
+   962→- Filter chip selection.
+   963→- Drag-and-drop feedback.
+   964→- Draft turn indicator progression.
+   965→
+   966→Never animate a number so aggressively that its real value becomes difficult to read.
+   967→
+   968→## F4. Macro animations
+   969→
+   970→### Series progression animation
+   971→
+   972→When moving from Game 1 to Game 2:
+   973→
+   974→1. Camera/view focuses on the completed game.
+   975→2. Selected champions receive a brief illuminated outline.
+   976→3. Restrictions propagate to unavailable champions.
+   977→4. The remaining pool updates.
+   978→5. The next game panel activates.
+   979→
+   980→The operation must be deterministic and immediately reflect the underlying state.
+   981→
+   982→### Draft transition
+   983→
+   984→When a pick is locked:
+   985→- Selected card moves into the active team composition.
+   986→- Draft timeline updates.
+   987→- Role assignment recalculates.
+   988→- Recommendation scores refresh.
+   989→
+   990→When a champion becomes unavailable:
+   991→- Its tile dims.
+   992→- A lock glyph appears.
+   993→- A tooltip explains the source of the restriction.
+   994→- The available champion count updates.
+   995→
+   996→## F5. Custom loading animations
+   997→
+   998→Create four distinct loading patterns.
+   999→
+  1000→**1. Signal Sweep**
+  1001→
+  1002→A horizontal cyan-violet line scans across a dark surface.
+  1003→
+  1004→Use: data loading.
+  1005→
+  1006→**2. Aperture Loader**
+  1007→
+  1008→The five-line Seriesight emblem expands and contracts.
+  1009→
+  1010→Use: application startup.
+  1011→
+  1012→**3. Series Assembly**
+  1013→
+  1014→Five vertical geometric panels illuminate sequentially.
+  1015→
+  1016→Use: loading a series analysis.
+  1017→
+  1018→**4. Evidence Reconstruction**
+  1019→
+  1020→Small points connect into an evidence graph.
+  1021→
+  1022→Use: building a scouting report.
+  1023→
+  1024→No endless full-page spinners.
+  1025→
+  1026→## F6. Skeleton states
+  1027→
+  1028→Provide dedicated skeletons for:
+  1029→- Dashboard cards.
+  1030→- Champion cards.
+  1031→- Opponent profiles.
+  1032→- Draft board.
+  1033→- Macro timeline.
+  1034→- Statistical charts.
+  1035→- Evidence rows.
+  1036→
+  1037→The skeleton dimensions must match the completed content to avoid layout shifts.
+  1038→
+  1039→## F7. 3D visual system
+  1040→
+  1041→Use React Three Fiber and Three.js selectively.
+  1042→
+  1043→Create a central 3D object called the **Series Core**.
+  1044→
+  1045→Design:
+  1046→- Five nested orbital rings.
+  1047→- A central crystalline aperture.
+  1048→- Subtle metallic materials.
+  1049→- Cyan/violet lighting.
+  1050→- Fine particle paths.
+  1051→- Subtle camera parallax.
+  1052→- Responsive scaling.
+  1053→
+  1054→Use it primarily on:
+  1055→- Marketing/landing page.
+  1056→- Command Center hero.
+  1057→- Series Lab transition.
+  1058→
+  1059→It must not obstruct data.
+  1060→
+  1061→Technical rules:
+  1062→- Lazy load the 3D scene.
+  1063→- Dynamic import.
+  1064→- Limit geometry complexity.
+  1065→- Cap device pixel ratio.
+  1066→- Use GPU-friendly materials.
+  1067→- Dispose of resources correctly.
+  1068→- Provide CSS/2D fallback.
+  1069→- Pause offscreen animation.
+  1070→- Honor reduced-motion preferences.
+  1071→
+  1072→The app must remain fast when the 3D scene is disabled.
+  1073→
+  1074→## F8. Haptic feedback
+  1075→
+  1076→Haptics are progressive enhancement, not a core dependency.
+  1077→
+  1078→On supported mobile devices:
+  1079→- Pick confirmed: brief single pulse.
+  1080→- Invalid restricted champion: short double pulse.
+  1081→- Session completed: distinct confirmation pulse.
+  1082→
+  1083→Requirements:
+  1084→- Detect API support.
+  1085→- Respect an in-app haptic setting.
+  1086→- Never trigger on page loading.
+  1087→- Never trigger repeated long vibration.
+  1088→- Silently fall back to visual confirmation.
+  1089→
+  1090→Desktop users must receive equivalent visual state changes.
+  1091→
+  1092→---
+  1093→
+  1094→# PART G: TECHNICAL ARCHITECTURE
+  1095→
+  1096→## G1. Recommended stack
+  1097→
+  1098→### Frontend
+  1099→- Next.js App Router.
+  1100→- React.
+  1101→- TypeScript strict mode.
+  1102→- Tailwind CSS.
+  1103→- shadcn/ui.
+  1104→- Radix UI primitives.
+  1105→- Motion for React.
+  1106→- React Three Fiber.
+  1107→- Three.js.
+  1108→- Recharts or another accessible charting library.
+  1109→- TanStack Query.
+  1110→- Zustand for appropriate client-side session UI state.
+  1111→- XState for draft workflow/state-machine management.
+  1112→- Zod for validation.
+  1113→
+  1114→### Backend
+  1115→- Next.js Route Handlers.
+  1116→- TypeScript service layer.
+  1117→- PostgreSQL.
+  1118→- Drizzle ORM.
+  1119→- Zod request and response validation.
+  1120→- GraphQL client for GRID API integration.
+  1121→- pg-boss or an equivalent PostgreSQL-backed job queue if asynchronous imports require it.
+  1122→
+  1123→### Testing
+  1124→- Vitest.
+  1125→- React Testing Library.
+  1126→- Playwright.
+  1127→- API contract tests.
+  1128→- Database integration tests.
+  1129→- Accessibility checks.
+  1130→- Performance testing.
+  1131→
+  1132→### Development and deployment
+  1133→- JetBrains WebStorm.
+  1134→- JetBrains Junie.
+  1135→- DataGrip.
+  1136→- GitHub.
+  1137→- Docker Compose.
+  1138→- Managed PostgreSQL.
+  1139→- Docker-compatible application deployment.
+  1140→
+  1141→Pin dependency versions in the lockfile. Use stable releases rather than unverified prerelease packages.
+  1142→
+  1143→## G2. Architecture pattern
+  1144→
+  1145→Use a modular monolith for the hackathon.
+  1146→
+  1147→Do not build unnecessary microservices.
+  1148→
+  1149→Logical layers:
+  1150→
+  1151→1. Presentation layer.
+  1152→2. Application service layer.
+  1153→3. Domain logic layer.
+  1154→4. Analytics layer.
+  1155→5. Data integration layer.
+  1156→6. Persistence layer.
+  1157→7. External provider layer.
+  1158→
+  1159→The UI must never perform direct GRID API requests.
+  1160→
+  1161→All GRID calls must pass through the backend.
+  1162→
+  1163→## G3. Core architecture flow
+  1164→
+  1165→GRID Central Data
+  1166→→ GRID Provider Adapter
+  1167→→ Validated Provider Models
+  1168→→ Normalization Layer
+  1169→→ Authorized Minimal Persistence/Cache
+  1170→→ Analytics Engine
+  1171→→ Evidence Builder
+  1172→→ Recommendation Engine
+  1173→→ API
+  1174→→ User Interface.
+  1175→
+  1176→Draft workflow:
+  1177→
+  1178→Coach Input
+  1179→→ Draft State Machine
+  1180→→ Rule Validation
+  1181→→ Draft Action Event
+  1182→→ Series Restrictions
+  1183→→ Composition Analysis
+  1184→→ Recommendation Refresh
+  1185→→ Updated Series Board.
+  1186→
+  1187→## G4. GRID integration
+  1188→
+  1189→Use the authorized GRID APIs available to the hackathon participant.
+  1190→
+  1191→The documented endpoints include:
+  1192→
+  1193→Central Data:
+  1194→`https://api-op.grid.gg/central-data/graphql`
+  1195→
+  1196→Series State:
+  1197→`https://api-op.grid.gg/live-data-feed/series-state/graphql`
+  1198→
+  1199→Authentication:
+  1200→`x-api-key` header.
+  1201→
+  1202→Use only the endpoints and data products confirmed by the active GRID/Open Access account. Verify current schema and entitlements before implementation.
+  1203→
+  1204→### Central Data responsibilities
+  1205→
+  1206→Retrieve:
+  1207→- Available titles.
+  1208→- Tournaments.
+  1209→- Series identifiers.
+  1210→- Teams.
+  1211→- Series metadata.
+  1212→- Scheduling information.
+  1213→- Supported coverage information.
+  1214→
+  1215→### Series State responsibilities
+  1216→
+  1217→Retrieve the permitted historical series state.
+  1218→
+  1219→Extract the fields actually available:
+  1220→- Series information.
+  1221→- Games.
+  1222→- Participants.
+  1223→- Teams.
+  1224→- Results.
+  1225→- Champion selections.
+  1226→- Roles.
+  1227→- Available objective statistics.
+  1228→- Timestamps.
+  1229→- Supported macro statistics.
+  1230→
+  1231→Do not assume all fields exist for all tournaments.
+  1232→
+  1233→### Provider adapter
+  1234→
+  1235→Create:
+  1236→
+  1237→`lib/providers/grid/grid-client.ts`
+  1238→
+  1239→`lib/providers/grid/grid-queries.ts`
+  1240→
+  1241→`lib/providers/grid/grid-mapper.ts`
+  1242→
+  1243→`lib/providers/grid/grid-types.ts`
+  1244→
+  1245→`lib/providers/grid/grid-errors.ts`
+  1246→
+  1247→`lib/providers/grid/grid-capabilities.ts`
+  1248→
+  1249→The adapter should:
+  1250→- Validate responses.
+  1251→- Map provider identifiers.
+  1252→- Normalize timestamps.
+  1253→- Handle missing fields.
+  1254→- Preserve provenance.
+  1255→- Respect quotas.
+  1256→- Enforce request timeouts.
+  1257→- Avoid logging sensitive payloads.
+  1258→- Avoid unsupported endpoints.
+  1259→- Provide actionable integration errors.
+  1260→
+  1261→### Important license restriction
+  1262→
+  1263→GRID's free Open Access is for non-commercial learning and experimentation.
+  1264→
+  1265→Do not make Seriesight commercial using this access. Commercialization requires the appropriate GRID commercial licence.
+  1266→
+  1267→Never publish unauthorized GRID raw data or derivative datasets in GitHub. Do not assume permission to retain, export or redistribute the data. Verify the active hackathon and Open Access terms before deciding what can be stored, displayed or exported.
+  1268→
+  1269→Implement a provider-specific data retention policy, and keep the public demonstration fixtures independently authored.
+  1270→
+  1271→## G5. Riot static data
+  1272→
+  1273→Use the authorized Data Dragon static data service for champion metadata and other permitted static data.
+  1274→
+  1275→Implement:
+  1276→- Version discovery.
+  1277→- Patch selection.
+  1278→- Local static-data cache.
+  1279→- Champion ID normalization.
+  1280→- Asset fallback.
+  1281→- Patch mismatch warnings.
+  1282→
+  1283→Do not hardcode one patch version forever.
+  1284→
+  1285→The data layer must be able to distinguish:
+  1286→- Current static metadata version.
+  1287→- Match patch version.
+  1288→- Historical patch metadata.
+  1289→
+  1290→If there is no matching metadata, the app should still work using safe fallback labels.
+  1291→
+  1292→---
+  1293→
+  1294→# PART H: DOMAIN MODEL AND DATABASE
+  1295→
+  1296→## H1. Domain entities
+  1297→
+  1298→Implement typed models for:
+  1299→
+  1300→- Workspace.
+  1301→- User.
+  1302→- Tournament.
+  1303→- Team.
+  1304→- Player.
+  1305→- Series.
+  1306→- Game.
+  1307→- Champion.
+  1308→- DraftSession.
+  1309→- DraftAction.
+  1310→- DraftRuleset.
+  1311→- SeriesRestriction.
+  1312→- ScoutingReport.
+  1313→- Insight.
+  1314→- EvidenceRecord.
+  1315→- DataSource.
+  1316→- IngestionJob.
+  1317→- AnalysisVersion.
+  1318→
+  1319→## H2. Core tables
+  1320→
+  1321→Recommended tables:
+  1322→
+  1323→`workspaces`
+  1324→- id
+  1325→- name
+  1326→- created_at
+  1327→
+  1328→`users`
+  1329→- id
+  1330→- email or provider identity
+  1331→- created_at
+  1332→
+  1333→`workspace_members`
+  1334→- workspace_id
+  1335→- user_id
+  1336→- role
+  1337→
+  1338→`tournaments`
+  1339→- id
+  1340→- provider
+  1341→- external_id
+  1342→- title
+  1343→- start_date
+  1344→- end_date
+  1345→
+  1346→`teams`
+  1347→- id
+  1348→- provider
+  1349→- external_id
+  1350→- name
+  1351→
+  1352→`series`
+  1353→- id
+  1354→- provider
+  1355→- external_id
+  1356→- tournament_id
+  1357→- start_time
+  1358→- format
+  1359→- status
+  1360→
+  1361→`games`
+  1362→- id
+  1363→- series_id
+  1364→- game_number
+  1365→- winner_id
+  1366→- patch
+  1367→- duration
+  1368→- metadata_version
+  1369→
+  1370→`champions`
+  1371→- id
+  1372→- external_id
+  1373→- canonical_name
+  1374→- display_name
+  1375→
+  1376→`draft_sessions`
+  1377→- id
+  1378→- workspace_id
+  1379→- opponent_team_id
+  1380→- format
+  1381→- ruleset_id
+  1382→- current_game
+  1383→- status
+  1384→- state_version
+  1385→- created_at
+  1386→- updated_at
+  1387→
+  1388→`draft_actions`
+  1389→- id
+  1390→- session_id
+  1391→- game_number
+  1392→- action_order
+  1393→- team_id
+  1394→- player_id
+  1395→- champion_id
+  1396→- action_type
+  1397→- phase
+  1398→- created_at
+  1399→
+  1400→`draft_rulesets`
+  1401→- id
+  1402→- name
+  1403→- mode
+  1404→- restrictions_scope
+  1405→- restrict_picks
+  1406→- restrict_bans
+  1407→- action_sequence
+  1408→- configuration_json
+  1409→
+  1410→`insights`
+  1411→- id
+  1412→- workspace_id
+  1413→- insight_type
+  1414→- title
+  1415→- metric_value
+  1416→- sample_size
+  1417→- patch_context
+  1418→- analysis_version
+  1419→- created_at
+  1420→
+  1421→`evidence_records`
+  1422→- id
+  1423→- insight_id
+  1424→- provider
+  1425→- source_id
+  1426→- metric_definition
+  1427→- numerator
+  1428→- denominator
+  1429→- confidence_lower
+  1430→- confidence_upper
+  1431→- provenance_metadata
+  1432→
+  1433→`ingestion_jobs`
+  1434→- id
+  1435→- provider
+  1436→- job_type
+  1437→- status
+  1438→- attempts
+  1439→- last_error
+  1440→- created_at
+  1441→- completed_at
+  1442→
+  1443→`data_source_connections`
+  1444→- id
+  1445→- provider
+  1446→- connection_status
+  1447→- last_verified_at
+  1448→- metadata
+  1449→
+  1450→Do not store sensitive provider credentials in these ordinary metadata tables.
+  1451→
+  1452→Only persist data when the applicable provider agreement permits it. Database schema must not be treated as permission to retain licensed data.
+  1453→
+  1454→## H3. Database rules
+  1455→
+  1456→- Use UUID primary keys.
+  1457→- Add foreign-key constraints.
+  1458→- Index filtering columns.
+  1459→- Use transactions for draft action updates.
+  1460→- Add unique constraints to prevent duplicate provider series.
+  1461→- Use optimistic concurrency for draft sessions.
+  1462→- Enforce referential integrity.
+  1463→- Maintain migration files.
+  1464→- Never rely on frontend validation alone.
+  1465→
+  1466→---
+  1467→
+  1468→# PART I: ANALYTICS AND RECOMMENDATION ENGINE
+  1469→
+  1470→## I1. Analytical philosophy
+  1471→
+  1472→The analytics engine must be deterministic, reproducible and explainable.
+  1473→
+  1474→An LLM must never be the source of the underlying statistical truth.
+  1475→
+  1476→Use code for:
+  1477→- Frequency calculations.
+  1478→- Pick and ban rates.
+  1479→- Sample sizes.
+  1480→- Confidence intervals.
+  1481→- Composition scoring.
+  1482→- Restriction tracking.
+  1483→- Series simulation.
+  1484→
+  1485→AI may optionally write a concise explanation of an already calculated finding.
+  1486→
+  1487→## I2. Pick and ban frequency
+  1488→
+  1489→For any champion:
+  1490→
+  1491→Pick rate = Number of eligible picks / Number of eligible games or opportunities.
+  1492→
+  1493→Ban rate = Number of eligible bans / Number of eligible draft opportunities.
+  1494→
+  1495→The denominator must be explicitly defined.
+  1496→
+  1497→Do not mix:
+  1498→- Game-based pick rate.
+  1499→- Draft-slot-based priority.
+  1500→- Team-specific pick rate.
+  1501→- Player-specific usage.
+  1502→- Champion availability.
+  1503→
+  1504→Each requires its own metric definition.
+  1505→
+  1506→## I3. Sample-size handling
+  1507→
+  1508→Use Wilson confidence intervals for binomial rates where appropriate.
+  1509→
+  1510→Use a documented Bayesian Beta prior or another defensible method for smoothing small samples.
+  1511→
+  1512→Display:
+  1513→- Observations.
+  1514→- Eligible opportunities.
+  1515→- Estimated rate.
+  1516→- Confidence interval.
+  1517→- Data coverage.
+  1518→
+  1519→Never call a metric "high confidence" merely because it is visually impressive.
+  1520→
+  1521→Implement configurable confidence labels based on sample size and interval width.
+  1522→
+  1523→## I4. Recency
+  1524→
+  1525→Use configurable recency weighting.
+  1526→
+  1527→Example:
+  1528→- Recent patch data has the greatest relevance.
+  1529→- Older patch data is retained for historical comparisons when permitted.
+  1530→- Significant patch transitions reduce the relevance of old draft observations.
+  1531→
+  1532→A possible exponential decay function:
+  1533→
+  1534→`weight = exp(-ln(2) * age / halfLife)`
+  1535→
+  1536→Document the half-life and test that the weighting behaves as intended.
+  1537→
+  1538→## I5. Draft recommendation score
+  1539→
+  1540→Create a transparent 0–100 draft suitability score.
+  1541→
+  1542→Potential components:
+  1543→- Opponent priority.
+  1544→- Historical champion usage.
+  1545→- Relevant draft-side context.
+  1546→- Champion availability.
+  1547→- Team composition fit.
+  1548→- Flexibility.
+  1549→- Evidence quality.
+  1550→- Matchup support.
+  1551→
+  1552→Every weight must be configurable and documented.
+  1553→
+  1554→Separate the score into visible components.
+  1555→
+  1556→Avoid claiming this score is a win probability.
+  1557→
+  1558→## I6. Recommendation output contract
+  1559→
+  1560→Each recommendation must contain:
+  1561→
+  1562→- champion_id
+  1563→- candidate_name
+  1564→- recommendation_type
+  1565→- score
+  1566→- score_breakdown
+  1567→- explanation
+  1568→- supporting_evidence
+  1569→- sample_size
+  1570→- confidence_interval
+  1571→- patch_context
+  1572→- positive_factors
+  1573→- risk_factors
+  1574→- alternatives
+  1575→
+  1576→No result without a source or explicit indication that the result is based on a fixture or coach input.
+  1577→
+  1578→## I7. Composition intelligence
+  1579→
+  1580→Develop composition feature calculations.
+  1581→
+  1582→Initial dimensions:
+  1583→- Engage.
+  1584→- Disengage.
+  1585→- Frontline.
+  1586→- Crowd control.
+  1587→- Physical damage.
+  1588→- Magic damage.
+  1589→- Scaling.
+  1590→- Siege.
+  1591→- Pick potential.
+  1592→- Objective control.
+  1593→
+  1594→Champion attribute data must be sourced from defensible metadata or explicitly coach-curated mappings.
+  1595→
+  1596→Do not assume all champion attributes can be inferred accurately from champion names.
+  1597→
+  1598→If a dimension is unknown, mark it as unknown and exclude it from the score rather than inventing a value.
+  1599→
+  1600→## I8. Macro analysis
+  1601→
+  1602→Implement independent metric calculators.
+  1603→
+  1604→Each calculator should include:
+  1605→- Input requirements.
+  1606→- Formula.
+  1607→- Null behavior.
+  1608→- Edge cases.
+  1609→- Tests.
+  1610→- Output provenance.
+  1611→
+  1612→Example:
+  1613→First objective acquisition rate must be based on valid objective events, not on the final match winner.
+  1614→
+  1615→If the event sequence is unavailable, the metric must remain unavailable unless a valid source provides a direct value.
+  1616→
+  1617→---
+  1618→
+  1619→# PART J: API CONTRACTS
+  1620→
+  1621→All application API endpoints must validate input and return consistent response objects.
+  1622→
+  1623→Suggested response envelope:
+  1624→
+  1625→{
+  1626→  "success": true,
+  1627→  "data": {},
+  1628→  "meta": {
+  1629→    "requestId": "uuid",
+  1630→    "generatedAt": "ISO-8601"
+  1631→  },
+  1632→  "error": null
+  1633→}
+  1634→
+  1635→Error responses:
+  1636→
+  1637→{
+  1638→  "success": false,
+  1639→  "data": null,
+  1640→  "meta": {
+  1641→    "requestId": "uuid"
+  1642→  },
+  1643→  "error": {
+  1644→    "code": "VALIDATION_ERROR",
+  1645→    "message": "A readable explanation",
+  1646→    "retryable": false,
+  1647→    "details": {}
+  1648→  }
+  1649→}
+  1650→
+  1651→Do not leak stack traces or provider secrets.
+  1652→
+  1653→## J1. Endpoints
+  1654→
+  1655→Health:
+  1656→
+  1657→`GET /api/health`
+  1658→
+  1659→Provider status:
+  1660→
+  1661→`GET /api/data-sources`
+  1662→
+  1663→List tournaments:
+  1664→
+  1665→`GET /api/tournaments`
+  1666→
+  1667→List series:
+  1668→
+  1669→`GET /api/series`
+  1670→
+  1671→Import series:
+  1672→
+  1673→`POST /api/ingestion/series`
+  1674→
+  1675→Get opponent profile:
+  1676→
+  1677→`GET /api/scouting/opponents/:teamId`
+  1678→
+  1679→Get opponent trends:
+  1680→
+  1681→`GET /api/scouting/opponents/:teamId/trends`
+  1682→
+  1683→Get macro analysis:
+  1684→
+  1685→`GET /api/macro/teams/:teamId`
+  1686→
+  1687→Get champion catalogue:
+  1688→
+  1689→`GET /api/champions`
+  1690→
+  1691→Get recommendation candidates:
+  1692→
+  1693→`POST /api/draft/recommendations`
+  1694→
+  1695→Create draft:
+  1696→
+  1697→`POST /api/draft/sessions`
+  1698→
+  1699→Get draft:
+  1700→
+  1701→`GET /api/draft/sessions/:sessionId`
+  1702→
+  1703→Apply draft action:
+  1704→
+  1705→`POST /api/draft/sessions/:sessionId/actions`
+  1706→
+  1707→Undo last action:
+  1708→
+  1709→`POST /api/draft/sessions/:sessionId/undo`
+  1710→
+  1711→Redo action:
+  1712→
+  1713→`POST /api/draft/sessions/:sessionId/redo`
+  1714→
+  1715→Simulate next game:
+  1716→
+  1717→`POST /api/draft/sessions/:sessionId/simulate`
+  1718→
+  1719→Create counterfactual:
+  1720→
+  1721→`POST /api/series-lab/counterfactual`
+  1722→
+  1723→Get evidence:
+  1724→
+  1725→`GET /api/evidence/:evidenceId`
+  1726→
+  1727→All mutation routes must validate their payloads.
+  1728→
+  1729→Draft mutations must support state-version checks to prevent concurrent writes from silently overwriting the board.
+  1730→
+  1731→---
+  1732→
+  1733→# PART K: ERROR HANDLING AND FAULT TOLERANCE
+  1734→
+  1735→## K1. Global error architecture
+  1736→
+  1737→Implement:
+  1738→- Application-level error boundary.
+  1739→- Page-level error boundaries.
+  1740→- Component-level recovery for noncritical widgets.
+  1741→- API error middleware/helper.
+  1742→- Provider error normalization.
+  1743→- Job failure handling.
+  1744→- Database exception handling.
+  1745→
+  1746→No uncaught error should leave the application in an unusable state without a recovery path.
+  1747→
+  1748→## K2. Error catalogue
+  1749→
+  1750→Implement explicit errors for:
+  1751→
+  1752→### Data integration
+  1753→- GRID credential missing.
+  1754→- Unauthorized.
+  1755→- Forbidden.
+  1756→- Request timeout.
+  1757→- Provider unavailable.
+  1758→- Rate limit exceeded.
+  1759→- Invalid GraphQL query.
+  1760→- Invalid schema.
+  1761→- Unexpected empty result.
+  1762→- Unsupported title.
+  1763→- Unsupported tournament.
+  1764→- Partial game data.
+  1765→- Missing champion ID.
+  1766→- Unknown team ID.
+  1767→
+  1768→### Analytics
+  1769→- Insufficient sample size.
+  1770→- Invalid denominator.
+  1771→- Missing data fields.
+  1772→- Invalid timestamp.
+  1773→- Duplicate observations.
+  1774→- Patch mismatch.
+  1775→- Unsupported metric.
+  1776→- Missing confidence calculation.
+  1777→
+  1778→### Draft engine
+  1779→- Restricted champion.
+  1780→- Duplicate pick.
+  1781→- Wrong team.
+  1782→- Wrong action order.
+  1783→- Invalid draft phase.
+  1784→- Unsupported series format.
+  1785→- Invalid Fearless ruleset.
+  1786→- Missing role.
+  1787→- Completed session.
+  1788→- Stale session version.
+  1789→- Illegal undo operation.
+  1790→
+  1791→### Interface
+  1792→- Network disconnected.
+  1793→- Request timeout.
+  1794→- Session expired.
+  1795→- Route not found.
+  1796→- Rendering failure.
+  1797→- Unsupported graphics capability.
+  1798→
+  1799→Every error should contain:
+  1800→- Human-readable message.
+  1801→- Stable machine code.
+  1802→- Retryability.
+  1803→- Recovery action.
+  1804→- Relevant request ID.
+  1805→
+  1806→## K3. Retry strategy
+  1807→
+  1808→For transient provider failures:
+  1809→- Exponential backoff.
+  1810→- Random jitter.
+  1811→- Bounded retry count.
+  1812→- Respect Retry-After headers.
+  1813→- Never retry unauthorized requests indefinitely.
+  1814→- Never repeat a mutation without an idempotency mechanism.
+  1815→
+  1816→Suggested retry schedule:
+  1817→- Initial request.
+  1818→- Retry after approximately 500 ms.
+  1819→- Retry after approximately 1 second.
+  1820→- Retry after approximately 2 seconds.
+  1821→
+  1822→Stop according to the maximum configured attempt count.
+  1823→
+  1824→## K4. Circuit breaker
+  1825→
+  1826→Introduce a circuit breaker if repeated provider failure occurs.
+  1827→
+  1828→States:
+  1829→- CLOSED.
+  1830→- OPEN.
+  1831→- HALF_OPEN.
+  1832→
+  1833→The UI must communicate when the data source is unavailable.
+  1834→
+  1835→Locally cached or demo data should remain accessible when permitted.
+  1836→
+  1837→Do not silently mix real and synthetic records.
+  1838→
+  1839→## K5. Error pages
+  1840→
+  1841→Create custom:
+  1842→- 404 page.
+  1843→- 500 page.
+  1844→- 503 page.
+  1845→- Access-denied state.
+  1846→- Network-offline state.
+  1847→- Data-source-disconnected page.
+  1848→
+  1849→All must preserve the Seriesight visual identity.
+  1850→
+  1851→---
+  1852→
+  1853→# PART L: LOADING, EMPTY AND PARTIAL STATES
+  1854→
+  1855→Implement explicit states for every major component.
+  1856→
+  1857→### Initial loading
+  1858→Aperture loader.
+  1859→
+  1860→### Dashboard loading
+  1861→Card skeletons, chart skeletons, metric placeholders.
+  1862→
+  1863→### Opponent profile loading
+  1864→Team identity skeleton and champion grid placeholders.
+  1865→
+  1866→### Draft loading
+  1867→Preserve the current draft board while loading new recommendation data.
+  1868→
+  1869→### Importing
+  1870→Display a step-by-step ingestion progress state:
+  1871→1. Connecting.
+  1872→2. Retrieving metadata.
+  1873→3. Validating payloads.
+  1874→4. Normalizing.
+  1875→5. Computing insights.
+  1876→6. Verifying results.
+  1877→
+  1878→Do not fake percentage progress when a provider does not expose actual job progress. Use named stages instead.
+  1879→
+  1880→### Empty states
+  1881→
+  1882→Create specific messages for:
+  1883→- No opponents.
+  1884→- No historical series.
+  1885→- No draft sessions.
+  1886→- No champion matches.
+  1887→- No macro events.
+  1888→- No evidence.
+  1889→- No available recommendations.
+  1890→
+  1891→Every empty state should provide a useful next action.
+  1892→
+  1893→### Partial data
+  1894→
+  1895→A profile with incomplete macro data must still display complete draft statistics.
+  1896→
+  1897→Do not block the entire page because one analytics module lacks data.
+  1898→
+  1899→Show a partial coverage indicator and identify missing metrics.
+  1900→
+  1901→---
+  1902→
+  1903→# PART M: SECURITY AND PRIVACY
+  1904→
+  1905→Implement security appropriate for a public demo and professional application.
+  1906→
+  1907→Requirements:
+  1908→
+  1909→1. Server-side API credentials only.
+  1910→2. Environment secrets management.
+  1911→3. No hardcoded tokens.
+  1912→4. No accidental secret logging.
+  1913→5. Request validation.
+  1914→6. Output encoding.
+  1915→7. SQL parameterization through ORM.
+  1916→8. Rate limiting on expensive endpoints.
+  1917→9. Secure HTTP headers.
+  1918→10. CSRF protection where cookie-based authentication or mutation patterns require it.
+  1919→11. Authorization checks for workspace resources.
+  1920→12. Safe file-import validation.
+  1921→13. File-size limits.
+  1922→14. MIME and content validation.
+  1923→15. SSRF prevention for externally supplied URLs.
+  1924→16. Database backup and migration procedures.
+  1925→17. Dependency audit.
+  1926→18. Error responses that do not expose internals.
+  1927→
+  1928→Never accept arbitrary user-submitted provider URLs and fetch them from the server.
+  1929→
+  1930→Restrict GRID requests to an explicit allowlist of authorized API hosts.
+  1931→
+  1932→Do not collect or expose personal information unnecessarily.
+  1933→
+  1934→Do not put secrets, private data or licensed raw datasets into public fixture files or screenshots.
+  1935→
+  1936→---
+  1937→
+  1938→# PART N: PERFORMANCE AND ACCESSIBILITY
+  1939→
+  1940→## N1. Performance targets
+  1941→
+  1942→Engineering acceptance targets:
+  1943→
+  1944→- Main workspace LCP: under 2.5 seconds in the agreed desktop test environment.
+  1945→- Interactive draft operations: target under 100 ms locally.
+  1946→- Standard API response: target under 500 ms for cached or precomputed reads.
+  1947→- Analytics report: target under 2 seconds on the demo dataset.
+  1948→- No unnecessary full-page reload for normal draft actions.
+  1949→- Lazy-load heavy visualization libraries.
+  1950→- Paginate large historical lists.
+  1951→- Virtualize long tables where necessary.
+  1952→- Avoid large client-side provider payloads.
+  1953→
+  1954→All targets must be benchmarked and reported honestly.
+  1955→
+  1956→## N2. Accessibility
+  1957→
+  1958→Target WCAG 2.2 AA.
+  1959→
+  1960→Implement:
+  1961→- Keyboard navigation.
+  1962→- Visible focus.
+  1963→- Screen-reader labels.
+  1964→- Accessible dialogs.
+  1965→- Accessible charts with textual summaries.
+  1966→- Sufficient color contrast.
+  1967→- Reduced-motion support.
+  1968→- Non-color state indicators.
+  1969→- Responsive text sizing.
+  1970→- Touch-friendly controls.
+  1971→
+  1972→The draft board must remain navigable without a mouse.
+  1973→
+  1974→---
+  1975→
+  1976→# PART O: TESTING AND QUALITY GATES
+  1977→
+  1978→## O1. Unit testing
+  1979→
+  1980→Test:
+  1981→- Draft state machine.
+  1982→- Hard Fearless restrictions.
+  1983→- Soft Fearless restrictions.
+  1984→- Configurable custom rules.
+  1985→- Pick and ban sequences.
+  1986→- Duplicate handling.
+  1987→- Undo and redo.
+  1988→- Pick and ban rates.
+  1989→- Denominator calculations.
+  1990→- Confidence intervals.
+  1991→- Recency weights.
+  1992→- Composition scores.
+  1993→- Recommendation explanations.
+  1994→- Provider response mapping.
+  1995→- Missing-data handling.
+  1996→
+  1997→## O2. Integration testing
+  1998→
+  1999→Test:
+  2000→- Database persistence.
+
+[showing lines 1-2000 of 2784; use offset=2001 with limit to continue reading]

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ApiClientError, apiFetch, apiPost } from "@/lib/api-client";
+import { useHashRoute } from "@/hooks/use-hash-route";
 import { Panel, StatTile, ConfidenceBadge, EvidenceChip, FixtureBadge, EmptyState, SkeletonBlock, ErrorState } from "@/components/common/primitives";
 import { SeriesCore } from "@/components/brand/logo";
 import { useWorkspaceStore } from "@/store/workspace";
@@ -19,7 +20,7 @@ export function CommandCenter() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<ApiClientError | null>(null);
   const setSelectedOpponent = useWorkspaceStore((s) => s.setSelectedOpponent);
-  const setRoute = useWorkspaceStore((s) => s.setRoute);
+  const [, navigate] = useHashRoute();
   const setActiveSession = useWorkspaceStore((s) => s.setActiveSession);
   const pushToast = useWorkspaceStore((s) => s.pushToast);
   const [preparing, setPreparing] = useState(false);
@@ -49,10 +50,15 @@ export function CommandCenter() {
         modeOverride: mode,
       });
       setActiveSession(session);
-      pushToast(`Draft session ready vs ${opponent} (${format}, ${mode === "none" ? "standard" : `${mode} fearless`}).`);
-      setRoute("draft");
+      pushToast(`Draft session ready vs ${opponent} (${format}, ${mode === "none" ? "standard" : `${mode} fearless`}). Opening the Draft Room…`);
+      navigate("draft");
     } catch (e) {
-      pushToast(e instanceof ApiClientError ? `${e.code}: ${e.message}` : "Failed to create session", "error");
+      pushToast(
+        e instanceof ApiClientError
+          ? `Could not create the draft session — ${e.message} (${e.code}). Check the connection in Data Sources and try again.`
+          : "Could not create the draft session. Check your connection and try again.",
+        "error",
+      );
     } finally {
       setPreparing(false);
     }
@@ -97,7 +103,7 @@ export function CommandCenter() {
       </section>
 
       {/* B. Intelligence overview — verified values only */}
-      <section aria-label="Intelligence overview" className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <section aria-label="Intelligence overview" className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {data ? (
           <>
             <StatTile label="Series processed" value={data.dataset.seriesCount} detail="completed, verified imports" />
@@ -111,16 +117,16 @@ export function CommandCenter() {
         )}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* C. Priority intelligence */}
         <Panel
           title="Priority intelligence"
           subtitle="Three most relevant opponent tendencies, each traceable to evidence"
           className="xl:col-span-2"
-          actions={<button type="button" onClick={() => setRoute("scouting")} className="text-xs font-medium text-[var(--accent-cyan)] hover:underline">Open Opponent Intelligence →</button>}
+          actions={<button type="button" onClick={() => navigate("scouting")} className="min-h-[36px] px-1 text-xs font-medium text-[var(--accent-cyan)] hover:underline">Open Opponent Intelligence →</button>}
         >
           {data ? (
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {data.priorityInsights.map((insight) => (
                 <article key={insight.id} className="flex flex-col gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 p-4">
                   <div className="flex items-center justify-between gap-2">
@@ -139,7 +145,7 @@ export function CommandCenter() {
               ))}
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <SkeletonBlock key={i} className="h-40" />
               ))}
@@ -161,7 +167,7 @@ export function CommandCenter() {
                   ))}
                 </div>
               ) : null}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   type="button"
                   disabled={preparing}
@@ -188,16 +194,16 @@ export function CommandCenter() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setRoute("series-lab")}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-3 py-2.5 text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-violet)]"
+                  onClick={() => navigate("series-lab")}
+                  className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-3 py-2.5 text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-violet)]"
                 >
                   <RadarGlyph size={14} /> Open Fearless Lab
                 </button>
               </div>
               <button
                 type="button"
-                onClick={() => setRoute("data-sources")}
-                className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-cyan)]"
+                onClick={() => navigate("data-sources")}
+                className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-cyan)]"
               >
                 <ImportGlyph size={14} /> Inspect the data source
               </button>
@@ -248,8 +254,8 @@ export function CommandCenter() {
       </Panel>
 
       {/* F. Quick start */}
-      <Panel title="Quick start">
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <Panel title="Quick start" subtitle="Four actions that cover the full preparation loop">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Scout an opponent", route: "scouting" as const, glyph: RadarGlyph },
             { label: "Start a draft", route: "draft" as const, glyph: PickGlyph },
@@ -259,8 +265,8 @@ export function CommandCenter() {
             <button
               key={q.route}
               type="button"
-              onClick={() => setRoute(q.route)}
-              className="flex items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 px-4 py-3 text-left text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
+              onClick={() => navigate(q.route)}
+              className="flex min-h-[44px] items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 px-4 py-3 text-left text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
             >
               <span className="text-[var(--accent-cyan)]"><q.glyph size={16} /></span>
               {q.label}

@@ -47,13 +47,13 @@ export function EvidenceLedger() {
             Every insight receives a unique evidence identifier. Open any record to inspect its provenance, sample size, computation and limitations.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter by metric or id…"
             aria-label="Filter evidence"
-            className="w-56 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm"
+            className="min-h-[44px] w-full min-w-[200px] rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm sm:w-56"
           />
           <span className="tnum font-mono text-xs text-[var(--text-muted)]">{records ? `${records.length} records` : "…"}</span>
         </div>
@@ -70,7 +70,8 @@ export function EvidenceLedger() {
         />
       ) : (
         <Panel title="Evidence records" subtitle="Deterministic ids — identical inputs always resolve to the same record">
-          <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)]">
+          <p className="mb-3 text-xs text-[var(--text-muted)] sm:hidden">Swipe the table sideways to see all columns.</p>
+          <div className="overflow-x-auto rounded-lg border border-[var(--border-subtle)]">
             <table className="w-full min-w-[760px] text-left text-xs">
               <thead className="bg-[var(--surface-2)] text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 <tr>
@@ -97,7 +98,7 @@ export function EvidenceLedger() {
                     <td className="px-3 py-2.5 font-mono text-[10px] text-[var(--text-muted)]">{r.patch ?? "all"}</td>
                     <td className="tnum px-3 py-2.5 text-right text-[var(--text-muted)]">{r.gameIds.length}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <button type="button" onClick={() => openEvidence(r.id)} className="text-[11px] font-medium text-[var(--accent-cyan)] hover:underline" aria-label={`Open evidence ${r.id}`}>
+                      <button type="button" onClick={() => openEvidence(r.id)} className="inline-flex min-h-[36px] items-center rounded px-2 font-mono text-[11px] font-medium text-[var(--accent-cyan)] hover:underline" aria-label={`Open evidence record ${r.id}`}>
                         Inspect
                       </button>
                     </td>

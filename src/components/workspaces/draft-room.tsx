@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiClientError, apiFetch, apiPost } from "@/lib/api-client";
 import { Panel, EmptyState, SkeletonBlock, ErrorState, ConfidenceBadge, EvidenceChip } from "@/components/common/primitives";
 import { ROLE_GLYPHS, PickGlyph, BanGlyph, HardFearlessGlyph, SoftFearlessGlyph, CompositionGlyph, ConfidenceGlyph, RiskGlyph, SeriesGlyph } from "@/components/icons/seriesight-icons";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useWorkspaceStore, haptic } from "@/store/workspace";
 import type { Champion, DraftGameState, DraftSession, Recommendation, CompositionProfile, Role, Side } from "@/domain/types";
 import { ALL_ROLES } from "@/domain/types";
@@ -48,6 +49,7 @@ export function DraftRoom() {
   const [recs, setRecs] = useState<RecommendationsPayload | null>(null);
   const [recsLoading, setRecsLoading] = useState(false);
   const [expandedRec, setExpandedRec] = useState<string | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -289,7 +291,7 @@ export function DraftRoom() {
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" disabled={busy || game.actions.length === 0 || game.status !== "drafting"} onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/undo`, { expectedStateVersion: v }))} className="ctrl-btn">Undo</button>
               <button type="button" disabled={busy || game.redoStack.length === 0 || game.status !== "drafting"} onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/redo`, { expectedStateVersion: v }))} className="ctrl-btn">Redo</button>
-              <button type="button" disabled={busy || game.status !== "drafting"} onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/reset`, { expectedStateVersion: v }), "Board reset.")} className="ctrl-btn">Reset</button>
+              <button type="button" disabled={busy || game.status !== "drafting"} onClick={() => setResetConfirmOpen(true)} className="ctrl-btn">Reset</button>
               <button
                 type="button"
                 disabled={busy || game.status !== "drafting" || game.actions.length < 20}
@@ -314,7 +316,7 @@ export function DraftRoom() {
 
           {error && <ErrorState code={error.code} message={error.message} recovery={error.recovery} />}
 
-          <div className="grid gap-6 xl:grid-cols-[240px_1fr_320px]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[240px_1fr_320px]">
             {/* Left: opponent profile */}
             <div className="order-2 flex flex-col gap-4 xl:order-1">
               <Panel title="Opponent profile" subtitle="Fixture-scouted priorities">
@@ -354,7 +356,7 @@ export function DraftRoom() {
               </div>
 
               {/* Draft board */}
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <SideBoard game={game} side="BLUE" label={game.blueTeamId} isOur={ourSideInGame === "BLUE"} onAssignRole={(pickIndex, role) => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/roles`, { side: "BLUE", pickIndex, role, expectedStateVersion: v }))} />
                 <SideBoard game={game} side="RED" label={game.redTeamId} isOur={ourSideInGame === "RED"} onAssignRole={(pickIndex, role) => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/roles`, { side: "RED", pickIndex, role, expectedStateVersion: v }))} />
               </div>
@@ -370,9 +372,9 @@ export function DraftRoom() {
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search champions…"
                       aria-label="Search champions"
-                      className="w-40 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-xs"
+                      className="min-h-[44px] w-36 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm sm:w-40"
                     />
-                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as Role | "all")} aria-label="Filter by role" className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1.5 text-xs">
+                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as Role | "all")} aria-label="Filter by role" className="min-h-[44px] rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm">
                       <option value="all">All roles</option>
                       {ALL_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
@@ -382,7 +384,7 @@ export function DraftRoom() {
                 {!catalogue ? (
                   <SkeletonBlock className="h-56" />
                 ) : (
-                  <div ref={gridRef} className="grid max-h-[340px] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6 lg:grid-cols-8" role="listbox" aria-label="Champion grid">
+                  <div ref={gridRef} className="grid max-h-[340px] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-6 lg:grid-cols-8" role="listbox" aria-label="Champion grid">
                     {filteredChampions.map((c) => {
                       const av = availability?.[c.id] ?? { available: true, reasons: [] };
                       const isTurnTypeOk = currentTurn?.type;
@@ -531,6 +533,34 @@ export function DraftRoom() {
           </div>
         </>
       )}
+
+      {/* Reset confirmation — destructive action requires an explicit decision */}
+      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <AlertDialogContent className="border-[var(--border-subtle)] bg-[var(--bg-primary)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[var(--text-primary)]">Reset this game board?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--text-secondary)]">
+              This clears all bans, picks and role assignments for the current game and returns the board to an empty,
+              validated state. Undo history is also cleared. Previous games and the Fearless restriction ledger are
+              untouched. You can rebuild the draft immediately afterwards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[var(--border-subtle)] bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]">
+              Keep the board
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-[var(--accent-coral)] text-[#1c0a0e] hover:bg-[var(--accent-coral)]/90"
+              onClick={() => {
+                setResetConfirmOpen(false);
+                mutate((id, v) => apiPost(`/api/draft/sessions/${id}/reset`, { expectedStateVersion: v }), "Board reset — all slots are empty again.");
+              }}
+            >
+              Reset board
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -572,8 +602,8 @@ function SideBoard({
         {bucket.bans.map((b, i) => {
           const champ = b ? getChampion(b) : null;
           return (
-            <div key={i} aria-label={champ ? `Ban ${i + 1}: ${champ.displayName}` : `Ban slot ${i + 1} (empty)`} className={`flex h-9 items-center justify-center rounded border ${b ? "ban-eliminate border-[var(--accent-coral)]/50 bg-[var(--accent-coral)]/10" : "border-dashed border-[var(--border-subtle)]"}`}>
-              <span className={`truncate px-1 text-[10px] ${b ? "font-mono text-[var(--accent-coral)]" : "text-[var(--text-disabled)]"}`}>{champ?.displayName ?? "—"}</span>
+            <div key={i} className={`flex h-9 items-center justify-center rounded border ${b ? "ban-eliminate border-[var(--accent-coral)]/50 bg-[var(--accent-coral)]/10" : "border-dashed border-[var(--border-subtle)]"}`}>
+              <span className={`truncate px-1 text-[10px] ${b ? "font-mono text-[var(--accent-coral)]" : "text-[var(--text-disabled)]"}`}>{champ ? champ.displayName : "empty"}</span>
             </div>
           );
         })}
@@ -596,7 +626,7 @@ function SideBoard({
                   value={p.role ?? ""}
                   onChange={(e) => e.target.value && onAssignRole(i, e.target.value as Role)}
                   aria-label={`Assign role to ${champ?.displayName}`}
-                  className="rounded border border-[var(--border-subtle)] bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+                  className="min-h-[36px] rounded border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--text-secondary)]"
                 >
                   <option value="">role…</option>
                   {[champ?.primaryRole, ...(champ?.flexRoles ?? [])].filter(Boolean).map((r) => (
@@ -628,7 +658,7 @@ function RecCard({ rec, expanded, onToggle }: { rec: Recommendation; expanded: b
       <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[var(--text-secondary)]">{rec.explanation}</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {rec.supportingEvidence[0] && <EvidenceChip evidenceId={rec.supportingEvidence[0].id} compact />}
-        <button type="button" onClick={onToggle} aria-expanded={expanded} className="text-[11px] text-[var(--accent-cyan)] hover:underline">
+        <button type="button" onClick={onToggle} aria-expanded={expanded} className="inline-flex min-h-[36px] items-center rounded px-2 text-[11px] font-medium text-[var(--accent-cyan)] hover:underline">
           {expanded ? "Hide breakdown" : "Score breakdown"}
         </button>
         {rec.confidenceInterval && (

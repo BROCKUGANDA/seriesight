@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiClientError, apiFetch, apiPost } from "@/lib/api-client";
 import { Panel, EmptyState, SkeletonBlock, StatTile, ConfidenceBadge } from "@/components/common/primitives";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SeriesGlyph, HardFearlessGlyph, SoftFearlessGlyph, CounterfactualGlyph, RiskGlyph, PickGlyph, BanGlyph } from "@/components/icons/seriesight-icons";
 import { useWorkspaceStore, haptic } from "@/store/workspace";
 import type { DraftSession, FearlessMode, SeriesFormat } from "@/domain/types";
@@ -43,6 +44,7 @@ export function SeriesLab() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiClientError | null>(null);
   const [notes, setNotes] = useState<Record<number, string>>({});
+  const [progressHelpOpen, setProgressHelpOpen] = useState(false);
 
   useEffect(() => {
     apiFetch<TeamRow[]>("/api/teams").then(setTeams).catch(() => setTeams([]));
@@ -111,7 +113,12 @@ export function SeriesLab() {
       setCf(result);
       setCfSource({ gameNumber, remove });
     } catch (e) {
-      pushToast(e instanceof ApiClientError ? `${e.code}: ${e.message}` : "Counterfactual failed", "error");
+      pushToast(
+        e instanceof ApiClientError
+          ? `The simulation could not run — ${e.message} (${e.code}). ${e.recovery ?? "Finalize the game first, then retry."}`
+          : "The simulation could not run. Check your connection and try again.",
+        "error",
+      );
     } finally {
       setBusy(false);
     }
@@ -141,7 +148,7 @@ export function SeriesLab() {
       {!session && (
         <Panel title="Start a series simulation" subtitle="Configure the Fearless ruleset, then draft game by game">
           {error && <p role="alert" className="mb-3 rounded border border-[var(--accent-coral)]/40 bg-[var(--accent-coral)]/10 px-3 py-2 text-xs text-[var(--accent-coral)]">{error.message}</p>}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <label className="flex flex-col gap-1.5 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
               Opponent
               <select value={cfgOpponent} onChange={(e) => setCfgOpponent(e.target.value)} className="cfg-select" aria-label="Opponent">
@@ -185,7 +192,7 @@ export function SeriesLab() {
               ) : null
             }
           >
-            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-5">
               {Array.from({ length: maxGames }).map((_, i) => {
                 const n = i + 1;
                 const g = session.games.find((x) => x.gameNumber === n);
@@ -262,10 +269,10 @@ export function SeriesLab() {
             </div>
             {session.currentGame > 1 && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => setRouteSafe("draft")} className="rounded-md border border-[var(--border-active)] px-3 py-1.5 text-xs text-[var(--text-secondary)]">
+                <button type="button" onClick={() => setRouteSafe("draft")} className="min-h-[44px] rounded-md border border-[var(--border-active)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
                   Open Game {session.currentGame} in the Draft Room
                 </button>
-                <button type="button" onClick={() => pushToast("Draft the full game (20 actions), assign roles, then finalize to unlock the next one.", "warn")} className="rounded-md border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-muted)]">
+                <button type="button" onClick={() => setProgressHelpOpen(true)} className="min-h-[44px] rounded-md border border-[var(--border-subtle)] px-3 py-2 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
                   How does progression work?
                 </button>
               </div>
@@ -325,7 +332,7 @@ export function SeriesLab() {
             actions={
               <div className="flex items-center gap-2">
                 <label htmlFor="cf-add" className="text-[10px] uppercase text-[var(--text-muted)]">Replacement pick</label>
-                <select id="cf-add" value={cfAdd} onChange={(e) => setCfAdd(e.target.value)} className="rounded border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1 text-xs">
+                <select id="cf-add" value={cfAdd} onChange={(e) => setCfAdd(e.target.value)} className="min-h-[44px] rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm">
                   {["ksante", "rumble", "ornn", "jax", "camille", "vi", "sejuani", "azir", "orianna", "ashe", "jinx", "nautilus", "rakan", "thresh"].map((id) => (
                     <option key={id} value={id}>{getChampion(id)?.displayName ?? id}</option>
                   ))}
@@ -334,7 +341,7 @@ export function SeriesLab() {
             }
           >
             {cf && cfSource ? (
-              <div className="grid gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 {[cf.base, cf.variant].map((v, idx) => (
                   <div key={idx} className={`rounded-xl border p-4 ${idx === 0 ? "border-[var(--border-subtle)] bg-[var(--surface-2)]/60" : "border-[var(--accent-violet)]/50 bg-[var(--accent-violet)]/[0.06]"}`}>
                     <p className="text-xs font-semibold text-[var(--text-primary)]">{idx === 0 ? "Actual Game 1" : `Counterfactual (${getChampion(cfSource.remove)?.displayName} → ${getChampion(cfAdd)?.displayName})`}</p>
@@ -377,7 +384,7 @@ export function SeriesLab() {
                       type="button"
                       disabled={busy}
                       onClick={() => runCounterfactual(g.gameNumber, p.championId)}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-violet)]"
+                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-[11px] text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-violet)]"
                     >
                       <PickGlyph size={12} />
                       G{g.gameNumber}: swap out {getChampion(p.championId)?.displayName}
@@ -389,7 +396,7 @@ export function SeriesLab() {
           </Panel>
 
           {/* Series stats */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile label="Games drafted" value={`${session.games.filter((g) => g.status === "finalized").length}/${maxGames}`} detail="finalized draft boards" />
             <StatTile label="Fearless locks" value={restrictions?.restrictions.reduce((s, r) => s + Object.values(r.introducedByTeam).flat().length, 0) ?? 0} detail="champions removed from the pool" tone="violet" />
             <StatTile label="Current pool" value={restrictions?.restrictions.at(-1)?.poolRemaining ?? 80} detail="champions available next" tone="accent" />
@@ -408,6 +415,39 @@ export function SeriesLab() {
           </ul>
         </Panel>
       )}
+
+      {/* Progression explanation — replaces the previous one-line toast dead-end */}
+      <Dialog open={progressHelpOpen} onOpenChange={setProgressHelpOpen}>
+        <DialogContent className="max-h-[86dvh] overflow-y-auto border-[var(--border-subtle)] bg-[var(--bg-primary)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[var(--text-primary)]">How series progression works</DialogTitle>
+            <DialogDescription className="text-[var(--text-secondary)]">
+              Four gates take a series board from empty to finalized, game by game.
+            </DialogDescription>
+          </DialogHeader>
+          <ol className="mt-1 space-y-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+            <li className="flex gap-3">
+              <span className="tnum mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--accent-cyan)]/50 text-xs font-semibold text-[var(--accent-cyan)]">1</span>
+              <span><strong className="text-[var(--text-primary)]">Draft all 20 actions.</strong> Every ban and pick in the tournament sequence must be locked before the game can close.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="tnum mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--accent-cyan)]/50 text-xs font-semibold text-[var(--accent-cyan)]">2</span>
+              <span><strong className="text-[var(--text-primary)]">Assign a role to every pick.</strong> Open roles block finalization so the evidence ledger stays attributable.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="tnum mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--accent-cyan)]/50 text-xs font-semibold text-[var(--accent-cyan)]">3</span>
+              <span><strong className="text-[var(--text-primary)]">Finalize the game.</strong> The board locks, and Fearless restrictions propagate to the following game automatically.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="tnum mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--accent-cyan)]/50 text-xs font-semibold text-[var(--accent-cyan)]">4</span>
+              <span><strong className="text-[var(--text-primary)]">Advance.</strong> The next game unlocks on the Series board and in the Draft Room with the updated champion pool.</span>
+            </li>
+          </ol>
+          <p className="mt-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 px-3 py-2.5 text-xs leading-relaxed text-[var(--text-muted)]">
+            Progress is never guessed: a game stays “drafting” until its 20 actions and role assignments are complete, so the restriction ledger always reflects verified boards only.
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

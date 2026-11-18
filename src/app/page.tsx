@@ -2,9 +2,9 @@
 
 /**
  * Seriesight — League of Legends esports coaching intelligence and Fearless Draft
- * management platform. The sandbox preview exposes only `/`, so the eight
- * workspace destinations live on hash routes inside this client shell
- * (PRD Part D information architecture preserved 1:1).
+ * management platform. The sandbox preview exposes only `/`, so the commercial
+ * site (landing, pricing, legal) and the eight workspace destinations live on
+ * hash routes inside this client shell (PRD Part D information architecture preserved).
  */
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/app-shell";
@@ -16,7 +16,10 @@ import { SeriesLab } from "@/components/workspaces/series-lab";
 import { EvidenceLedger } from "@/components/workspaces/evidence-ledger";
 import { DataSources } from "@/components/workspaces/data-sources";
 import { Settings } from "@/components/workspaces/settings";
-import { useHashRoute } from "@/hooks/use-hash-route";
+import { LandingPage } from "@/components/marketing/landing";
+import { PricingPage } from "@/components/marketing/pricing";
+import { LegalPage } from "@/components/marketing/legal";
+import { useHashRoute, isMarketingRoute } from "@/hooks/use-hash-route";
 import { ApertureLoader, SignalSweep } from "@/components/loading/loaders";
 
 function WorkspaceView({ route }: { route: string }) {
@@ -40,6 +43,19 @@ function WorkspaceView({ route }: { route: string }) {
   }
 }
 
+function MarketingView({ route }: { route: string }) {
+  switch (route) {
+    case "pricing":
+      return <PricingPage />;
+    case "terms":
+      return <LegalPage document="terms" />;
+    case "privacy":
+      return <LegalPage document="privacy" />;
+    default:
+      return <LandingPage />;
+  }
+}
+
 export default function SeriesightApp() {
   const [route] = useHashRoute();
   const [booted, setBooted] = useState(false);
@@ -58,9 +74,13 @@ export default function SeriesightApp() {
   if (!booted) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg-void)]">
-        {bootPhase === 0 ? <ApertureLoader /> : <SignalSweep label="Connecting to fixture workspace" className="w-64" />}
+        {bootPhase === 0 ? <ApertureLoader /> : <SignalSweep label="Connecting to Seriesight" className="w-64" />}
       </div>
     );
+  }
+
+  if (isMarketingRoute(route)) {
+    return <MarketingView route={route} />;
   }
 
   return (

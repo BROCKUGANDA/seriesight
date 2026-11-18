@@ -9,11 +9,18 @@ import { Panel, FixtureBadge } from "@/components/common/primitives";
 import { ALL_ROLES } from "@/domain/types";
 import { ROLE_GLYPHS } from "@/components/icons/seriesight-icons";
 import { useWorkspaceStore } from "@/store/workspace";
+import { Switch } from "@/components/ui/switch";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useState } from "react";
+import { useHashRoute } from "@/hooks/use-hash-route";
 
 export function Settings() {
   const hapticsEnabled = useWorkspaceStore((s) => s.hapticsEnabled);
   const setHapticsEnabled = useWorkspaceStore((s) => s.setHapticsEnabled);
   const pushToast = useWorkspaceStore((s) => s.pushToast);
+  const setActiveSession = useWorkspaceStore((s) => s.setActiveSession);
+  const [, navigate] = useHashRoute();
+  const [cleanupOpen, setCleanupOpen] = useState(false);
   const reduceMotion = useSyncExternalStore(
     (cb) => {
       const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -32,7 +39,7 @@ export function Settings() {
       </header>
 
       <Panel title="Workspace identity">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs md:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
           <Field k="Workspace" v="Seriesight Demo Workspace" />
           <Field k="Workspace ID" v="ws-demo" />
           <Field k="Our squad" v="Signal Nine (SGT) — fictional" />
@@ -42,7 +49,7 @@ export function Settings() {
       </Panel>
 
       <Panel title="Draft role configuration" subtitle="Players map to roles from observed data; champion flex options stay selectable">
-        <div className="grid gap-2 md:grid-cols-5">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {ALL_ROLES.map((r) => {
             const Glyph = ROLE_GLYPHS[r];
             return (
@@ -68,14 +75,12 @@ export function Settings() {
               <span className="block text-sm text-[var(--text-primary)]">Haptic feedback</span>
               <span className="block text-[11px] text-[var(--text-muted)]">Brief pulses on pick confirm / invalid action / session complete. Supported mobile devices only; desktop always gets visual confirmation. Never fires on page load.</span>
             </span>
-            <input
-              type="checkbox"
+            <Switch
               checked={hapticsEnabled}
-              onChange={(e) => {
-                setHapticsEnabled(e.target.checked);
-                pushToast(e.target.checked ? "Haptics enabled where supported." : "Haptics disabled.");
+              onCheckedChange={(checked) => {
+                setHapticsEnabled(checked);
+                pushToast(checked ? "Haptics enabled where supported." : "Haptics disabled.");
               }}
-              className="h-5 w-9 shrink-0"
               aria-label="Enable haptic feedback"
             />
           </label>
@@ -107,16 +112,43 @@ export function Settings() {
 
       <Panel title="Danger zone">
         <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-          Draft sessions persist in the local database. Clearing them cannot be undone.
+          Draft sessions persist in the local database so boards stay reproducible between reloads. Closing the active
+          session here clears it from this browser immediately; anything already finalized stays recorded. Full database
+          cleanup is available on the Organisation plan or by written request.
         </p>
-        <button
-          type="button"
-          onClick={() => pushToast("Session cleanup is available through the database; the demo keeps sessions for reproducibility.", "warn")}
-          className="ctrl-btn mt-3"
-        >
-          Request session cleanup
+        <button type="button" onClick={() => setCleanupOpen(true)} className="ctrl-btn mt-3">
+          Close active session in this browser
         </button>
       </Panel>
+
+      <AlertDialog open={cleanupOpen} onOpenChange={setCleanupOpen}>
+        <AlertDialogContent className="border-[var(--border-subtle)] bg-[var(--bg-primary)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[var(--text-primary)]">Close the active draft session?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--text-secondary)]">
+              The Draft Room and Series Lab will return to their empty configuration state in this browser. The session
+              record remains in the demo database for reproducibility and can be reopened by creating a new board.
+              This does not affect any other workspace or user.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[var(--border-subtle)] bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]">
+              Keep working
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-[var(--accent-coral)] text-[#1c0a0e] hover:bg-[var(--accent-coral)]/90"
+              onClick={() => {
+                setActiveSession(null);
+                setCleanupOpen(false);
+                pushToast("Active session closed in this browser. The Draft Room is ready for a new board.");
+                navigate("dashboard");
+              }}
+            >
+              Close session
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

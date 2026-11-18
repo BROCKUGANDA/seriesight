@@ -70,7 +70,12 @@ export function DataSources() {
       }
       load();
     } catch (e) {
-      pushToast(e instanceof ApiClientError ? `${e.code}: ${e.message}` : "Action failed", "error");
+      pushToast(
+        e instanceof ApiClientError
+          ? `The action could not complete — ${e.message} (${e.code}). ${e.recovery ?? "Check the provider status above and try again."}`
+          : "The action could not complete. Check your connection and try again.",
+        "error",
+      );
     } finally {
       setBusy(null);
     }
@@ -91,7 +96,7 @@ export function DataSources() {
         <div className="grid gap-3 md:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => <SkeletonBlock key={i} className="h-48" />)}</div>
       ) : (
         <>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* GRID panel */}
             {data.connections.filter((c) => c.provider === "grid").map((conn) => {
               const tone = STATUS_TONE[conn.status] ?? STATUS_TONE.not_configured;
@@ -108,7 +113,7 @@ export function DataSources() {
                     </span>
                     <span className="font-mono text-[11px] text-[var(--text-muted)]">circuit: {data.circuit.state} ({data.circuit.failures}/{data.circuit.failureThreshold} failures)</span>
                   </div>
-                  <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                  <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
                     <Row k="Credential configuration" v="GRID_API_KEY read from server environment only" />
                     <Row k="Last successful request" v={conn.lastSuccessfulRequestAt ?? "never"} />
                     <Row k="Last import attempt" v={conn.lastImportAttemptAt ?? "never"} />
@@ -118,14 +123,14 @@ export function DataSources() {
                     <Row k="Failed imports" v={`${conn.failedImportCount}`} />
                     <Row k="Commercial restriction" v="Open Access is non-commercial only" />
                   </dl>
-                  <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 p-3">
-                    <p className="text-[11px] leading-relaxed text-[var(--text-secondary)]">
-                      {String(conn.metadata.note ?? "")}
-                    </p>
-                    <ul className="mt-2 list-disc space-y-0.5 pl-4 font-mono text-[10px] text-[var(--text-muted)]">
-                      {conn.authorizedEndpoints.map((e) => <li key={e}>{e}</li>)}
-                    </ul>
-                  </div>
+                  {conn.metadata.note ? (
+                    <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 p-3">
+                      <p className="text-[11px] leading-relaxed text-[var(--text-secondary)]">{String(conn.metadata.note)}</p>
+                      <ul className="mt-2 list-disc space-y-0.5 pl-4 font-mono text-[10px] text-[var(--text-muted)]">
+                        {conn.authorizedEndpoints.map((e) => <li key={e}>{e}</li>)}
+                      </ul>
+                    </div>
+                  ) : null}
                 </Panel>
               );
             })}
@@ -144,15 +149,17 @@ export function DataSources() {
                   </span>
                   <span className="font-mono text-[11px] text-[var(--text-muted)]">{conn.metadata.datasetId}</span>
                 </div>
-                <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
                   <Row k="Series" v={String(conn.parsedSeriesCount)} />
-                  <Row k="Games" v={String(conn.metadata.games ?? "—")} />
-                  <Row k="Deterministic seed" v={String(conn.metadata.deterministicSeed ?? "—")} />
+                  <Row k="Games" v={String(conn.metadata.games ?? "not recorded")} />
+                  <Row k="Deterministic seed" v={String(conn.metadata.deterministicSeed ?? "not recorded")} />
                   <Row k="Last import" v={conn.lastImportAttemptAt ?? "not run"} />
                 </dl>
-                <p className="mt-3 rounded-lg border border-[var(--accent-amber)]/30 bg-[var(--accent-amber)]/5 px-3 py-2 text-[11px] leading-relaxed text-[var(--accent-amber)]">
-                  {String(conn.metadata.note ?? "")}
-                </p>
+                {conn.metadata.note ? (
+                  <p className="mt-3 rounded-lg border border-[var(--accent-amber)]/30 bg-[var(--accent-amber)]/5 px-3 py-2 text-[11px] leading-relaxed text-[var(--accent-amber)]">
+                    {String(conn.metadata.note)}
+                  </p>
+                ) : null}
                 <button type="button" onClick={() => act("import", "fixture")} disabled={busy !== null} className="ctrl-btn mt-3 inline-flex items-center gap-1.5">
                   <ImportGlyph size={13} /> {busy === "import:fixture" ? "Importing…" : "Run staged import"}
                 </button>
@@ -162,7 +169,7 @@ export function DataSources() {
 
           {/* Static data adapter */}
           <Panel title="Static data adapter" subtitle="Data Dragon with bundled fallback — never hardcoded to one patch">
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs md:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
               <Row k="Metadata version" v={data.staticData.version} />
               <Row k="Source" v={data.staticData.source} />
               <Row k="Fetched at" v={data.staticData.fetchedAt.slice(0, 19).replace("T", " ")} />
@@ -199,7 +206,7 @@ export function DataSources() {
                         {job.seriesCount} series · {job.gameCount} games · attempts {job.attempts}
                       </span>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Import stages">
+                    <div className="mt-2 flex flex-wrap gap-1.5" aria-hidden="true">
                       {STAGES.map((s, i) => {
                         const reached = STAGES.indexOf(job.stage) >= i && (job.status === "succeeded" || job.status === "running" || job.status === "partial");
                         return (
@@ -209,6 +216,7 @@ export function DataSources() {
                         );
                       })}
                     </div>
+                    <p className="sr-only">Import stage reached: {job.stage.replace(/_/g, " ")}.</p>
                     {job.lastError && <p className="mt-2 rounded border border-[var(--accent-coral)]/30 bg-[var(--accent-coral)]/5 px-2.5 py-1.5 text-[11px] text-[var(--accent-coral)]">{job.lastError}</p>}
                   </li>
                 ))}
@@ -235,9 +243,9 @@ export function DataSources() {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{k}</dt>
-      <dd className="mt-0.5 truncate font-mono text-[11px] text-[var(--text-secondary)]" title={v}>{v}</dd>
+      <dd className="mt-0.5 break-words font-mono text-[11px] leading-relaxed text-[var(--text-secondary)]">{v}</dd>
     </div>
   );
 }

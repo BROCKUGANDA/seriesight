@@ -1,0 +1,678 @@
+     1→"use client";
+     2→
+     3→/**
+     4→ * Draft Room (PRD D5) — the primary interactive product demonstration.
+     5→ * Board state is validated locally (same engine semantics) and every mutation is
+     6→ * applied through the API with optimistic-concurrency version checks; the server
+     7→ * response is the single source of truth for the board.
+     8→ */
+     9→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+    10→import { ApiClientError, apiFetch, apiPost } from "@/lib/api-client";
+    11→import { Panel, EmptyState, SkeletonBlock, ErrorState, ConfidenceBadge, EvidenceChip } from "@/components/common/primitives";
+    12→import { ROLE_GLYPHS, PickGlyph, BanGlyph, HardFearlessGlyph, SoftFearlessGlyph, CompositionGlyph, ConfidenceGlyph, RiskGlyph, SeriesGlyph } from "@/components/icons/seriesight-icons";
+    13→import { useWorkspaceStore, haptic } from "@/store/workspace";
+    14→import type { Champion, DraftGameState, DraftSession, Recommendation, CompositionProfile, Role, Side } from "@/domain/types";
+    15→import { ALL_ROLES } from "@/domain/types";
+    16→import { getChampion } from "@/fixtures/champions";
+    17→import { formatPct } from "@/domain/analytics/stats";
+    18→
+    19→interface ChampionCatalogue { champions: Champion[]; metadataVersion: string; metadataSource: string; warnings: string[] }
+    20→interface RecommendationsPayload { picks: Recommendation[]; bans: Recommendation[]; alternatives: CompositionProfile[] }
+    21→interface ActionResult { session: DraftSession; availability: Record<string, { available: boolean; reasons: { kind: string; detail: string }[] }>; progress: { applied: number; total: number; pct: number } }
+    22→interface TeamRow { id: string; shortName: string; name: string; isOurTeam: boolean }
+    23→
+    24→const SEQUENCE_LABEL = ["B", "R", "B", "R", "B", "R", "B", "R", "R", "B", "R", "B", "R", "B", "B", "R", "R", "B", "B", "R"];
+    25→const SEQUENCE_TYPE = ["ban", "ban", "ban", "ban", "ban", "ban", "pick", "pick", "pick", "pick", "ban", "ban", "ban", "ban", "pick", "pick", "pick", "pick", "pick", "pick"];
+    26→
+    27→export function DraftRoom() {
+    28→  const activeSession = useWorkspaceStore((s) => s.activeSession);
+    29→  const setActiveSession = useWorkspaceStore((s) => s.setActiveSession);
+    30→  const pushToast = useWorkspaceStore((s) => s.pushToast);
+    31→  const hapticsEnabled = useWorkspaceStore((s) => s.hapticsEnabled);
+    32→
+    33→  // catalogue
+    34→  const [catalogue, setCatalogue] = useState<ChampionCatalogue | null>(null);
+    35→  const [teams, setTeams] = useState<TeamRow[]>([]);
+    36→  // config
+    37→  const [cfgOpponent, setCfgOpponent] = useState("NVX");
+    38→  const [cfgFormat, setCfgFormat] = useState<"BO1" | "BO3" | "BO5">("BO3");
+    39→  const [cfgMode, setCfgMode] = useState<"none" | "hard" | "soft">("hard");
+    40→  const [cfgScope, setCfgScope] = useState<"both" | "own">("both");
+    41→  const [cfgSide, setCfgSide] = useState<Side>("BLUE");
+    42→  // board
+    43→  const [search, setSearch] = useState("");
+    44→  const [roleFilter, setRoleFilter] = useState<Role | "all">("all");
+    45→  const [selected, setSelected] = useState<string | null>(null);
+    46→  const [busy, setBusy] = useState(false);
+    47→  const [error, setError] = useState<ApiClientError | null>(null);
+    48→  const [recs, setRecs] = useState<RecommendationsPayload | null>(null);
+    49→  const [recsLoading, setRecsLoading] = useState(false);
+    50→  const [expandedRec, setExpandedRec] = useState<string | null>(null);
+    51→  const gridRef = useRef<HTMLDivElement>(null);
+    52→
+    53→  useEffect(() => {
+    54→    apiFetch<ChampionCatalogue>("/api/champions").then(setCatalogue).catch(() => setCatalogue(null));
+    55→    apiFetch<TeamRow[]>("/api/teams").then(setTeams).catch(() => setTeams([]));
+    56→  }, []);
+    57→
+    58→  const session = activeSession;
+    59→  const game = session?.games.find((g) => g.gameNumber === session.currentGame) ?? null;
+    60→
+    61→  const refreshRecs = useCallback((sessionId: string) => {
+    62→    setRecsLoading(true);
+    63→    apiPost<RecommendationsPayload>("/api/draft/recommendations", { sessionId })
+    64→      .then(setRecs)
+    65→      .catch(() => setRecs(null))
+    66→      .finally(() => setRecsLoading(false));
+    67→  }, []);
+    68→
+    69→  useEffect(() => {
+    70→    if (session) refreshRecs(session.id);
+    71→  }, [session, refreshRecs]);
+    72→
+    73→  const createSession = async () => {
+    74→    setBusy(true);
+    75→    setError(null);
+    76→    try {
+    77→      const rulesetId = cfgMode === "none" ? `std-${cfgFormat.toLowerCase()}` : `ff-${cfgMode}-${cfgFormat.toLowerCase()}`;
+    78→      const s = await apiPost<DraftSession>("/api/draft/sessions", {
+    79→        opponentTeamId: cfgOpponent,
+    80→        format: cfgFormat,
+    81→        rulesetId,
+    82→        modeOverride: cfgMode,
+    83→        scopeOverride: cfgMode === "none" ? undefined : cfgScope,
+    84→        ourSide: cfgSide,
+    85→      });
+    86→      setActiveSession(s);
+    87→      setSelected(null);
+    88→      pushToast(`Session created — ${cfgFormat} vs ${cfgOpponent} (${cfgMode === "none" ? "standard" : `${cfgMode} fearless`}).`);
+    89→    } catch (e) {
+    90→      setError(e instanceof ApiClientError ? e : new ApiClientError({ code: "INTERNAL_ERROR", message: "Failed to create session.", retryable: true, recovery: "Retry." }));
+    91→    } finally {
+    92→      setBusy(false);
+    93→    }
+    94→  };
+    95→
+    96→  const mutate = useCallback(
+    97→    async (fn: (id: string, version: number) => Promise<ActionResult>, successMsg?: string) => {
+    98→      if (!session) return;
+    99→      setBusy(true);
+   100→      setError(null);
+   101→      try {
+   102→        const result = await fn(session.id, session.stateVersion);
+   103→        setActiveSession(result.session);
+   104→        setSelected(null);
+   105→        if (successMsg) pushToast(successMsg);
+   106→        haptic("pick", hapticsEnabled);
+   107→      } catch (e) {
+   108→        if (e instanceof ApiClientError) {
+   109→          setError(e);
+   110→          haptic("invalid", hapticsEnabled);
+   111→          if (e.code === "DRAFT_STALE_VERSION") {
+   112→            const fresh = await apiFetch<DraftSession>(`/api/draft/sessions/${session.id}`).catch(() => null);
+   113→            if (fresh) setActiveSession(fresh);
+   114→            pushToast("Board was stale — reloaded the latest state. No corruption occurred.", "warn");
+   115→          }
+   116→        }
+   117→      } finally {
+   118→        setBusy(false);
+   119→      }
+   120→    },
+   121→    [session, setActiveSession, pushToast, hapticsEnabled],
+   122→  );
+   123→
+   124→  const applyAction = (type: "ban" | "pick", championId: string) =>
+   125→    mutate(
+   126→      (id, v) => apiPost<ActionResult>(`/api/draft/sessions/${id}/actions`, { type, championId, expectedStateVersion: v }),
+   127→      `${type === "ban" ? "Ban" : "Pick"} locked: ${getChampion(championId)?.displayName ?? championId}`,
+   128→    );
+   129→
+   130→  const currentTurn = useMemo(() => {
+   131→    if (!game || !session) return null;
+   132→    const idx = game.actions.length;
+   133→    if (game.status !== "drafting" || idx >= 20) return null;
+   134→    return { index: idx, type: SEQUENCE_TYPE[idx] as "ban" | "pick", side: (SEQUENCE_LABEL[idx] === "B" ? "BLUE" : "RED") as Side };
+   135→  }, [game, session]);
+   136→
+   137→  const availability = useMemo(() => {
+   138→    // Client-side mirror for instant visual feedback; the server remains
+   139→    // authoritative on lock. Fearless restriction is turn-aware in soft/own mode.
+   140→    if (!game || !session || !catalogue) return null;
+   141→    const map: Record<string, { available: boolean; reasons: string[] }> = {};
+   142→    const banned = new Set([...game.blue.bans.filter(Boolean), ...game.red.bans.filter(Boolean)] as string[]);
+   143→    const picked = [...game.blue.picks, ...game.red.picks].map((p) => p.championId);
+   144→    const priorByTeam: Record<string, Set<string>> = {};
+   145→    for (const g of session.games) {
+   146→      if (g.status !== "finalized") continue;
+   147→      for (const [teamId, picks] of Object.entries({
+   148→        [g.blueTeamId]: g.blue.picks.map((p) => p.championId),
+   149→        [g.redTeamId]: g.red.picks.map((p) => p.championId),
+   150→      })) {
+   151→        const set = priorByTeam[teamId] ?? new Set<string>();
+   152→        picks.forEach((p) => set.add(p));
+   153→        priorByTeam[teamId] = set;
+   154→      }
+   155→    }
+   156→    const idx = game.actions.length;
+   157→    const actingSide = idx < 20 ? (SEQUENCE_LABEL[idx] === "B" ? "BLUE" : "RED") : null;
+   158→    const actingTeamId = actingSide === "BLUE" ? game.blueTeamId : actingSide === "RED" ? game.redTeamId : null;
+   159→    const restrictedFor = (championId: string): string | null => {
+   160→      if (session.mode === "none") return null;
+   161→      const restrictedOwn = priorByTeam[actingTeamId ?? ""]?.has(championId);
+   162→      if (session.mode === "hard" || session.restrictionsScope === "both") {
+   163→        const any = [...new Set([...priorByTeam[game.blueTeamId] ?? [], ...priorByTeam[game.redTeamId] ?? []])];
+   164→        return any.includes(championId) ? "Hard Fearless — locked from an earlier game" : null;
+   165→      }
+   166→      return restrictedOwn ? "Soft Fearless — locked via our earlier pick" : null;
+   167→    };
+   168→    for (const c of catalogue.champions) {
+   169→      const reasons: string[] = [];
+   170→      if (banned.has(c.id)) reasons.push(`banned this game (${game.blue.bans.includes(c.id) ? "blue" : "red"})`);
+   171→      if (picked.includes(c.id)) reasons.push("picked this game");
+   172→      if (!picked.includes(c.id)) {
+   173→        const fr = restrictedFor(c.id);
+   174→        if (fr) reasons.push(fr);
+   175→      }
+   176→      map[c.id] = { available: reasons.length === 0, reasons };
+   177→    }
+   178→    return map;
+   179→  }, [game, session, catalogue]);
+   180→
+   181→  const filteredChampions = useMemo(() => {
+   182→    if (!catalogue) return [];
+   183→    const q = search.trim().toLowerCase();
+   184→    return catalogue.champions.filter(
+   185→      (c) => (roleFilter === "all" || [c.primaryRole, ...c.flexRoles].includes(roleFilter)) && (!q || c.displayName.toLowerCase().includes(q) || c.id.includes(q)),
+   186→    );
+   187→  }, [catalogue, search, roleFilter]);
+   188→
+   189→  // Composition analysis of our current picks (client-side trait aggregation).
+   190→  const compProfile = useMemo(() => {
+   191→    if (!game || !session) return null;
+   192→    const ourTeamId = session.ourTeamId;
+   193→    const ourPicks = game.blueTeamId === ourTeamId ? game.blue.picks : game.red.picks;
+   194→    const dims = ["engage", "disengage", "frontline", "crowdControl", "physicalDamage", "magicDamage", "scaling", "siege", "pickPotential", "objectiveControl"] as const;
+   195→    const out: Record<string, number | null> = {};
+   196→    for (const d of dims) {
+   197→      const vals = ourPicks.map((p) => getChampion(p.championId)?.traits[d]).filter((v): v is number => v !== null);
+   198→      out[d] = vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 100) / 100 : null;
+   199→    }
+   200→    return out;
+   201→  }, [game, session]);
+   202→
+   203→  const ourSideInGame: Side | null = game ? ((game.blueTeamId === session?.ourTeamId ? "BLUE" : "RED")) : null;
+   204→  const weAct = currentTurn && ourSideInGame === currentTurn.side;
+   205→
+   206→  return (
+   207→    <div className="flex flex-col gap-6">
+   208→      <header className="flex flex-wrap items-end justify-between gap-4">
+   209→        <div>
+   210→          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Draft Room</h1>
+   211→          <p className="mt-1 text-sm text-[var(--text-secondary)]">Interactive pick/ban workspace. Every action is validated by the deterministic engine and persisted with a version stamp.</p>
+   212→        </div>
+   213→        {session && (
+   214→          <div className="flex items-center gap-2 font-mono text-[11px] text-[var(--text-muted)]">
+   215→            <span className="rounded border border-[var(--border-subtle)] px-2 py-1">session {session.id.slice(0, 8)}</span>
+   216→            <span className="rounded border border-[var(--border-subtle)] px-2 py-1">persisted v{session.stateVersion}</span>
+   217→          </div>
+   218→        )}
+   219→      </header>
+   220→
+   221→      {/* Configuration */}
+   222→      {!session && (
+   223→        <Panel title="Draft configuration" subtitle="Opponent, format, tournament sequence, Fearless ruleset, sides">
+   224→          {error && <ErrorState code={error.code} message={error.message} recovery={error.recovery} />}
+   225→          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+   226→            <Field label="Opponent">
+   227→              <select value={cfgOpponent} onChange={(e) => setCfgOpponent(e.target.value)} className="cfg-select" aria-label="Opponent">
+   228→                {teams.filter((t) => !t.isOurTeam).map((t) => (
+   229→                  <option key={t.id} value={t.id}>{t.name}</option>
+   230→                ))}
+   231→              </select>
+   232→            </Field>
+   233→            <Field label="Format">
+   234→              <select value={cfgFormat} onChange={(e) => setCfgFormat(e.target.value as "BO1" | "BO3" | "BO5")} className="cfg-select" aria-label="Series format">
+   235→                {["BO1", "BO3", "BO5"].map((f) => <option key={f}>{f}</option>)}
+   236→              </select>
+   237→            </Field>
+   238→            <Field label="Fearless ruleset">
+   239→              <select value={cfgMode} onChange={(e) => setCfgMode(e.target.value as "none" | "hard" | "soft")} className="cfg-select" aria-label="Fearless mode">
+   240→                <option value="none">Standard draft</option>
+   241→                <option value="hard">Hard / Full Fearless</option>
+   242→                <option value="soft">Soft Fearless</option>
+   243→              </select>
+   244→            </Field>
+   245→            {cfgMode !== "none" && (
+   246→              <Field label="Restriction scope">
+   247→                <select value={cfgScope} onChange={(e) => setCfgScope(e.target.value as "both" | "own")} className="cfg-select" aria-label="Restriction scope">
+   248→                  <option value="both">Both teams</option>
+   249→                  <option value="own">Own picks only</option>
+   250→                </select>
+   251→              </Field>
+   252→            )}
+   253→            <Field label="Our side (Game 1)">
+   254→              <select value={cfgSide} onChange={(e) => setCfgSide(e.target.value as Side)} className="cfg-select" aria-label="Our side">
+   255→                <option value="BLUE">Blue side (first pick)</option>
+   256→                <option value="RED">Red side</option>
+   257→              </select>
+   258→            </Field>
+   259→          </div>
+   260→          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+   261→            <p className="max-w-2xl text-[11px] leading-relaxed text-[var(--text-muted)]">
+   262→              Tournament sequence: 6 bans → 4 picks → 4 bans → 6 picks. Bans, picks and Fearless-restricted champions are tracked as separate states — bans never count as completed picks.
+   263→            </p>
+   264→            <button
+   265→              type="button"
+   266→              onClick={createSession}
+   267→              disabled={busy}
+   268→              className="rounded-lg border border-[var(--accent-cyan)]/60 bg-[var(--accent-cyan)]/10 px-5 py-2.5 text-sm font-semibold text-[var(--accent-cyan)] transition-colors hover:bg-[var(--accent-cyan)]/20 disabled:opacity-50"
+   269→            >
+   270→              {busy ? "Creating…" : "Create draft session"}
+   271→            </button>
+   272→          </div>
+   273→        </Panel>
+   274→      )}
+   275→
+   276→      {session && game && (
+   277→        <>
+   278→          {/* Session strip */}
+   279→          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)]/70 px-4 py-3">
+   280→            <div className="flex flex-wrap items-center gap-2 text-xs">
+   281→              <span className="font-semibold text-[var(--text-primary)]">{session.format} vs {session.opponentTeamId}</span>
+   282→              <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-active)] px-2.5 py-0.5 text-[var(--accent-cyan)]">
+   283→                {session.mode === "none" ? <><PickGlyph size={12} /> Standard</> : session.mode === "hard" ? <><HardFearlessGlyph size={12} /> Hard Fearless</> : <><SoftFearlessGlyph size={12} /> Soft Fearless</>}
+   284→                {session.mode !== "none" && <span className="text-[var(--text-muted)]">· {session.restrictionsScope}</span>}
+   285→              </span>
+   286→              <span className="font-mono text-[var(--text-muted)]">Game {game.gameNumber} · our side {ourSideInGame}</span>
+   287→              {game.status === "finalized" && <span className="rounded-full bg-[var(--accent-green)]/10 px-2 py-0.5 text-[var(--accent-green)]">finalized</span>}
+   288→            </div>
+   289→            <div className="flex flex-wrap items-center gap-2">
+   290→              <button type="button" disabled={busy || game.actions.length === 0 || game.status !== "drafting"} onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/undo`, { expectedStateVersion: v }))} className="ctrl-btn">Undo</button>
+   291→              <button type="button" disabled={busy || game.redoStack.length === 0 || game.status !== "drafting"} onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/redo`, { expectedStateVersion: v }))} className="ctrl-btn">Redo</button>
+   292→              <button type="button" disabled={busy || game.status !== "drafting"} onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/reset`, { expectedStateVersion: v }), "Board reset.")} className="ctrl-btn">Reset</button>
+   293→              <button
+   294→                type="button"
+   295→                disabled={busy || game.status !== "drafting" || game.actions.length < 20}
+   296→                onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/finalize`, { expectedStateVersion: v }), "Game finalized — Fearless restrictions propagate to the next game.")}
+   297→                className="rounded-md border border-[var(--accent-green)]/60 bg-[var(--accent-green)]/10 px-3 py-1.5 text-xs font-medium text-[var(--accent-green)] disabled:opacity-40"
+   298→                title={game.actions.length < 20 ? "All 20 actions must be locked first" : "Assign roles to all picks, then finalize"}
+   299→              >
+   300→                Finalize game
+   301→              </button>
+   302→              {game.status === "finalized" && session.currentGame < (session.format === "BO1" ? 1 : session.format === "BO3" ? 3 : 5) && (
+   303→                <button
+   304→                  type="button"
+   305→                  disabled={busy}
+   306→                  onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/next-game`, { expectedStateVersion: v }), "Next game started — restricted champions updated.")}
+   307→                  className="rounded-md border border-[var(--accent-cyan)]/60 bg-[var(--accent-cyan)]/10 px-3 py-1.5 text-xs font-medium text-[var(--accent-cyan)]"
+   308→                >
+   309→                  <span className="inline-flex items-center gap-1.5"><SeriesGlyph size={13} /> Start Game {game.gameNumber + 1}</span>
+   310→                </button>
+   311→              )}
+   312→            </div>
+   313→          </div>
+   314→
+   315→          {error && <ErrorState code={error.code} message={error.message} recovery={error.recovery} />}
+   316→
+   317→          <div className="grid gap-6 xl:grid-cols-[240px_1fr_320px]">
+   318→            {/* Left: opponent profile */}
+   319→            <div className="order-2 flex flex-col gap-4 xl:order-1">
+   320→              <Panel title="Opponent profile" subtitle="Fixture-scouted priorities">
+   321→                <OpponentMini teamId={session.opponentTeamId} />
+   322→              </Panel>
+   323→            </div>
+   324→
+   325→            {/* Center: draft board + champion grid */}
+   326→            <div className="order-1 flex min-w-0 flex-col gap-4 xl:order-2">
+   327→              {/* Turn indicator */}
+   328→              <div className={`rounded-xl border px-4 py-3 ${weAct ? "active-trace border-[var(--accent-cyan)]/60 bg-[var(--accent-cyan)]/5" : "border-[var(--border-subtle)] bg-[var(--surface-1)]/70"}`}>
+   329→                <div className="flex flex-wrap items-center justify-between gap-2">
+   330→                  <p className="text-sm">
+   331→                    {game.status !== "drafting" ? (
+   332→                      <span className="text-[var(--accent-green)]">Draft completed — restrictions recorded.</span>
+   333→                    ) : currentTurn ? (
+   334→                      <>
+   335→                        <span className="font-semibold text-[var(--text-primary)]">{currentTurn.side} side {currentTurn.type}</span>
+   336→                        <span className="ml-2 text-[var(--text-secondary)]">
+   337→                          {weAct ? "Our turn — select a champion below and lock." : `Waiting on ${currentTurn.side === "BLUE" ? game.blueTeamId : game.redTeamId}.`}
+   338→                        </span>
+   339→                      </>
+   340→                    ) : (
+   341→                      "Sequence complete — assign roles and finalize."
+   342→                    )}
+   343→                  </p>
+   344→                  <span className="tnum font-mono text-[11px] text-[var(--text-muted)]">{game.actions.length}/20 · phase {game.phase.replace("_", " ")}</span>
+   345→                </div>
+   346→                <div className="mt-2 flex gap-1" aria-hidden="true">
+   347→                  {SEQUENCE_TYPE.map((t, i) => (
+   348→                    <div
+   349→                      key={i}
+   350→                      className={`h-1.5 flex-1 rounded-full ${i < game.actions.length ? (t === "ban" ? "bg-[var(--accent-coral)]/70" : "bg-[var(--accent-cyan)]/70") : i === game.actions.length ? "bg-[var(--accent-white)]/80" : "bg-[var(--surface-3)]"}`}
+   351→                    />
+   352→                  ))}
+   353→                </div>
+   354→              </div>
+   355→
+   356→              {/* Draft board */}
+   357→              <div className="grid gap-3 md:grid-cols-2">
+   358→                <SideBoard game={game} side="BLUE" label={game.blueTeamId} isOur={ourSideInGame === "BLUE"} onAssignRole={(pickIndex, role) => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/roles`, { side: "BLUE", pickIndex, role, expectedStateVersion: v }))} />
+   359→                <SideBoard game={game} side="RED" label={game.redTeamId} isOur={ourSideInGame === "RED"} onAssignRole={(pickIndex, role) => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/roles`, { side: "RED", pickIndex, role, expectedStateVersion: v }))} />
+   360→              </div>
+   361→
+   362→              {/* Champion grid */}
+   363→              <Panel
+   364→                title="Champion availability"
+   365→                subtitle={catalogue ? `Pool of ${catalogue.champions.length} · metadata ${catalogue.metadataVersion} (${catalogue.metadataSource})` : "Loading catalogue…"}
+   366→                actions={
+   367→                  <div className="flex flex-wrap items-center gap-2">
+   368→                    <input
+   369→                      value={search}
+   370→                      onChange={(e) => setSearch(e.target.value)}
+   371→                      placeholder="Search champions…"
+   372→                      aria-label="Search champions"
+   373→                      className="w-40 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-xs"
+   374→                    />
+   375→                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as Role | "all")} aria-label="Filter by role" className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1.5 text-xs">
+   376→                      <option value="all">All roles</option>
+   377→                      {ALL_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+   378→                    </select>
+   379→                  </div>
+   380→                }
+   381→              >
+   382→                {!catalogue ? (
+   383→                  <SkeletonBlock className="h-56" />
+   384→                ) : (
+   385→                  <div ref={gridRef} className="grid max-h-[340px] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6 lg:grid-cols-8" role="listbox" aria-label="Champion grid">
+   386→                    {filteredChampions.map((c) => {
+   387→                      const av = availability?.[c.id] ?? { available: true, reasons: [] };
+   388→                      const isTurnTypeOk = currentTurn?.type;
+   389→                      const actionable = av.available && isTurnTypeOk && game.status === "drafting";
+   390→                      const RoleGlyph = ROLE_GLYPHS[c.primaryRole];
+   391→                      return (
+   392→                        <button
+   393→                          key={c.id}
+   394→                          type="button"
+   395→                          disabled={!actionable}
+   396→                          onClick={() => setSelected(selected === c.id ? null : c.id)}
+   397→                          title={av.available ? `${c.displayName} — available (${c.primaryRole}${c.flexRoles.length ? ` / ${c.flexRoles.join("/")}` : ""})` : `Unavailable: ${av.reasons.join("; ")}`}
+   398→                          aria-label={`${c.displayName}, ${av.available ? "available" : `unavailable: ${av.reasons.join("; ")}`}`}
+   399→                          className={`champ-tile flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-center ${
+   400→                            !av.available
+   401→                              ? "border-[var(--border-subtle)] bg-[var(--surface-1)]/40 opacity-45"
+   402→                              : selected === c.id
+   403→                                ? "border-[var(--accent-cyan)] bg-[var(--accent-cyan)]/10"
+   404→                                : "border-[var(--border-subtle)] bg-[var(--surface-2)]/60"
+   405→                          }`}
+   406→                        >
+   407→                          <span className={`text-lg font-semibold ${av.available ? "text-[var(--text-primary)]" : "text-[var(--text-disabled)] line-through decoration-[var(--accent-coral)]/60"}`}>
+   408→                            {c.displayName.slice(0, 2).toUpperCase()}
+   409→                          </span>
+   410→                          <span className="w-full truncate text-[10px] leading-tight text-[var(--text-secondary)]">{c.displayName}</span>
+   411→                          <span className={`inline-flex items-center gap-0.5 text-[9px] ${av.available ? "text-[var(--text-muted)]" : "text-[var(--accent-coral)]"}`}>
+   412→                            {!av.available ? <BanGlyph size={10} /> : <RoleGlyph size={10} />}
+   413→                            {c.primaryRole}
+   414→                          </span>
+   415→                        </button>
+   416→                      );
+   417→                    })}
+   418→                  </div>
+   419→                )}
+   420→
+   421→                {/* Selection strip */}
+   422→                {selected && currentTurn && (
+   423→                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--accent-cyan)]/50 bg-[var(--accent-cyan)]/5 px-4 py-3">
+   424→                    <div className="flex items-center gap-3">
+   425→                      <span className="text-sm font-semibold text-[var(--text-primary)]">{getChampion(selected)?.displayName}</span>
+   426→                      <span className="text-xs text-[var(--text-secondary)]">
+   427→                        Lock as {currentTurn.type} for {currentTurn.side} side?
+   428→                      </span>
+   429→                    </div>
+   430→                    <div className="flex items-center gap-2">
+   431→                      <button type="button" onClick={() => setSelected(null)} className="rounded-md border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-secondary)]">Cancel</button>
+   432→                      <button
+   433→                        type="button"
+   434→                        disabled={busy}
+   435→                        onClick={() => applyAction(currentTurn.type, selected)}
+   436→                        className={`inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold ${
+   437→                          currentTurn.type === "ban"
+   438→                            ? "border border-[var(--accent-coral)]/60 bg-[var(--accent-coral)]/10 text-[var(--accent-coral)]"
+   439→                            : "border border-[var(--accent-cyan)]/60 bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)]"
+   440→                        }`}
+   441→                      >
+   442→                        {currentTurn.type === "ban" ? <BanGlyph size={13} /> : <PickGlyph size={13} />} Lock {currentTurn.type}
+   443→                      </button>
+   444→                    </div>
+   445→                  </div>
+   446→                )}
+   447→              </Panel>
+   448→
+   449→              {/* Event history */}
+   450→              <Panel title="Draft event history" subtitle="Every action carries id, timestamp, actor, phase and prior version">
+   451→                <ol className="flex max-h-40 flex-col gap-1 overflow-y-auto font-mono text-[11px]">
+   452→                  {game.actions.map((a) => (
+   453→                    <li key={a.id} className="flex items-center justify-between gap-3 rounded bg-[var(--surface-2)]/50 px-2.5 py-1.5">
+   454→                      <span className="text-[var(--text-secondary)]">
+   455→                        <span className="tnum">{String(a.order).padStart(2, "0")}</span> · {a.type.toUpperCase()} · {a.side} · <span className="text-[var(--text-primary)]">{getChampion(a.championId)?.displayName}</span>
+   456→                      </span>
+   457→                      <span className="text-[var(--text-muted)]">{a.phase.replace("_", " ").toLowerCase()} · v{a.priorStateVersion}→v{a.priorStateVersion + 1}</span>
+   458→                    </li>
+   459→                  ))}
+   460→                  {game.actions.length === 0 && <li className="text-[var(--text-muted)]">No actions yet — the board is empty and validated.</li>}
+   461→                </ol>
+   462→              </Panel>
+   463→            </div>
+   464→
+   465→            {/* Right: recommendations + composition */}
+   466→            <div className="order-3 flex flex-col gap-4">
+   467→              <Panel title="Recommended picks" subtitle={recsLoading ? "Refreshing…" : "Transparent 0–100 suitability score — not a win probability"}>
+   468→                {!recs ? (
+   469→                  recsLoading ? <SkeletonBlock className="h-44" /> : <EmptyState title="No recommendations yet" message="Make the first draft action to refresh the recommendation engine." />
+   470→                ) : (
+   471→                  <div className="flex flex-col gap-2">
+   472→                    {recs.picks.map((r) => (
+   473→                      <RecCard key={r.championId} rec={r} expanded={expandedRec === r.championId} onToggle={() => setExpandedRec(expandedRec === r.championId ? null : r.championId)} />
+   474→                    ))}
+   475→                  </div>
+   476→                )}
+   477→              </Panel>
+   478→
+   479→              <Panel title="Candidate bans" subtitle="Deny value from observed opponent usage">
+   480→                {!recs ? (
+   481→                  <SkeletonBlock className="h-36" />
+   482→                ) : (
+   483→                  <div className="flex flex-col gap-2">
+   484→                    {recs.bans.map((r) => (
+   485→                      <RecCard key={r.championId} rec={r} expanded={expandedRec === `b-${r.championId}`} onToggle={() => setExpandedRec(expandedRec === `b-${r.championId}` ? null : `b-${r.championId}`)} />
+   486→                    ))}
+   487→                  </div>
+   488→                )}
+   489→              </Panel>
+   490→
+   491→              <Panel title="Composition balance" subtitle="Our picks so far — coach-curated trait vectors">
+   492→                {!compProfile ? (
+   493→                  <SkeletonBlock className="h-40" />
+   494→                ) : (
+   495→                  <div className="flex flex-col gap-2.5">
+   496→                    {Object.entries(compProfile).map(([dim, v]) => (
+   497→                      <div key={dim}>
+   498→                        <div className="flex items-center justify-between text-[11px]">
+   499→                          <span className="text-[var(--text-secondary)]">{dim.replace(/([A-Z])/g, " $1").toLowerCase()}</span>
+   500→                          <span className="tnum text-[var(--text-muted)]">{v === null ? "unknown" : v}</span>
+   501→                        </div>
+   502→                        <div className="mt-1 h-1.5 rounded-full bg-[var(--surface-3)]">
+   503→                          <div className={`h-1.5 rounded-full ${v === null ? "bg-[var(--surface-3)]" : "signal-gradient"}`} style={{ width: v === null ? "6px" : `${v}%` }} />
+   504→                        </div>
+   505→                      </div>
+   506→                    ))}
+   507→                    <p className="flex items-start gap-1.5 pt-1 text-[10px] text-[var(--text-muted)]">
+   508→                      <ConfidenceGlyph size={12} /> Unknown dimensions stay unknown — they are excluded from scores, never invented.
+   509→                    </p>
+   510→                  </div>
+   511→                )}
+   512→              </Panel>
+   513→
+   514→              {recs && recs.alternatives.length > 0 && (
+   515→                <Panel title="Alternative compositions" subtitle="Greedy builds from the available pool">
+   516→                  <div className="flex flex-col gap-2">
+   517→                    {recs.alternatives.map((a, i) => (
+   518→                      <div key={i} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 p-3">
+   519→                        <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--accent-violet)]"><CompositionGlyph size={13} /> Variant {i + 1} {a.score !== null && <span className="tnum text-[var(--text-muted)]">· comp score {a.score}</span>}</p>
+   520→                        <p className="mt-1.5 flex flex-wrap gap-1.5">
+   521→                          {a.championIds.map((id) => (
+   522→                            <span key={id} className="rounded bg-[var(--surface-3)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">{getChampion(id)?.displayName ?? id}</span>
+   523→                          ))}
+   524→                        </p>
+   525→                      </div>
+   526→                    ))}
+   527→                  </div>
+   528→                </Panel>
+   529→              )}
+   530→            </div>
+   531→          </div>
+   532→        </>
+   533→      )}
+   534→    </div>
+   535→  );
+   536→}
+   537→
+   538→/* ------------------------------ subcomponents ----------------------------- */
+   539→
+   540→function Field({ label, children }: { label: string; children: React.ReactNode }) {
+   541→  return (
+   542→    <label className="flex flex-col gap-1.5 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+   543→      {label}
+   544→      <span className="cfg-select-wrap">{children}</span>
+   545→    </label>
+   546→  );
+   547→}
+   548→
+   549→function SideBoard({
+   550→  game,
+   551→  side,
+   552→  label,
+   553→  isOur,
+   554→  onAssignRole,
+   555→}: {
+   556→  game: DraftGameState;
+   557→  side: Side;
+   558→  label: string;
+   559→  isOur: boolean;
+   560→  onAssignRole: (pickIndex: number, role: Role) => void;
+   561→}) {
+   562→  const bucket = side === "BLUE" ? game.blue : game.red;
+   563→  return (
+   564→    <div className={`rounded-xl border p-3.5 ${isOur ? "border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/[0.04]" : "border-[var(--border-subtle)] bg-[var(--surface-1)]/70"}`}>
+   565→      <div className="mb-2.5 flex items-center justify-between">
+   566→        <p className="text-xs font-semibold text-[var(--text-primary)]">
+   567→          {side === "BLUE" ? "■" : "□"} {label} <span className="font-normal text-[var(--text-muted)]">({side.toLowerCase()}{isOur ? " · us" : ""})</span>
+   568→        </p>
+   569→        <span className="font-mono text-[10px] text-[var(--text-muted)]">{bucket.bans.filter(Boolean).length} bans / {bucket.picks.length} picks</span>
+   570→      </div>
+   571→      <div className="mb-2 grid grid-cols-5 gap-1.5">
+   572→        {bucket.bans.map((b, i) => {
+   573→          const champ = b ? getChampion(b) : null;
+   574→          return (
+   575→            <div key={i} aria-label={champ ? `Ban ${i + 1}: ${champ.displayName}` : `Ban slot ${i + 1} (empty)`} className={`flex h-9 items-center justify-center rounded border ${b ? "ban-eliminate border-[var(--accent-coral)]/50 bg-[var(--accent-coral)]/10" : "border-dashed border-[var(--border-subtle)]"}`}>
+   576→              <span className={`truncate px-1 text-[10px] ${b ? "font-mono text-[var(--accent-coral)]" : "text-[var(--text-disabled)]"}`}>{champ?.displayName ?? "—"}</span>
+   577→            </div>
+   578→          );
+   579→        })}
+   580→      </div>
+   581→      <div className="flex flex-col gap-1.5">
+   582→        {bucket.picks.length === 0 && (
+   583→          <p className="rounded border border-dashed border-[var(--border-subtle)] px-2 py-2 text-center text-[10px] text-[var(--text-disabled)]">No picks yet</p>
+   584→        )}
+   585→        {bucket.picks.map((p, i) => {
+   586→          const champ = getChampion(p.championId);
+   587→          const RoleGlyph = p.role ? ROLE_GLYPHS[p.role] : null;
+   588→          return (
+   589→            <div key={`${p.championId}-${i}`} className="pick-confirm flex items-center justify-between gap-2 rounded border border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/10 px-2.5 py-1.5">
+   590→              <span className="flex min-w-0 items-center gap-2">
+   591→                <span className="truncate text-xs font-medium text-[var(--text-primary)]">{champ?.displayName}</span>
+   592→                {RoleGlyph && <span className="text-[var(--text-muted)]"><RoleGlyph size={12} /></span>}
+   593→              </span>
+   594→              {game.status === "drafting" ? (
+   595→                <select
+   596→                  value={p.role ?? ""}
+   597→                  onChange={(e) => e.target.value && onAssignRole(i, e.target.value as Role)}
+   598→                  aria-label={`Assign role to ${champ?.displayName}`}
+   599→                  className="rounded border border-[var(--border-subtle)] bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+   600→                >
+   601→                  <option value="">role…</option>
+   602→                  {[champ?.primaryRole, ...(champ?.flexRoles ?? [])].filter(Boolean).map((r) => (
+   603→                    <option key={r} value={r}>{r}</option>
+   604→                  ))}
+   605→                </select>
+   606→              ) : (
+   607→                <span className="font-mono text-[10px] text-[var(--text-muted)]">{p.role ?? "unassigned"}</span>
+   608→              )}
+   609→            </div>
+   610→          );
+   611→        })}
+   612→      </div>
+   613→    </div>
+   614→  );
+   615→}
+   616→
+   617→function RecCard({ rec, expanded, onToggle }: { rec: Recommendation; expanded: boolean; onToggle: () => void }) {
+   618→  const isBan = rec.recommendationType === "ban";
+   619→  return (
+   620→    <div className={`rounded-lg border p-3 ${isBan ? "border-[var(--accent-coral)]/30 bg-[var(--accent-coral)]/[0.04]" : "border-[var(--accent-cyan)]/30 bg-[var(--accent-cyan)]/[0.04]"}`}>
+   621→      <div className="flex items-center justify-between gap-2">
+   622→        <p className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
+   623→          {isBan ? <span className="text-[var(--accent-coral)]"><BanGlyph size={14} /></span> : <span className="text-[var(--accent-cyan)]"><PickGlyph size={14} /></span>}
+   624→          {rec.candidateName}
+   625→        </p>
+   626→        <span className="tnum rounded bg-[var(--surface-3)] px-2 py-0.5 text-xs font-semibold text-[var(--text-primary)]">{rec.score}</span>
+   627→      </div>
+   628→      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[var(--text-secondary)]">{rec.explanation}</p>
+   629→      <div className="mt-2 flex flex-wrap items-center gap-2">
+   630→        {rec.supportingEvidence[0] && <EvidenceChip evidenceId={rec.supportingEvidence[0].id} compact />}
+   631→        <button type="button" onClick={onToggle} aria-expanded={expanded} className="text-[11px] text-[var(--accent-cyan)] hover:underline">
+   632→          {expanded ? "Hide breakdown" : "Score breakdown"}
+   633→        </button>
+   634→        {rec.confidenceInterval && (
+   635→          <span className="tnum text-[10px] text-[var(--text-muted)]">CI {formatPct(rec.confidenceInterval.lower)}–{formatPct(rec.confidenceInterval.upper)}</span>
+   636→        )}
+   637→      </div>
+   638→      {expanded && (
+   639→        <div className="mt-2.5 space-y-1.5 border-t border-[var(--border-subtle)] pt-2.5">
+   640→          {rec.scoreBreakdown.map((b) => (
+   641→            <div key={b.component} className="flex items-center justify-between gap-2 text-[10px]">
+   642→              <span className="text-[var(--text-secondary)]">{b.component} <span className="text-[var(--text-muted)]">(w {b.weight})</span></span>
+   643→              <span className="tnum text-[var(--text-muted)]">{b.weighted === null ? "excluded" : b.weighted.toFixed(1)} · {b.note}</span>
+   644→            </div>
+   645→          ))}
+   646→          {rec.positiveFactors.map((f) => (
+   647→            <p key={f} className="text-[10px] text-[var(--accent-green)]">+ {f}</p>
+   648→          ))}
+   649→          {rec.riskFactors.map((f) => (
+   650→            <p key={f} className="text-[10px] text-[var(--accent-amber)]">⚠ {f}</p>
+   651→          ))}
+   652→          <p className="text-[10px] text-[var(--text-muted)]">Alternatives: {rec.alternatives.join(", ") || "none in pool"}</p>
+   653→        </div>
+   654→      )}
+   655→    </div>
+   656→  );
+   657→}
+   658→
+   659→function OpponentMini({ teamId }: { teamId: string }) {
+   660→  const [data, setData] = useState<{ usage: { championId: string; displayName: string; picks: number; bans: number; pickRate: { value: number | null }; primaryRole: string }[] } | null>(null);
+   661→  useEffect(() => {
+   662→    apiFetch<{ usage: { championId: string; displayName: string; picks: number; bans: number; pickRate: { value: number | null }; primaryRole: string }[] }>(`/api/scouting/opponents/${teamId}`)
+   663→      .then((p) => setData({ usage: p.usage.slice(0, 8) }))
+   664→      .catch(() => setData(null));
+   665→  }, [teamId]);
+   666→  if (!data) return <SkeletonBlock className="h-48" />;
+   667→  return (
+   668→    <ul className="flex flex-col gap-1.5 text-xs">
+   669→      {data.usage.map((u) => (
+   670→        <li key={u.championId} className="flex items-center justify-between gap-2 rounded bg-[var(--surface-2)]/60 px-2.5 py-1.5">
+   671→          <span className="min-w-0 truncate text-[var(--text-primary)]">{u.displayName}</span>
+   672→          <span className="tnum shrink-0 font-mono text-[10px] text-[var(--text-muted)]">{u.picks}p/{u.bans}b · {formatPct(u.pickRate.value)}</span>
+   673→        </li>
+   674→      ))}
+   675→    </ul>
+   676→  );
+   677→}
+   678→

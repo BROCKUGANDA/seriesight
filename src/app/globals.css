@@ -335,11 +335,18 @@ body {
   border-radius: 6px;
   border: 1px solid var(--border-active);
   background: var(--surface-2);
-  padding: 6px 12px;
+  padding: 10px 14px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-primary);
+  min-height: 44px; /* WCAG 2.5.8 / bench-side touch comfort */
   transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+@media (pointer: fine) {
+  .ctrl-btn {
+    padding: 8px 14px;
+    min-height: 40px;
+  }
 }
 .ctrl-btn:hover:not(:disabled) {
   border-color: var(--accent-cyan);

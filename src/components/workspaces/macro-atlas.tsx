@@ -131,7 +131,7 @@ export function MacroAtlas() {
         <div className="grid gap-3 md:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <SkeletonBlock key={i} className="h-36" />)}</div>
       ) : (
         <>
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile label="Games analyzed" value={analysis.gamesAnalyzed} detail={`${analysis.objectiveCoverage} with objective coverage`} />
             <StatTile label="Excluded games" value={analysis.excludedGames.length} detail="missing event coverage — shown, never estimated" tone="warn" />
             <StatTile label="Modules available" value={analysis.modules.filter((m) => m.status === "available").length} detail={`of ${analysis.modules.length} analytics modules`} tone="accent" />
@@ -139,7 +139,7 @@ export function MacroAtlas() {
           </section>
 
           {/* Objective modules */}
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {analysis.modules.map((m) => (
               <article key={m.id} className={`rounded-xl border p-4 ${m.status === "available" ? "border-[var(--border-subtle)] bg-[var(--surface-1)]/80" : "border-dashed border-[var(--border-subtle)] bg-transparent"}`}>
                 <div className="flex items-start justify-between gap-2">
@@ -195,7 +195,7 @@ export function MacroAtlas() {
                 <select
                   value={intervalMin}
                   onChange={(e) => setIntervalMin(Number(e.target.value))}
-                  className="rounded border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--text-primary)]"
+                  className="min-h-[44px] rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)]"
                   aria-label="Interval length"
                 >
                   {[5, 10, 15].map((v) => (
@@ -253,12 +253,15 @@ export function MacroAtlas() {
                           {g.blueTeamId} (blue) vs {g.redTeamId} (red)
                         </p>
                       </div>
-                      <div className="relative h-12 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/50">
+                      <div className="relative h-14 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/50 sm:h-12">
                         <div className="absolute inset-x-3 top-1/2 h-px bg-[var(--border-active)]" />
                         {events.map((e) => {
                           const meta = EVENT_META[e.type];
                           if (!meta) return null;
-                          const left = 3 + (e.timestampSec / g.durationSec) * 94;
+                          // Clamp to the bar: some recorded events sit past the
+                          // game clock; they must never push the page wider.
+                          const ratio = Math.min(Math.max(e.timestampSec / g.durationSec, 0), 1);
+                          const left = 2 + ratio * 96;
                           return (
                             <button
                               key={e.id}
@@ -266,7 +269,7 @@ export function MacroAtlas() {
                               onClick={() => setSelectedEvent({ id: e.id, gameId: g.gameId, type: e.type, timestampSec: e.timestampSec, teamId: e.teamId, value: e.value })}
                               title={`${meta.label} · ${Math.floor(e.timestampSec / 60)}:${String(e.timestampSec % 60).padStart(2, "0")}`}
                               aria-label={`${meta.label} at ${Math.floor(e.timestampSec / 60)} minutes in ${g.gameId}`}
-                              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-transparent bg-[var(--bg-void)] p-1 transition-transform hover:scale-125"
+                              className="absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-transparent bg-[var(--bg-void)] p-1.5 transition-transform hover:scale-125 focus-visible:scale-125"
                               style={{ left: `${left}%`, color: meta.color }}
                             >
                               <meta.Glyph size={15} />
@@ -274,7 +277,7 @@ export function MacroAtlas() {
                           );
                         })}
                         {[0, 5, 10, 15, 20, 25, 30, 35].filter((m) => m * 60 < g.durationSec).map((m) => (
-                          <span key={m} className="tnum absolute bottom-0 -translate-x-1/2 font-mono text-[8px] text-[var(--text-muted)]" style={{ left: `${3 + ((m * 60) / g.durationSec) * 94}%` }}>
+                          <span key={m} className="tnum absolute bottom-0 -translate-x-1/2 font-mono text-[8px] text-[var(--text-muted)]" style={{ left: `${2 + ((m * 60) / g.durationSec) * 96}%` }}>
                             {m}
                           </span>
                         ))}
@@ -288,7 +291,7 @@ export function MacroAtlas() {
 
           {/* Event detail panel */}
           {selectedEvent && (
-            <Panel title="Event detail" actions={<button type="button" onClick={() => setSelectedEvent(null)} className="text-xs text-[var(--accent-cyan)]">Close</button>}>
+            <Panel title="Event detail" actions={<button type="button" onClick={() => setSelectedEvent(null)} className="min-h-[36px] px-2 text-xs font-medium text-[var(--accent-cyan)] hover:underline">Close</button>}>
               <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
                 {(() => {
                   const meta = EVENT_META[selectedEvent.type];

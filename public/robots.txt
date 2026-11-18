@@ -1,7 +1,14 @@
+# Seriesight — robots.txt
+# Crawlers welcome on the public commercial site; the app workspace is client-rendered
+# on the same origin and carries a fixture-data notice on every screen.
+
 User-agent: Googlebot
 Allow: /
 
 User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
 Allow: /
 
 User-agent: Twitterbot
@@ -10,5 +17,20 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
 User-agent: *
 Allow: /
+
+# Answer engines (AEO): explicitly welcomed
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+Sitemap: https://seriesight.ae/sitemap.xml

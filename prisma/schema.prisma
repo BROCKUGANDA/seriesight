@@ -88,3 +88,20 @@ model DataSourceConnectionRecord {
   metadataJson             String    @default("{}")
   updatedAt                DateTime  @updatedAt
 }
+
+// Commercial layer: trial & demo requests captured from the public site.
+model LeadRecord {
+  id          String   @id @default(uuid())
+  name        String
+  email       String
+  organization String
+  role        String
+  plan        String   @default("coach")
+  message     String?
+  source      String   @default("website-trial")
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([email])
+}
