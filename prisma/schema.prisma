@@ -1,0 +1,90 @@
+// Seriesight persistence (SQLite via Prisma).
+// Analytics are computed deterministically from the fixture dataset module;
+// the database owns mutable workflow state: draft sessions, their audit trail,
+// ingestion jobs and provider connections.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./db/seriesight.db"
+}
+
+model DraftSessionRecord {
+  id                 String   @id @default(uuid())
+  workspaceId        String   @default("ws-demo")
+  ourTeamId          String
+  opponentTeamId     String
+  format             String
+  rulesetId          String
+  mode               String
+  restrictionsScope  String
+  tournamentId       String?
+  patch              String
+  ourSide            String   @default("BLUE")
+  poolJson           String   @default("[]")
+  currentGame        Int      @default(1)
+  status             String   @default("active")
+  stateVersion       Int      @default(1)
+  gamesJson          String   @default("[]")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  actions            DraftActionRecord[]
+
+  @@index([workspaceId, status])
+  @@index([opponentTeamId])
+}
+
+model DraftActionRecord {
+  id                String   @id @default(uuid())
+  sessionId         String
+  gameNumber        Int
+  order             Int
+  type              String
+  side              String
+  championId        String
+  playerId          String?
+  role              String?
+  phase             String
+  actor             String
+  priorStateVersion Int
+  createdAt         DateTime @default(now())
+
+  session           DraftSessionRecord @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, gameNumber, order])
+}
+
+model IngestionJobRecord {
+  id            String    @id @default(uuid())
+  provider      String
+  jobType       String
+  status        String
+  stage         String
+  attempts      Int       @default(0)
+  seriesCount   Int       @default(0)
+  gameCount     Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([status, createdAt])
+}
+
+model DataSourceConnectionRecord {
+  provider                 String    @id
+  status                   String
+  label                    String
+  lastVerifiedAt           DateTime?
+  lastSuccessfulRequestAt  DateTime?
+  lastImportAttemptAt      DateTime?
+  authorizedEndpointsJson  String    @default("[]")
+  rateLimitRemaining       Int?
+  parsedSeriesCount        Int       @default(0)
+  failedImportCount        Int       @default(0)
+  metadataJson             String    @default("{}")
+  updatedAt                DateTime  @updatedAt
+}
