@@ -81,7 +81,11 @@ function runGate(argsForRunner) {
   const cmd = RUNNER === "bun" ? "bun" : "npm";
   const finalArgs = RUNNER === "bun" ? argsForRunner : ["run", ...argsForRunner];
   log(`▸ gate: ${cmd} ${finalArgs.join(" ")}`);
-  run(cmd, finalArgs, { capture: true, throwOnFail: true });
+  try {
+    execFileSync(cmd, finalArgs, { cwd: ROOT, stdio: "inherit" });
+  } catch {
+    throw new Error(`gate failed: ${cmd} ${finalArgs.join(" ")}`);
+  }
 }
 
 function runGates(promotingToMain) {
@@ -220,7 +224,23 @@ function cmdPromote() {
     die("merge conflict — resolve manually, then rerun.");
   }
 
-  // 2. gates on the merged tree; roll back on failure
+  // 2. schema must exist for DB-backed gates (dev checkouts have it gitignored/untracked)
+  try {
+    log("── database ──");
+    log("▸ setup: bun run db:generate");
+    execFileSync(RUNNER, RUNNER === "bun" ? ["run", "db:generate"] : ["run", "db:generate"], { cwd: ROOT, stdio: "inherit" });
+    log("▸ setup: bun run db:push");
+    execFileSync(RUNNER, RUNNER === "bun" ? ["run", "db:push"] : ["run", "db:push"], { cwd: ROOT, stdio: "inherit" });
+  } catch {
+    log("✗ database setup failed — rolling back the merge");
+    if (!DRY) {
+      git(["reset", "--hard", toShaBefore]);
+      git(["checkout", startingBranch]);
+    }
+    process.exit(1);
+  }
+
+  // 3. gates on the merged tree; roll back on failure
   try {
     runGates(to === "main");
   } catch {
