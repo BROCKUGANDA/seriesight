@@ -6,7 +6,7 @@
   "description": "The series, in focus. LoL coaching intelligence and Fearless Draft management platform.",
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "build": "next build && node scripts/postbuild.mjs",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:push": "prisma db push --accept-data-loss",
@@ -17,7 +17,7 @@
     "db:push:pg": "prisma db push --schema prisma/schema.production.prisma --skip-generate",
     "db:migrate:pg": "prisma migrate deploy --schema prisma/schema.production.prisma",
     "db:migrate:init:pg": "prisma migrate dev --schema prisma/schema.production.prisma --name init",
-    "build:prod": "prisma generate --schema prisma/schema.production.prisma && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "build:prod": "prisma generate --schema prisma/schema.production.prisma && next build && node scripts/postbuild.mjs",
     "docker:db": "docker compose up -d db",
     "docker:db:down": "docker compose down",
     "test": "vitest run",
