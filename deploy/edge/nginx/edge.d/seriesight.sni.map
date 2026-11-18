@@ -1,0 +1,2 @@
+# Per-project tables for the shared front door (/home/ubuntu/edge/nginx/edge.d/seriesight.sni.map)
+seriesight.aiazimara.com 127.0.0.1:8453;
