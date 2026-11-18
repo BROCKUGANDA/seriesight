@@ -12,7 +12,13 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dispatch:tick": "node scripts/dispatch-cron-worker.mjs --once",
+    "dispatch:worker": "node scripts/dispatch-cron-worker.mjs",
+    "integration:seed": "node scripts/seed-integration-endpoints.mjs",
+    "connector:crm": "node mini-services/crm-connector/server.mjs",
+    "connector:scrim": "node mini-services/scrim-scheduler/server.mjs",
+    "connector:discord": "node mini-services/discord-alerts/server.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

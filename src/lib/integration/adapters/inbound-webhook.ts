@@ -34,6 +34,9 @@ export const INBOUND_SCHEMAS = {
       tournament: z.string().trim().max(120).optional(),
       playedAt: isoDate.optional(),
       notes: z.string().trim().max(600).optional(),
+      scrimId: z.string().trim().max(80).optional(),
+      ourScore: z.number().int().min(0).max(100).optional(),
+      theirScore: z.number().int().min(0).max(100).optional(),
       externalSystem: z.string().trim().max(80).optional(),
     })
     .strict(),
@@ -44,6 +47,20 @@ export const INBOUND_SCHEMAS = {
       scheduledAt: isoDate,
       format: z.enum(["bo1", "bo3", "bo5"]).default("bo3"),
       notes: z.string().trim().max(600).optional(),
+      scrimId: z.string().trim().max(80).optional(),
+      action: z.enum(["created", "rescheduled", "cancelled"]).optional(),
+      externalSystem: z.string().trim().max(80).optional(),
+    })
+    .strict(),
+  "commercial.lead.captured": z
+    .object({
+      leadId: z.string().trim().max(80).optional(),
+      name: z.string().trim().min(1).max(120),
+      email: z.string().trim().email(),
+      org: z.string().trim().max(120).optional(),
+      source: z.string().trim().max(80).optional(),
+      notes: z.string().trim().max(600).optional(),
+      capturedAt: isoDate.optional(),
       externalSystem: z.string().trim().max(80).optional(),
     })
     .strict(),

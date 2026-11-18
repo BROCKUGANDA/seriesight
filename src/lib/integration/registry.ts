@@ -47,8 +47,8 @@ export const SEAMS: SeamDescriptor[] = [
     kind: "adapter",
     direction: "inbound",
     protocol: "HTTP POST + HMAC-SHA256",
-    topics: ["scrim.result.recorded", "scrim.schedule.updated", "integration.ping"],
-    description: "Receives signed webhooks from tournament platforms, scrim schedulers and academy systems.",
+    topics: ["scrim.result.recorded", "scrim.schedule.updated", "commercial.lead.captured", "integration.ping"],
+    description: "Receives signed webhooks from tournament platforms, scrim schedulers, CRMs and academy systems.",
     availability: "live",
   },
   {

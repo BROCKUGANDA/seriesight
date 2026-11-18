@@ -44,12 +44,51 @@ bus.ts                 outbox publish/dispatch, retries, DLQ, replay
 bootstrap.ts           registers consumers exactly once per process
 hmac.ts                signing, timing-safe verification, secret helpers
 registry.ts            machine-readable seam catalogue (drives the Hub UI)
+scheduler.ts           in-process background dispatch cron (instrumentation)
+connectors.ts          live health probes for the paired connector services
 types.ts               topic catalogue, envelope, backoff
 controllers/           ingestion · draft · commercial
 adapters/              inbound-webhook · rest-polling · file-drop · outbound-webhook
 consumers/index.ts     audit · warehouse · metrics · notifications · evidence
 sinks/                 webhook-sink · warehouse-sink · notification-sink
 ```
+
+Connector mini-services (real external systems, under `mini-services/`):
+
+```
+crm-connector/server.mjs          standalone CRM — POST /leads publishes a signed
+                                  commercial.lead.captured webhook to the Hub; its
+                                  /receiver/crm verifies Hub fan-out signatures
+scrim-scheduler/server.mjs        standalone scrim tool — POST /scrims,
+                                  PATCH /scrims/:id, POST /scrims/:id/result publish
+                                  signed scrim.* webhooks; /receiver/scrim-scheduler
+                                  verifies Hub fan-out signatures
+discord-alerts/server.mjs         standalone staff Discord bot (receive-only) —
+                                  /receiver/discord-alerts verifies signed Hub
+                                  fan-out (scrim.*, draft.session.finalized) and
+                                  formats Discord webhook embeds; posts them to
+                                  DISCORD_WEBHOOK_URL when configured, otherwise
+                                  queues them in a dry-run outbox (GET /messages)
+shared/seriesight-client.mjs      the connector SDK (sign, publish, verify, store)
+```
+
+Run them and pair them once:
+
+```bash
+bun run connector:crm                 # http://127.0.0.1:4001
+bun run connector:scrim               # http://127.0.0.1:4002
+bun run connector:discord             # http://127.0.0.1:4003
+bun run integration:seed              # registers all three receivers as Hub endpoints
+                                      # and writes their one-time signing secrets
+```
+
+The Hub shows all three connectors' live health (probed on every overview refresh)
+as chips above the seam map. A lead created via
+`POST http://127.0.0.1:4001/leads` lands in the Hub event stream, the
+notification feed and the CRM receiver's ledger; a scrim booked via
+`POST http://127.0.0.1:4002/scrims` flows through `scrim.schedule.updated`
+the same way — and the Discord bot turns that booking into a
+"Scrim booked vs <opponent>" embed alert for the staff channel.
 
 ## Topic catalogue
 
@@ -96,6 +135,7 @@ sinks/                 webhook-sink · warehouse-sink · notification-sink
 |---|---|
 | `GET /api/integration/overview` | seam map, bus stats, event stream, endpoints, deliveries, notifications, inbound guide |
 | `POST /api/integration/dispatch` | worker tick — drain due events (schedulers call this) |
+| `GET /api/integration/dispatch` | same tick via GET for cron tools that cannot POST |
 | `GET/POST /api/integration/events` | filterable event log / manual publish (catalogue topics only) |
 | `POST /api/integration/events/[id]/replay` | replay a dead or pending event |
 | `GET/POST /api/integration/endpoints` | list (secrets masked) / register subscriber |
@@ -129,10 +169,33 @@ the ingestion controller publishes the result.
 ## Operational notes
 
 - Rotation: override `SERIESIGHT_INBOUND_SECRET` in the server environment.
-  The Hub hides the secret entirely once a custom value is set.
-- Scheduling: call `POST /api/integration/dispatch` from cron/Kubernetes
-  CronJob for background-style delivery; inline dispatch already covers the
-  interactive paths.
+  The Hub hides the secret entirely once a custom value is set. This
+  deployment has been rotated: `.env` carries a generated 64-hex-char value,
+  so the documented demo secret (`seriesight-demo-secret`) is rejected on the
+  wire and the Hub shows *"A custom secret is configured"*. To rotate again,
+  change the value in `.env` (and the connector processes sharing it) and
+  restart — `hmac.inboundSecretIsDefault()` flips the Hub's guidance text.
+- Scheduling — two interchangeable paths, same outbox:
+  1. **In-process (default, already wired).** `instrumentation.ts` starts
+     `scheduler.ts` at server boot; it calls `dispatchPending()` directly
+     every `SERIESIGHT_DISPATCH_INTERVAL_MS` (15 s default, overlap-guarded,
+     `0` disables). The Hub header chip shows the live tick status.
+  2. **External cron (background-style delivery over HTTP).** Run the
+     standalone worker or a raw cron line:
+
+     ```bash
+     bun run dispatch:worker        # long-running interval worker (60 s default)
+     bun run dispatch:tick          # one tick — pair with crontab/CronJob
+
+     # crontab: every minute
+     * * * * * cd /opt/seriesight && bun run dispatch:tick >> /var/log/seriesight-dispatch.log 2>&1
+
+     # Kubernetes CronJob (every minute)
+     #   command: ["node", "scripts/dispatch-cron-worker.mjs", "--once"]
+     ```
+
+     Or hit the seam directly: `POST /api/integration/dispatch` with body
+     `{"limit":50}` (GET also works for curl-only schedulers).
 - BI loads: `prisma/db/export/integration-warehouse.jsonl` (one JSON object
   per line) loads directly into DuckDB/BigQuery/Snowflake staging tables.
 - The fixture dataset remains the only source of analytics until a real

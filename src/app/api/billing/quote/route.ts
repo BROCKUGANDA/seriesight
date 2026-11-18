@@ -31,5 +31,5 @@ export const POST = handler(async (req: NextRequest) => {
     usdAedPeg: USD_AED_PEG,
     quotes,
     rates: { source: rates.source, fetchedAt: rates.fetchedAt, fallback: rates.fallback },
-  });
+  }, req);
 });

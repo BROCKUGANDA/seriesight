@@ -6,11 +6,13 @@
  * Uses the real SQLite database; all rows created here are cleaned up.
  */
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
-import { signPayload, verifySignature, generateEndpointSecret, maskSecret } from "@/lib/integration/hmac";
+import { signPayload, verifySignature, generateEndpointSecret, maskSecret, inboundSecret } from "@/lib/integration/hmac";
 import { publish, dispatchEvent, registerConsumer, replayEvent, resetBusForTests } from "@/lib/integration/bus";
 import { receiveInboundWebhook, isInboundTopic } from "@/lib/integration/adapters/inbound-webhook";
 import { assertOutboundUrlAllowed } from "@/lib/integration/sinks/webhook-sink";
 import { importFileDrop } from "@/lib/integration/adapters/file-drop";
+import { connectorDescriptors, connectorStatuses } from "@/lib/integration/connectors";
+import { schedulerStatus, startDispatchScheduler } from "@/lib/integration/scheduler";
 import { backoffDelayMs } from "@/lib/integration/types";
 import { db } from "@/lib/db";
 
@@ -125,7 +127,9 @@ describe("Outbox bus semantics", () => {
 });
 
 describe("Inbound webhook adapter", () => {
-  const secret = "seriesight-demo-secret";
+  // Sign with the secret the running deployment actually verifies against —
+  // the documented demo default until SERIESIGHT_INBOUND_SECRET is rotated.
+  const secret = inboundSecret();
   const payload = JSON.stringify({ ourTeamId: "C9", opponentTeamId: "NVX", result: "win", gameNumber: 2 });
 
   it("accepts a signed scrim result and publishes an inbound event", async () => {
@@ -228,5 +232,80 @@ describe("File-drop adapter", () => {
   it("rejects malformed input with typed errors", async () => {
     await expect(importFileDrop("broken.json", "{not json")).rejects.toMatchObject({ code: "WEBHOOK_PAYLOAD_INVALID" });
     await expect(importFileDrop("empty.csv", "only,header\n")).rejects.toMatchObject({ code: "WEBHOOK_PAYLOAD_INVALID" });
+  });
+});
+
+describe("CRM inbound seam (connector contract)", () => {
+  it("accepts a signed commercial.lead.captured webhook from an external CRM", async () => {
+    const secret = inboundSecret();
+    const lead = JSON.stringify({
+      leadId: "lead_test001",
+      name: "Academy Scout",
+      email: "scout@academy.example",
+      org: "MENA Academy",
+      source: "crm:website-form",
+      notes: "Interested after the 14-day trial.",
+      capturedAt: new Date().toISOString(),
+      externalSystem: "crm-connector",
+    });
+    const receipt = await receiveInboundWebhook("commercial.lead.captured", lead, signPayload(secret, lead));
+    createdEventIds.push(receipt.event.id);
+    expect(receipt.verified).toBe(true);
+    expect(receipt.event.direction).toBe("inbound");
+    expect(receipt.event.payload.name).toBe("Academy Scout");
+    expect(receipt.event.payload.signatureVerified).toBe(true);
+  });
+
+  it("rejects lead payloads without a valid email", async () => {
+    const secret = inboundSecret();
+    const bad = JSON.stringify({ name: "No Email", email: "not-an-email" });
+    await expect(receiveInboundWebhook("commercial.lead.captured", bad, signPayload(secret, bad))).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+  });
+});
+
+describe("Connector registry + background dispatch scheduler", () => {
+  it("describes the paired connector services pointed at the Hub", () => {
+    const descriptors = connectorDescriptors();
+    expect(descriptors.map((d) => d.id)).toEqual([
+      "connector:crm",
+      "connector:scrim-scheduler",
+      "connector:discord-alerts",
+    ]);
+    for (const d of descriptors) {
+      expect(d.subscribedTopics.length).toBeGreaterThan(0);
+      expect(d.healthPath).toBe("/health");
+      expect(d.startScript).toMatch(/^connector:/);
+    }
+    expect(descriptors.find((d) => d.kind === "crm")?.ingestTopics).toContain("commercial.lead.captured");
+    expect(descriptors.find((d) => d.kind === "scrim-scheduler")?.ingestTopics).toContain("scrim.result.recorded");
+    const discord = descriptors.find((d) => d.kind === "discord-alerts");
+    expect(discord?.ingestTopics).toEqual([]); // receive-only staff bot
+    expect(discord?.subscribedTopics).toEqual([
+      "scrim.schedule.updated",
+      "scrim.result.recorded",
+      "draft.session.finalized",
+    ]);
+  });
+
+  it("reports scheduler status and stays disabled when the interval is zero", () => {
+    const before = schedulerStatus();
+    expect(before.started).toBe(false);
+    const prev = process.env.SERIESIGHT_DISPATCH_INTERVAL_MS;
+    process.env.SERIESIGHT_DISPATCH_INTERVAL_MS = "0";
+    startDispatchScheduler();
+    expect(schedulerStatus().disabled).toBe(true);
+    startDispatchScheduler(); // idempotent — never double-arms
+    expect(schedulerStatus().disabled).toBe(true);
+    if (prev === undefined) delete process.env.SERIESIGHT_DISPATCH_INTERVAL_MS;
+    else process.env.SERIESIGHT_DISPATCH_INTERVAL_MS = prev;
+  });
+
+  it("probes connector health without throwing when a connector is down", async () => {
+    const statuses = await connectorStatuses();
+    expect(statuses.length).toBe(3);
+    for (const s of statuses) {
+      expect(["up", "down"]).toContain(s.status);
+      expect(s.checkedAt).toBeTruthy();
+    }
   });
 });

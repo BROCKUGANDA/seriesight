@@ -19,5 +19,5 @@ const VerifySchema = z.object({
 export const POST = handler(async (req: NextRequest) => {
   const body = await parseBody(req, VerifySchema);
   const outcome = await verifyIntent(body.paymentId, body.txRef);
-  return ok(outcome);
+  return ok(outcome, req);
 });

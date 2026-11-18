@@ -45,7 +45,12 @@ export const TOPIC_LABELS: Record<IntegrationTopic, string> = {
   "integration.ping": "Connectivity ping",
 };
 
-export const INBOUND_TOPICS = ["scrim.result.recorded", "scrim.schedule.updated", "integration.ping"] as const;
+export const INBOUND_TOPICS = [
+  "scrim.result.recorded",
+  "scrim.schedule.updated",
+  "commercial.lead.captured", // external CRMs (connector mini-service) push leads through the inbound adapter
+  "integration.ping",
+] as const;
 export type InboundTopic = (typeof INBOUND_TOPICS)[number];
 
 export type IntegrationDirection = "internal" | "inbound" | "outbound";

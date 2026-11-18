@@ -10,5 +10,5 @@ export const dynamic = "force-dynamic";
 
 export const GET = handler(async (_req: NextRequest) => {
   const payments = await listPayments();
-  return ok({ payments });
+  return ok({ payments }, _req);
 });

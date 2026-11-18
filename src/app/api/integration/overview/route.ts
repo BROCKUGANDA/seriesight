@@ -14,6 +14,8 @@ import { INBOUND_TOPICS, TOPIC_LABELS, INTEGRATION_TOPICS } from "@/lib/integrat
 import { inboundSecret, inboundSecretIsDefault, SIGNATURE_HEADER, maskSecret } from "@/lib/integration/hmac";
 import { WAREHOUSE_PATHS } from "@/lib/integration/sinks/warehouse-sink";
 import { assertOutboundUrlAllowed } from "@/lib/integration/sinks/webhook-sink";
+import { schedulerStatus } from "@/lib/integration/scheduler";
+import { connectorStatuses } from "@/lib/integration/connectors";
 
 export const dynamic = "force-dynamic";
 
@@ -42,10 +44,12 @@ export const GET = handler(async (req: NextRequest) => {
     {
       seams: SEAMS,
       topics,
+      scheduler: schedulerStatus(),
+      connectors: await connectorStatuses(),
       bus: {
         counts,
         metrics: integrationMetrics(),
-        workerHint: "Dispatch is inline per route call plus the Run dispatch cycle button; retries use exponential backoff and dead-letter after 5 attempts.",
+        workerHint: "Dispatch is inline per route call, the background scheduler tick (see status below) and the Run dispatch cycle button; retries use exponential backoff and dead-letter after 5 attempts.",
       },
       events: recent.map((row) => ({
         id: row.id,

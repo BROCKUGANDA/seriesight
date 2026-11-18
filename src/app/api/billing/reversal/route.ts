@@ -13,5 +13,5 @@ export const dynamic = "force-dynamic";
 export const POST = handler(async (req: NextRequest) => {
   const body = await parseBody(req, BillingSchemas.ReversalSchema);
   const outcome = await reversePayment(body);
-  return ok(outcome);
+  return ok(outcome, req);
 });

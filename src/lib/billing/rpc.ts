@@ -99,7 +99,7 @@ export async function ethereumTreasuryBalance(): Promise<{ ok: boolean; eth: num
       params: [TREASURY.ethereum.address, "latest"],
     });
     const wei = BigInt(r.result ?? "0x0");
-    return { ok: true, eth: Number(wei / 10n ** 14n) / 1e4 };
+    return { ok: true, eth: Number(wei / BigInt(10) ** BigInt(14)) / 1e4 };
   } catch (err) {
     return { ok: false, eth: null, error: err instanceof Error ? err.message : "ethereum rpc failed" };
   }

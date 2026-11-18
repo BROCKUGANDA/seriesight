@@ -14,5 +14,5 @@ export const POST = handler(async (req: NextRequest) => {
   const body = await parseBody(req, BillingSchemas.IntentSchema);
   const rates = await fetchSpotRates();
   const payment = await createIntent(body.token, body.planId, body.period, rates);
-  return ok({ payment });
+  return ok({ payment }, req);
 });

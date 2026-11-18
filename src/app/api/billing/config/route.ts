@@ -23,7 +23,7 @@ export const GET = handler(async (_req: NextRequest) => {
     rates: { usdPer: { ETH: rates.ETH, SOL: rates.SOL, "USDC-ETH": rates["USDC-ETH"], "USDC-SOL": rates["USDC-SOL"] }, fetchedAt: rates.fetchedAt, source: rates.source, fallback: rates.fallback },
     quoteTtlMinutes: QUOTE_TTL_MINUTES,
     usdAedPeg: USD_AED_PEG,
-  });
+  }, _req);
 });
 
 export type BillingConfig = {

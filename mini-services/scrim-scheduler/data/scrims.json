@@ -1,0 +1,687 @@
+{
+  "scrims": [
+    {
+      "id": "scrim_3d000a0b",
+      "opponentTeamId": "NVX",
+      "ourTeamId": "C9",
+      "scheduledFor": "2026-11-19T16:27:43.111Z",
+      "bestOf": 3,
+      "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+      "status": "completed",
+      "createdAt": "2026-11-18T16:27:43.114Z",
+      "results": [
+        {
+          "result": "win",
+          "gameNumber": 1,
+          "patch": "14.9",
+          "ourScore": 1,
+          "theirScore": 0,
+          "notes": "",
+          "recordedAt": "2026-11-18T16:27:43.130Z"
+        }
+      ]
+    },
+    {
+      "id": "scrim_370f236f",
+      "opponentTeamId": "NVX",
+      "ourTeamId": "C9",
+      "scheduledFor": "2026-11-19T16:16:18.527Z",
+      "bestOf": 3,
+      "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+      "status": "completed",
+      "createdAt": "2026-11-18T16:16:18.529Z",
+      "results": [
+        {
+          "result": "win",
+          "gameNumber": 1,
+          "patch": "14.9",
+          "ourScore": 1,
+          "theirScore": 0,
+          "notes": "",
+          "recordedAt": "2026-11-18T16:16:18.607Z"
+        }
+      ]
+    },
+    {
+      "id": "scrim_e2706a0c",
+      "opponentTeamId": "NVX",
+      "ourTeamId": "C9",
+      "scheduledFor": "2026-11-19T16:06:41.327Z",
+      "bestOf": 3,
+      "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+      "status": "completed",
+      "createdAt": "2026-11-18T16:06:41.331Z",
+      "results": [
+        {
+          "result": "win",
+          "gameNumber": 1,
+          "patch": "14.9",
+          "ourScore": 1,
+          "theirScore": 0,
+          "notes": "",
+          "recordedAt": "2026-11-18T16:06:41.356Z"
+        }
+      ]
+    },
+    {
+      "id": "scrim_0c5df177",
+      "opponentTeamId": "NVX",
+      "ourTeamId": "C9",
+      "scheduledFor": "2026-11-19T16:03:23.149Z",
+      "bestOf": 3,
+      "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+      "status": "completed",
+      "createdAt": "2026-11-18T16:03:23.181Z",
+      "results": [
+        {
+          "result": "win",
+          "gameNumber": 1,
+          "patch": "14.9",
+          "ourScore": 1,
+          "theirScore": 0,
+          "notes": "",
+          "recordedAt": "2026-11-18T16:03:23.225Z"
+        }
+      ]
+    },
+    {
+      "id": "scrim_f976ee12",
+      "opponentTeamId": "NVX",
+      "ourTeamId": "C9",
+      "scheduledFor": "2026-11-19T16:03:02.196Z",
+      "bestOf": 3,
+      "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+      "status": "completed",
+      "createdAt": "2026-11-18T16:03:02.199Z",
+      "results": [
+        {
+          "result": "win",
+          "gameNumber": 1,
+          "patch": "14.9",
+          "ourScore": 1,
+          "theirScore": 0,
+          "notes": "",
+          "recordedAt": "2026-11-18T16:03:02.217Z"
+        }
+      ]
+    },
+    {
+      "id": "scrim_4e3bf204",
+      "opponentTeamId": "NVX",
+      "ourTeamId": "C9",
+      "scheduledFor": "2026-11-19T16:02:37.345Z",
+      "bestOf": 3,
+      "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+      "status": "completed",
+      "createdAt": "2026-11-18T16:02:37.351Z",
+      "results": [
+        {
+          "result": "win",
+          "gameNumber": 1,
+          "patch": "14.9",
+          "ourScore": 1,
+          "theirScore": 0,
+          "notes": "",
+          "recordedAt": "2026-11-18T16:02:37.419Z"
+        }
+      ]
+    },
+    {
+      "id": "scrim_c9b89d8d",
+      "opponentTeamId": "NVX",
+      "ourTeamId": "C9",
+      "scheduledFor": "2026-11-19T16:00:13.188Z",
+      "bestOf": 3,
+      "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+      "status": "completed",
+      "createdAt": "2026-11-18T16:00:13.193Z",
+      "results": [
+        {
+          "result": "win",
+          "gameNumber": 1,
+          "patch": "14.9",
+          "ourScore": 1,
+          "theirScore": 0,
+          "recordedAt": "2026-11-18T16:00:13.248Z"
+        }
+      ]
+    }
+  ],
+  "webhookLog": [
+    {
+      "id": "4569210c-e5e3-4151-ba7f-901bfde36ae3",
+      "at": "2026-11-18T16:27:43.144Z",
+      "topic": "scrim.result.recorded",
+      "scrimId": "scrim_3d000a0b",
+      "ok": true,
+      "status": 200,
+      "eventId": "7d145405-a232-4ba0-a688-7dd14b95d238",
+      "verified": true
+    },
+    {
+      "id": "c6ee4359-b8d6-4a04-80fd-2abf7e834504",
+      "at": "2026-11-18T16:27:43.128Z",
+      "topic": "scrim.schedule.updated",
+      "scrimId": "scrim_3d000a0b",
+      "ok": true,
+      "status": 200,
+      "eventId": "aa256027-5f52-4e15-97e7-565980a7ef3c",
+      "verified": true
+    },
+    {
+      "id": "16966a9d-e19c-4e28-b6d1-311885e37a35",
+      "at": "2026-11-18T16:16:18.642Z",
+      "topic": "scrim.result.recorded",
+      "scrimId": "scrim_370f236f",
+      "ok": true,
+      "status": 200,
+      "eventId": "87570e37-9837-470b-83cd-d934a143316e",
+      "verified": true
+    },
+    {
+      "id": "6f97a4ce-7190-44ad-9391-8d710cf7508f",
+      "at": "2026-11-18T16:16:18.603Z",
+      "topic": "scrim.schedule.updated",
+      "scrimId": "scrim_370f236f",
+      "ok": true,
+      "status": 200,
+      "eventId": "53b176df-dbea-47a3-9c6a-0adf66e1127b",
+      "verified": true
+    },
+    {
+      "id": "b7aed3f9-c368-4813-9883-d7e0895e0064",
+      "at": "2026-11-18T16:06:41.448Z",
+      "topic": "scrim.result.recorded",
+      "scrimId": "scrim_e2706a0c",
+      "ok": true,
+      "status": 200,
+      "eventId": "5c4efc6e-cfe4-41a9-8eb0-2be09a5da3df",
+      "verified": true
+    },
+    {
+      "id": "9efaba74-1a64-450f-8b56-507d64f0c238",
+      "at": "2026-11-18T16:06:41.353Z",
+      "topic": "scrim.schedule.updated",
+      "scrimId": "scrim_e2706a0c",
+      "ok": true,
+      "status": 200,
+      "eventId": "916e1c6b-7f68-4c90-8060-5a48fe40f726",
+      "verified": true
+    },
+    {
+      "id": "9d8e07d6-c1db-46db-9ac5-8e09131e7e20",
+      "at": "2026-11-18T16:03:23.317Z",
+      "topic": "scrim.result.recorded",
+      "scrimId": "scrim_0c5df177",
+      "ok": true,
+      "status": 200,
+      "eventId": "d41b546b-e9fa-4842-b45d-43478e82cc58",
+      "verified": true
+    },
+    {
+      "id": "2c078f31-bcaa-4da6-8dd9-4bb86de3b6b2",
+      "at": "2026-11-18T16:03:23.222Z",
+      "topic": "scrim.schedule.updated",
+      "scrimId": "scrim_0c5df177",
+      "ok": true,
+      "status": 200,
+      "eventId": "a52c6a21-bd2a-43fe-881d-674bedb47b8a",
+      "verified": true
+    },
+    {
+      "id": "4eefb727-8295-41ab-be56-4c0371e1da65",
+      "at": "2026-11-18T16:03:02.230Z",
+      "topic": "scrim.result.recorded",
+      "scrimId": "scrim_f976ee12",
+      "ok": true,
+      "status": 200,
+      "eventId": "65a8b91e-46d9-4521-b33e-bf21b39fd37b",
+      "verified": true
+    },
+    {
+      "id": "6c63b868-b6fa-4004-a1f8-1ef31c0c5958",
+      "at": "2026-11-18T16:03:02.214Z",
+      "topic": "scrim.schedule.updated",
+      "scrimId": "scrim_f976ee12",
+      "ok": true,
+      "status": 200,
+      "eventId": "1935e475-ffd2-4106-a907-8cce70967369",
+      "verified": true
+    },
+    {
+      "id": "9d6014f2-75ba-48fd-96c6-dc6a750b5ce7",
+      "at": "2026-11-18T16:02:37.435Z",
+      "topic": "scrim.result.recorded",
+      "scrimId": "scrim_4e3bf204",
+      "ok": true,
+      "status": 200,
+      "eventId": "3085b4f3-9a15-4b95-bb7b-6ae54fe03349",
+      "verified": true
+    },
+    {
+      "id": "b378d3bb-5cba-4b1d-9d14-653327433306",
+      "at": "2026-11-18T16:02:37.416Z",
+      "topic": "scrim.schedule.updated",
+      "scrimId": "scrim_4e3bf204",
+      "ok": true,
+      "status": 200,
+      "eventId": "56f25745-d0ff-4d98-87d5-f6ab2aeb1619",
+      "verified": true
+    },
+    {
+      "id": "fb4d4261-fda1-4ecf-836b-51a6c2d263ac",
+      "at": "2026-11-18T16:00:13.288Z",
+      "topic": "scrim.result.recorded",
+      "scrimId": "scrim_c9b89d8d",
+      "ok": false,
+      "status": 400,
+      "eventId": null,
+      "verified": false,
+      "error": "VALIDATION_ERROR: Webhook payload failed schema validation for \"scrim.result.recorded\"."
+    },
+    {
+      "id": "bbad2171-e8eb-45c4-9e4d-b56e79b9d88b",
+      "at": "2026-11-18T16:00:13.241Z",
+      "topic": "scrim.schedule.updated",
+      "scrimId": "scrim_c9b89d8d",
+      "ok": false,
+      "status": 400,
+      "eventId": null,
+      "verified": false,
+      "error": "VALIDATION_ERROR: Webhook payload failed schema validation for \"scrim.schedule.updated\"."
+    }
+  ],
+  "rejected": [],
+  "deliveries": [
+    {
+      "id": "b4b04c92-6384-4cd1-a0ec-68c9bd796aa2",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "72d38a7d-d976-49ec-88c8-aeb1d34f9da5",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:28:03.711Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "TL",
+        "scheduledAt": "2026-11-18T16:28:03.710Z",
+        "format": "bo3",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:28:03.711Z",
+        "signatureVerified": true,
+        "__originEventId": "72d38a7d-d976-49ec-88c8-aeb1d34f9da5"
+      },
+      "receivedAt": "2026-11-18T16:28:03.796Z"
+    },
+    {
+      "id": "447e0e74-4000-43de-9b7c-1c593342ca2b",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "b9824880-9ac1-47d8-b1e0-26fae30ffbc9",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:28:03.701Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 2,
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:28:03.700Z",
+        "signatureVerified": true,
+        "__originEventId": "b9824880-9ac1-47d8-b1e0-26fae30ffbc9"
+      },
+      "receivedAt": "2026-11-18T16:28:03.787Z"
+    },
+    {
+      "id": "c82339c0-66a7-4d92-91c8-0d4f047a2f49",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "7d145405-a232-4ba0-a688-7dd14b95d238",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:27:43.138Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 1,
+        "patch": "14.9",
+        "tournament": "Scrim vs NVX",
+        "playedAt": "2026-11-18T16:27:43.130Z",
+        "scrimId": "scrim_3d000a0b",
+        "ourScore": 1,
+        "theirScore": 0,
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:27:43.138Z",
+        "signatureVerified": true,
+        "__originEventId": "7d145405-a232-4ba0-a688-7dd14b95d238"
+      },
+      "receivedAt": "2026-11-18T16:27:43.174Z"
+    },
+    {
+      "id": "f0cba68e-9287-4b6e-bdbf-d3e55a533048",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "aa256027-5f52-4e15-97e7-565980a7ef3c",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:27:43.122Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "scheduledAt": "2026-11-19T16:27:43.111Z",
+        "format": "bo3",
+        "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+        "scrimId": "scrim_3d000a0b",
+        "action": "created",
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:27:43.121Z",
+        "signatureVerified": true,
+        "__originEventId": "aa256027-5f52-4e15-97e7-565980a7ef3c"
+      },
+      "receivedAt": "2026-11-18T16:27:43.160Z"
+    },
+    {
+      "id": "3d3b4ada-de59-471b-a6ab-c0c4b6772da4",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "a64b6d5e-43d3-432c-b861-2c2c05b86f9e",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:16:41.350Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "TL",
+        "scheduledAt": "2026-11-18T16:16:41.349Z",
+        "format": "bo3",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:16:41.350Z",
+        "signatureVerified": true,
+        "__originEventId": "a64b6d5e-43d3-432c-b861-2c2c05b86f9e"
+      },
+      "receivedAt": "2026-11-18T16:16:41.412Z"
+    },
+    {
+      "id": "268c72ee-45ed-4bb1-a480-6cb96f593bac",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "dfcc726f-8858-4456-8d4d-0fba6781d828",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:16:41.344Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 2,
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:16:41.343Z",
+        "signatureVerified": true,
+        "__originEventId": "dfcc726f-8858-4456-8d4d-0fba6781d828"
+      },
+      "receivedAt": "2026-11-18T16:16:41.406Z"
+    },
+    {
+      "id": "5fde5ef3-96ef-49ef-be65-d86862d1d888",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "87570e37-9837-470b-83cd-d934a143316e",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:16:18.626Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 1,
+        "patch": "14.9",
+        "tournament": "Scrim vs NVX",
+        "playedAt": "2026-11-18T16:16:18.607Z",
+        "scrimId": "scrim_370f236f",
+        "ourScore": 1,
+        "theirScore": 0,
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:16:18.625Z",
+        "signatureVerified": true,
+        "__originEventId": "87570e37-9837-470b-83cd-d934a143316e"
+      },
+      "receivedAt": "2026-11-18T16:16:18.690Z"
+    },
+    {
+      "id": "096ba0fc-e3a5-4e86-8c92-4feafdaf75ce",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "53b176df-dbea-47a3-9c6a-0adf66e1127b",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:16:18.586Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "scheduledAt": "2026-11-19T16:16:18.527Z",
+        "format": "bo3",
+        "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+        "scrimId": "scrim_370f236f",
+        "action": "created",
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:16:18.584Z",
+        "signatureVerified": true,
+        "__originEventId": "53b176df-dbea-47a3-9c6a-0adf66e1127b"
+      },
+      "receivedAt": "2026-11-18T16:16:18.633Z"
+    },
+    {
+      "id": "21c46d83-b22d-4417-ac0b-0a1a592d5055",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "5c4efc6e-cfe4-41a9-8eb0-2be09a5da3df",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:06:41.432Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 1,
+        "patch": "14.9",
+        "tournament": "Scrim vs NVX",
+        "playedAt": "2026-11-18T16:06:41.356Z",
+        "scrimId": "scrim_e2706a0c",
+        "ourScore": 1,
+        "theirScore": 0,
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:06:41.431Z",
+        "signatureVerified": true,
+        "__originEventId": "5c4efc6e-cfe4-41a9-8eb0-2be09a5da3df"
+      },
+      "receivedAt": "2026-11-18T16:06:41.493Z"
+    },
+    {
+      "id": "75b27c4b-f3ca-41f2-9b7a-f9a858c4c096",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "916e1c6b-7f68-4c90-8060-5a48fe40f726",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:06:41.345Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "scheduledAt": "2026-11-19T16:06:41.327Z",
+        "format": "bo3",
+        "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+        "scrimId": "scrim_e2706a0c",
+        "action": "created",
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:06:41.344Z",
+        "signatureVerified": true,
+        "__originEventId": "916e1c6b-7f68-4c90-8060-5a48fe40f726"
+      },
+      "receivedAt": "2026-11-18T16:06:41.396Z"
+    },
+    {
+      "id": "8306c7fc-29fd-4664-961b-8b97de535f0f",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "08c9a1ad-e673-4b8c-bce1-111a256d3986",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:06:22.755Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "TL",
+        "scheduledAt": "2026-11-18T16:06:22.754Z",
+        "format": "bo3",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:06:22.755Z",
+        "signatureVerified": true,
+        "__originEventId": "08c9a1ad-e673-4b8c-bce1-111a256d3986"
+      },
+      "receivedAt": "2026-11-18T16:06:22.844Z"
+    },
+    {
+      "id": "9746e90d-bab2-455b-a419-5d9d45e6da5c",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "03f7d26c-fd1a-467f-b924-41ecc93cc8d4",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:06:22.748Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 2,
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:06:22.748Z",
+        "signatureVerified": true,
+        "__originEventId": "03f7d26c-fd1a-467f-b924-41ecc93cc8d4"
+      },
+      "receivedAt": "2026-11-18T16:06:22.830Z"
+    },
+    {
+      "id": "0d652fcd-a09c-4de0-b35e-a552d45ddcde",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "d41b546b-e9fa-4842-b45d-43478e82cc58",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:03:23.251Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 1,
+        "patch": "14.9",
+        "tournament": "Scrim vs NVX",
+        "playedAt": "2026-11-18T16:03:23.225Z",
+        "scrimId": "scrim_0c5df177",
+        "ourScore": 1,
+        "theirScore": 0,
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:03:23.250Z",
+        "signatureVerified": true,
+        "__originEventId": "d41b546b-e9fa-4842-b45d-43478e82cc58"
+      },
+      "receivedAt": "2026-11-18T16:03:23.342Z"
+    },
+    {
+      "id": "75841b9a-7d89-4fb8-b708-2ada9781f5e9",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "a52c6a21-bd2a-43fe-881d-674bedb47b8a",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:03:23.194Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "scheduledAt": "2026-11-19T16:03:23.149Z",
+        "format": "bo3",
+        "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+        "scrimId": "scrim_0c5df177",
+        "action": "created",
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:03:23.193Z",
+        "signatureVerified": true,
+        "__originEventId": "a52c6a21-bd2a-43fe-881d-674bedb47b8a"
+      },
+      "receivedAt": "2026-11-18T16:03:23.291Z"
+    },
+    {
+      "id": "903c44ae-d5c3-40ba-862d-df1950624704",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "65a8b91e-46d9-4521-b33e-bf21b39fd37b",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:03:02.224Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 1,
+        "patch": "14.9",
+        "tournament": "Scrim vs NVX",
+        "playedAt": "2026-11-18T16:03:02.217Z",
+        "scrimId": "scrim_f976ee12",
+        "ourScore": 1,
+        "theirScore": 0,
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:03:02.223Z",
+        "signatureVerified": true,
+        "__originEventId": "65a8b91e-46d9-4521-b33e-bf21b39fd37b"
+      },
+      "receivedAt": "2026-11-18T16:03:02.256Z"
+    },
+    {
+      "id": "144962ee-4a16-4f7c-a7c9-52fdac9844de",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "1935e475-ffd2-4106-a907-8cce70967369",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:03:02.208Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "scheduledAt": "2026-11-19T16:03:02.196Z",
+        "format": "bo3",
+        "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+        "scrimId": "scrim_f976ee12",
+        "action": "created",
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:03:02.207Z",
+        "signatureVerified": true,
+        "__originEventId": "1935e475-ffd2-4106-a907-8cce70967369"
+      },
+      "receivedAt": "2026-11-18T16:03:02.246Z"
+    },
+    {
+      "id": "3a73dcb4-4e17-4018-ba4b-6c3c83ce6167",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "3085b4f3-9a15-4b95-bb7b-6ae54fe03349",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:02:37.428Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 1,
+        "patch": "14.9",
+        "tournament": "Scrim vs NVX",
+        "playedAt": "2026-11-18T16:02:37.419Z",
+        "scrimId": "scrim_4e3bf204",
+        "ourScore": 1,
+        "theirScore": 0,
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:02:37.427Z",
+        "signatureVerified": true,
+        "__originEventId": "3085b4f3-9a15-4b95-bb7b-6ae54fe03349"
+      },
+      "receivedAt": "2026-11-18T16:02:37.494Z"
+    },
+    {
+      "id": "311683f3-cc70-449a-89fa-6910e6b86448",
+      "endpointId": "4a8eecb7-33ad-4ceb-b742-8f8393dc3d0f",
+      "eventId": "56f25745-d0ff-4d98-87d5-f6ab2aeb1619",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:02:37.400Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "scheduledAt": "2026-11-19T16:02:37.345Z",
+        "format": "bo3",
+        "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+        "scrimId": "scrim_4e3bf204",
+        "action": "created",
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:02:37.399Z",
+        "signatureVerified": true,
+        "__originEventId": "56f25745-d0ff-4d98-87d5-f6ab2aeb1619"
+      },
+      "receivedAt": "2026-11-18T16:02:37.443Z"
+    }
+  ]
+}

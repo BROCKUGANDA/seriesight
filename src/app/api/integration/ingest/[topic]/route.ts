@@ -9,7 +9,7 @@
  * Headers:
  *   x-seriesight-signature: sha256=<hex digest of the raw body with the shared secret>
  *
- * Supported topics: scrim.result.recorded · scrim.schedule.updated · integration.ping
+ * Supported topics: scrim.result.recorded · scrim.schedule.updated · commercial.lead.captured · integration.ping
  */
 import { NextRequest } from "next/server";
 import { ok, handler } from "@/lib/api/respond";

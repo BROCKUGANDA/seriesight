@@ -1,0 +1,282 @@
+{
+  "leads": [
+    {
+      "id": "lead_44c0d7a6",
+      "name": "Academy Scout — MENA",
+      "email": "scout@mena-academy.example",
+      "org": "MENA Academy",
+      "source": "website-form",
+      "notes": "Interested in team plan after 14-day trial.",
+      "stage": "new",
+      "capturedAt": "2026-11-18T16:27:42.824Z"
+    },
+    {
+      "id": "lead_ca917e1f",
+      "name": "Academy Scout — MENA",
+      "email": "scout@mena-academy.example",
+      "org": "MENA Academy",
+      "source": "website-form",
+      "notes": "Interested in team plan after 14-day trial.",
+      "stage": "new",
+      "capturedAt": "2026-11-18T16:16:18.300Z"
+    },
+    {
+      "id": "lead_ec73ff00",
+      "name": "Academy Scout — MENA",
+      "email": "scout@mena-academy.example",
+      "org": "MENA Academy",
+      "source": "website-form",
+      "notes": "Interested in team plan after 14-day trial.",
+      "stage": "new",
+      "capturedAt": "2026-11-18T16:06:41.204Z"
+    },
+    {
+      "id": "lead_eed9b75d",
+      "name": "Academy Scout — MENA",
+      "email": "scout@mena-academy.example",
+      "org": "MENA Academy",
+      "source": "website-form",
+      "notes": "Interested in team plan after 14-day trial.",
+      "stage": "new",
+      "capturedAt": "2026-11-18T16:03:22.945Z"
+    },
+    {
+      "id": "lead_a607b4e5",
+      "name": "Academy Scout — MENA",
+      "email": "scout@mena-academy.example",
+      "org": "MENA Academy",
+      "source": "website-form",
+      "notes": "Interested in team plan after 14-day trial.",
+      "stage": "new",
+      "capturedAt": "2026-11-18T16:03:01.855Z"
+    },
+    {
+      "id": "lead_291a38bc",
+      "name": "Academy Scout — MENA",
+      "email": "scout@mena-academy.example",
+      "org": "MENA Academy",
+      "source": "website-form",
+      "notes": "Interested in team plan after 14-day trial.",
+      "stage": "new",
+      "capturedAt": "2026-11-18T16:02:37.124Z"
+    },
+    {
+      "id": "lead_46c5a9f9",
+      "name": "Academy Scout — MENA",
+      "email": "scout@mena-academy.example",
+      "org": "MENA Academy",
+      "source": "website-form",
+      "notes": "Interested in team plan after 14-day trial.",
+      "stage": "new",
+      "capturedAt": "2026-11-18T16:00:12.833Z"
+    }
+  ],
+  "webhookLog": [
+    {
+      "id": "3e912706-24ca-47b4-89ec-c997fa8b16a0",
+      "at": "2026-11-18T16:27:42.944Z",
+      "topic": "commercial.lead.captured",
+      "leadId": "lead_44c0d7a6",
+      "ok": true,
+      "status": 200,
+      "eventId": "c21b48dd-f5d1-4a34-8842-e01edafc4f10",
+      "verified": true
+    },
+    {
+      "id": "01f330aa-eef2-434d-9f0c-09eb30107f07",
+      "at": "2026-11-18T16:16:18.401Z",
+      "topic": "commercial.lead.captured",
+      "leadId": "lead_ca917e1f",
+      "ok": true,
+      "status": 200,
+      "eventId": "3fc22ada-e052-4908-a604-80d19a0183fc",
+      "verified": true
+    },
+    {
+      "id": "45a999fc-bb50-457d-975f-05a7b3077cd0",
+      "at": "2026-11-18T16:06:41.250Z",
+      "topic": "commercial.lead.captured",
+      "leadId": "lead_ec73ff00",
+      "ok": true,
+      "status": 200,
+      "eventId": "73c3fe51-c667-4d81-9bf1-12979efe1560",
+      "verified": true
+    },
+    {
+      "id": "e9efdded-8a8a-48cd-b711-6eae43401cf1",
+      "at": "2026-11-18T16:03:23.014Z",
+      "topic": "commercial.lead.captured",
+      "leadId": "lead_eed9b75d",
+      "ok": true,
+      "status": 200,
+      "eventId": "d8a48b61-10b3-410f-afde-8bd440ab40bf",
+      "verified": true
+    },
+    {
+      "id": "2dd7e52b-56fa-4f11-8696-d59ba415687d",
+      "at": "2026-11-18T16:03:02.004Z",
+      "topic": "commercial.lead.captured",
+      "leadId": "lead_a607b4e5",
+      "ok": true,
+      "status": 200,
+      "eventId": "c5937636-0097-4e8f-9b6a-e3fc2958915d",
+      "verified": true
+    },
+    {
+      "id": "a2d76b86-935d-4f14-9eb5-e1b62196e83e",
+      "at": "2026-11-18T16:02:37.198Z",
+      "topic": "commercial.lead.captured",
+      "leadId": "lead_291a38bc",
+      "ok": true,
+      "status": 200,
+      "eventId": "219d3da3-b175-4c6c-9731-998a88ea546e",
+      "verified": true
+    },
+    {
+      "id": "6de26651-333f-4dcb-ad4a-8208305d3117",
+      "at": "2026-11-18T16:00:12.887Z",
+      "topic": "commercial.lead.captured",
+      "leadId": "lead_46c5a9f9",
+      "ok": false,
+      "status": 404,
+      "eventId": null,
+      "verified": false,
+      "error": "WEBHOOK_TOPIC_UNSUPPORTED: Inbound webhook topic \"commercial.lead.captured\" is not supported."
+    }
+  ],
+  "rejected": [],
+  "deliveries": [
+    {
+      "id": "4e25cbb0-98ae-4c7d-a335-0c413c0bd010",
+      "endpointId": "c3521759-1781-49e4-926e-373d7d8c7431",
+      "eventId": "c21b48dd-f5d1-4a34-8842-e01edafc4f10",
+      "topic": "commercial.lead.captured",
+      "occurredAt": "2026-11-18T16:27:42.892Z",
+      "payload": {
+        "leadId": "lead_44c0d7a6",
+        "name": "Academy Scout — MENA",
+        "email": "scout@mena-academy.example",
+        "org": "MENA Academy",
+        "source": "crm:website-form",
+        "notes": "Interested in team plan after 14-day trial.",
+        "capturedAt": "2026-11-18T16:27:42.824Z",
+        "externalSystem": "crm-connector",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:27:42.885Z",
+        "signatureVerified": true,
+        "__originEventId": "c21b48dd-f5d1-4a34-8842-e01edafc4f10"
+      },
+      "receivedAt": "2026-11-18T16:27:42.989Z"
+    },
+    {
+      "id": "c9fa076d-3600-4604-8e01-6fbdf21f090a",
+      "endpointId": "c3521759-1781-49e4-926e-373d7d8c7431",
+      "eventId": "3fc22ada-e052-4908-a604-80d19a0183fc",
+      "topic": "commercial.lead.captured",
+      "occurredAt": "2026-11-18T16:16:18.323Z",
+      "payload": {
+        "leadId": "lead_ca917e1f",
+        "name": "Academy Scout — MENA",
+        "email": "scout@mena-academy.example",
+        "org": "MENA Academy",
+        "source": "crm:website-form",
+        "notes": "Interested in team plan after 14-day trial.",
+        "capturedAt": "2026-11-18T16:16:18.300Z",
+        "externalSystem": "crm-connector",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:16:18.319Z",
+        "signatureVerified": true,
+        "__originEventId": "3fc22ada-e052-4908-a604-80d19a0183fc"
+      },
+      "receivedAt": "2026-11-18T16:16:18.537Z"
+    },
+    {
+      "id": "706cd766-cfdc-489f-b6d4-4060015ba9c6",
+      "endpointId": "c3521759-1781-49e4-926e-373d7d8c7431",
+      "eventId": "73c3fe51-c667-4d81-9bf1-12979efe1560",
+      "topic": "commercial.lead.captured",
+      "occurredAt": "2026-11-18T16:06:41.233Z",
+      "payload": {
+        "leadId": "lead_ec73ff00",
+        "name": "Academy Scout — MENA",
+        "email": "scout@mena-academy.example",
+        "org": "MENA Academy",
+        "source": "crm:website-form",
+        "notes": "Interested in team plan after 14-day trial.",
+        "capturedAt": "2026-11-18T16:06:41.204Z",
+        "externalSystem": "crm-connector",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:06:41.232Z",
+        "signatureVerified": true,
+        "__originEventId": "73c3fe51-c667-4d81-9bf1-12979efe1560"
+      },
+      "receivedAt": "2026-11-18T16:06:41.311Z"
+    },
+    {
+      "id": "27cf488b-8260-48c2-8ba8-f3d763e39e77",
+      "endpointId": "c3521759-1781-49e4-926e-373d7d8c7431",
+      "eventId": "d8a48b61-10b3-410f-afde-8bd440ab40bf",
+      "topic": "commercial.lead.captured",
+      "occurredAt": "2026-11-18T16:03:22.996Z",
+      "payload": {
+        "leadId": "lead_eed9b75d",
+        "name": "Academy Scout — MENA",
+        "email": "scout@mena-academy.example",
+        "org": "MENA Academy",
+        "source": "crm:website-form",
+        "notes": "Interested in team plan after 14-day trial.",
+        "capturedAt": "2026-11-18T16:03:22.945Z",
+        "externalSystem": "crm-connector",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:03:22.995Z",
+        "signatureVerified": true,
+        "__originEventId": "d8a48b61-10b3-410f-afde-8bd440ab40bf"
+      },
+      "receivedAt": "2026-11-18T16:03:23.131Z"
+    },
+    {
+      "id": "f8ad1a92-6f2a-41a1-812c-f7ab67bd056f",
+      "endpointId": "c3521759-1781-49e4-926e-373d7d8c7431",
+      "eventId": "c5937636-0097-4e8f-9b6a-e3fc2958915d",
+      "topic": "commercial.lead.captured",
+      "occurredAt": "2026-11-18T16:03:01.936Z",
+      "payload": {
+        "leadId": "lead_a607b4e5",
+        "name": "Academy Scout — MENA",
+        "email": "scout@mena-academy.example",
+        "org": "MENA Academy",
+        "source": "crm:website-form",
+        "notes": "Interested in team plan after 14-day trial.",
+        "capturedAt": "2026-11-18T16:03:01.855Z",
+        "externalSystem": "crm-connector",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:03:01.935Z",
+        "signatureVerified": true,
+        "__originEventId": "c5937636-0097-4e8f-9b6a-e3fc2958915d"
+      },
+      "receivedAt": "2026-11-18T16:03:02.093Z"
+    },
+    {
+      "id": "defcfecf-60bb-4393-a4b1-7377d045bb68",
+      "endpointId": "c3521759-1781-49e4-926e-373d7d8c7431",
+      "eventId": "219d3da3-b175-4c6c-9731-998a88ea546e",
+      "topic": "commercial.lead.captured",
+      "occurredAt": "2026-11-18T16:02:37.142Z",
+      "payload": {
+        "leadId": "lead_291a38bc",
+        "name": "Academy Scout — MENA",
+        "email": "scout@mena-academy.example",
+        "org": "MENA Academy",
+        "source": "crm:website-form",
+        "notes": "Interested in team plan after 14-day trial.",
+        "capturedAt": "2026-11-18T16:02:37.124Z",
+        "externalSystem": "crm-connector",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:02:37.141Z",
+        "signatureVerified": true,
+        "__originEventId": "219d3da3-b175-4c6c-9731-998a88ea546e"
+      },
+      "receivedAt": "2026-11-18T16:02:37.331Z"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "messages": [
+    {
+      "id": "msg_df23b62c",
+      "at": "2026-11-18T16:27:43.187Z",
+      "topic": "scrim.result.recorded",
+      "eventId": "7d145405-a232-4ba0-a688-7dd14b95d238",
+      "content": "Scrim result: **WIN** vs NVX 1–0",
+      "embed": {
+        "title": "Scrim result: WIN vs NVX",
+        "description": "Game 1 on patch 14.9.",
+        "color": 2278750,
+        "fields": [
+          {
+            "name": "Score",
+            "value": "1 – 0",
+            "inline": true
+          },
+          {
+            "name": "Game",
+            "value": "1",
+            "inline": true
+          },
+          {
+            "name": "Patch",
+            "value": "14.9",
+            "inline": true
+          }
+        ],
+        "timestamp": "2026-11-18T16:27:43.187Z",
+        "footer": {
+          "text": "Seriesight Integration Hub → #scrim-alerts"
+        }
+      },
+      "webhookStatus": "queued-dry-run"
+    },
+    {
+      "id": "msg_7d182770",
+      "at": "2026-11-18T16:27:43.168Z",
+      "topic": "scrim.schedule.updated",
+      "eventId": "aa256027-5f52-4e15-97e7-565980a7ef3c",
+      "content": "Scrim booked vs NVX — 2026-11-19 16:27 UTC",
+      "embed": {
+        "title": "Scrim booked vs NVX",
+        "description": "Seriesight scrim schedule update for **C9**.",
+        "color": 3718648,
+        "fields": [
+          {
+            "name": "Opponent",
+            "value": "NVX",
+            "inline": true
+          },
+          {
+            "name": "Format",
+            "value": "BO3",
+            "inline": true
+          },
+          {
+            "name": "When",
+            "value": "2026-11-19 16:27 UTC",
+            "inline": false
+          },
+          {
+            "name": "Notes",
+            "value": "Best-of-3 scrim block, focus on Fearless draft prep.",
+            "inline": false
+          }
+        ],
+        "timestamp": "2026-11-18T16:27:43.168Z",
+        "footer": {
+          "text": "Seriesight Integration Hub → #scrim-alerts"
+        }
+      },
+      "webhookStatus": "queued-dry-run"
+    }
+  ],
+  "deliveries": [
+    {
+      "id": "1b8b308f-a429-4af7-a7de-e66bdd2b2d77",
+      "endpointId": "4e2c2680-1c30-48e8-8761-fe776ecfc6fd",
+      "eventId": "7d145405-a232-4ba0-a688-7dd14b95d238",
+      "topic": "scrim.result.recorded",
+      "occurredAt": "2026-11-18T16:27:43.138Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "result": "win",
+        "gameNumber": 1,
+        "patch": "14.9",
+        "tournament": "Scrim vs NVX",
+        "playedAt": "2026-11-18T16:27:43.130Z",
+        "scrimId": "scrim_3d000a0b",
+        "ourScore": 1,
+        "theirScore": 0,
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:27:43.138Z",
+        "signatureVerified": true,
+        "__originEventId": "7d145405-a232-4ba0-a688-7dd14b95d238"
+      },
+      "receivedAt": "2026-11-18T16:27:43.187Z"
+    },
+    {
+      "id": "b0ea7b4f-ceee-4ada-8083-fbe0cc6d874f",
+      "endpointId": "4e2c2680-1c30-48e8-8761-fe776ecfc6fd",
+      "eventId": "aa256027-5f52-4e15-97e7-565980a7ef3c",
+      "topic": "scrim.schedule.updated",
+      "occurredAt": "2026-11-18T16:27:43.122Z",
+      "payload": {
+        "ourTeamId": "C9",
+        "opponentTeamId": "NVX",
+        "scheduledAt": "2026-11-19T16:27:43.111Z",
+        "format": "bo3",
+        "notes": "Best-of-3 scrim block, focus on Fearless draft prep.",
+        "scrimId": "scrim_3d000a0b",
+        "action": "created",
+        "externalSystem": "scrim-scheduler",
+        "__hopCount": 2,
+        "receivedAt": "2026-11-18T16:27:43.121Z",
+        "signatureVerified": true,
+        "__originEventId": "aa256027-5f52-4e15-97e7-565980a7ef3c"
+      },
+      "receivedAt": "2026-11-18T16:27:43.167Z"
+    }
+  ],
+  "rejected": []
+}

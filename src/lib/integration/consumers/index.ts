@@ -61,8 +61,11 @@ const NOTIFICATION_RULES: Partial<Record<string, { severity: "info" | "success" 
   },
   "commercial.lead.captured": {
     severity: "info",
-    title: (p) => `New trial lead — ${String(p.organization ?? "organization")}`,
-    body: (p) => `A ${String(p.plan ?? "coach")} plan request arrived from the public site. Follow up from the CRM sink or export stream.`,
+    title: (p) => `New trial lead — ${String(p.name ?? p.organization ?? "unknown contact")}`,
+    body: (p) =>
+      `Lead from ${String(p.source ?? p.plan ?? "the public site")}${p.email ? ` (${String(p.email)})` : ""}${
+        p.org ? ` at ${String(p.org)}` : ""
+      }${p.externalSystem ? ` via ${String(p.externalSystem)}` : ""}. Follow up from the CRM sink or export stream.`,
   },
   "data.provider.health": {
     severity: "warning",
