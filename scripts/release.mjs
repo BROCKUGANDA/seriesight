@@ -81,7 +81,11 @@ function runGate(argsForRunner) {
   const cmd = RUNNER === "bun" ? "bun" : "npm";
   const finalArgs = RUNNER === "bun" ? argsForRunner : ["run", ...argsForRunner];
   log(`▸ gate: ${cmd} ${finalArgs.join(" ")}`);
-  run(cmd, finalArgs, { capture: true, throwOnFail: true });
+  try {
+    execFileSync(cmd, finalArgs, { cwd: ROOT, stdio: "inherit" });
+  } catch {
+    throw new Error(`gate failed: ${cmd} ${finalArgs.join(" ")}`);
+  }
 }
 
 function runGates(promotingToMain) {
