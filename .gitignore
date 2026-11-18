@@ -50,3 +50,5 @@ next-env.d.ts
 
 *.db-journal
 *.sqlite-journal
+prisma/db/*.db
+db/*.db

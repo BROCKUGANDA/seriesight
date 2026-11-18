@@ -12,3 +12,5 @@
 10. **Data governance.** No licensed GRID raw data, credentials, or private data in fixtures/screenshots; fixture data is independently authored and permanently labelled. Database schema is not treated as retention permission (see GRID_INTEGRATION.md).
 11. **File uploads.** None exist in the MVP — no arbitrary file import surface is exposed.
 12. **Dependency audit.** Dependencies are pinned by the lockfile; the stack uses stable releases only.
+13. **Known advisories.** GitHub Dependabot reports three high-severity advisories against `sharp` (librsvg, libheif, libvips). No fixed release exists yet; `sharp` is used by Next.js only for build-time image optimization of bundled brand assets — the application processes no user-supplied images, so the attack surface is minimal. Re-audit on every `sharp` release; upgrade as soon as a fix lands.
+14. **Secrets handling during release.** Deployment secrets (`GRID_API_KEY`, `PROD_DATABASE_URL`) live only in machine-local `.env` (git-ignored, untracked since the hygiene commit) or in the hosting secret store — never in Git history, fixtures, or CI logs.
