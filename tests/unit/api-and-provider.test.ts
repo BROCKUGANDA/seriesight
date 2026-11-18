@@ -3,6 +3,9 @@
  * checks and provider adapter behaviour with mocked responses.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { NextRequest } from "next/server";
+import { GET as healthGET } from "@/app/api/health/route";
+import { POST as sessionsPOST } from "@/app/api/draft/sessions/route";
 import { wilsonInterval } from "@/domain/analytics/stats";
 import { GridError, GRID_ALLOWED_HOSTS } from "@/lib/providers/grid/grid-types";
 import { gridRequest, circuitSnapshot, resetCircuitForTests, assertUrlAllowed, DEFAULT_GRID_CONFIG } from "@/lib/providers/grid/grid-client";
@@ -14,7 +17,8 @@ import type { DraftSession } from "@/domain/types";
 
 describe("API response envelope", () => {
   it("shapes success payloads exactly per contract", async () => {
-    const res = await fetch("http://localhost:3000/api/health");
+    const req = new NextRequest("http://localhost:3000/api/health");
+    const res = await healthGET(req);
     const json = await res.json();
     expect(res.status).toBe(200);
     expect(json).toMatchObject({ success: true, error: null });
@@ -24,11 +28,12 @@ describe("API response envelope", () => {
   });
 
   it("shapes error payloads for validation failures", async () => {
-    const res = await fetch("http://localhost:3000/api/draft/sessions", {
+    const req = new NextRequest("http://localhost:3000/api/draft/sessions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ format: "BO9" }),
     });
+    const res = await sessionsPOST(req);
     const json = await res.json();
     expect(res.status).toBe(400);
     expect(json.success).toBe(false);

@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging, dev]
+  pull_request:
+    branches: [main, staging, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bun run db:generate
+
+      - name: Typecheck (strict)
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Unit / contract tests
+        run: bun run test
+
+      - name: Production build
+        run: bun run build
+
+      - name: Smoke test the standalone server
+        run: |
+          NODE_ENV=production PORT=3111 bun .next/standalone/server.js &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3111/api/health > /dev/null; then
+              echo "health OK"; kill $SERVER_PID; exit 0
+            fi
+            sleep 1
+          done
+          echo "server did not become healthy"; kill $SERVER_PID; exit 1

@@ -1,7 +1,9 @@
 {
-  "name": "nextjs_tailwind_shadcn_ts",
+  "name": "seriesight",
   "version": "0.2.1",
   "private": true,
+  "license": "BSL-1.1",
+  "description": "The series, in focus. LoL coaching intelligence and Fearless Draft management platform.",
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
@@ -11,14 +13,25 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
+    "db:studio": "prisma studio",
+    "db:push:pg": "prisma db push --schema prisma/schema.production.prisma --skip-generate",
+    "db:migrate:pg": "prisma migrate deploy --schema prisma/schema.production.prisma",
+    "db:migrate:init:pg": "prisma migrate dev --schema prisma/schema.production.prisma --name init",
+    "build:prod": "prisma generate --schema prisma/schema.production.prisma && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "docker:db": "docker compose up -d db",
+    "docker:db:down": "docker compose down",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "verify": "tsc --noEmit && eslint . && vitest run",
     "dispatch:tick": "node scripts/dispatch-cron-worker.mjs --once",
     "dispatch:worker": "node scripts/dispatch-cron-worker.mjs",
     "integration:seed": "node scripts/seed-integration-endpoints.mjs",
     "connector:crm": "node mini-services/crm-connector/server.mjs",
     "connector:scrim": "node mini-services/scrim-scheduler/server.mjs",
-    "connector:discord": "node mini-services/discord-alerts/server.mjs"
+    "connector:discord": "node mini-services/discord-alerts/server.mjs",
+    "release": "node scripts/release.mjs",
+    "promote:staging": "node scripts/release.mjs promote --from dev --to staging",
+    "promote:main": "node scripts/release.mjs promote --from staging --to main"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
