@@ -13,7 +13,7 @@ import "./globals.css";
 
 /* ------------------------------------------------------------------ Viewport */
 export const viewport: Viewport = {
-  themeColor: "#080C14",
+  themeColor: "#0a0a0e",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { SeriesightWordmark } from "@/components/brand/logo";
 import { useHashRoute } from "@/hooks/use-hash-route";
+import { useAuthStore } from "@/store/auth";
 import { COMPANY, CONTACT_EMAIL, TRIAL_DAYS } from "@/lib/commercial";
 import { TrialDialog } from "./trial-dialog";
 
@@ -32,6 +33,8 @@ export function SiteHeader() {
   const [, navigate] = useHashRoute();
   const [menuOpen, setMenuOpen] = useState(false);
   const [trialOpen, setTrialOpen] = useState(false);
+  const signedIn = useAuthStore((s) => s.user !== null);
+  const user = useAuthStore((s) => s.user);
 
   // Anchor links only work on the landing page; if we are on pricing/legal,
   // first route home, then let the browser scroll to the anchor.
@@ -96,17 +99,27 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate("dashboard")}
-            className="hidden min-h-[40px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-4 text-[13px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)] sm:block"
-          >
-            Open workspace
-          </button>
+          {signedIn ? (
+            <button
+              type="button"
+              onClick={() => navigate("dashboard")}
+              className="hidden min-h-[40px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-4 text-[13px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)] sm:block"
+            >
+              Open workspace — {user?.name ?? "Coach"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate("signin")}
+              className="hidden min-h-[40px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-4 text-[13px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)] sm:block"
+            >
+              Judge demo · Sign in
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setTrialOpen(true)}
-            className="signal-gradient min-h-[40px] rounded-lg px-4 text-[13px] font-semibold text-[#06121c] transition-opacity hover:opacity-90"
+            className="signal-gradient min-h-[40px] rounded-lg px-4 text-[13px] font-semibold text-[#0e1405] transition-opacity hover:opacity-90"
           >
             Start free trial
           </button>
@@ -155,11 +168,11 @@ export function SiteHeader() {
             type="button"
             onClick={() => {
               setMenuOpen(false);
-              navigate("dashboard");
+              navigate(signedIn ? "dashboard" : "signin");
             }}
             className="block w-full rounded-lg px-3 py-3 text-left text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--text-primary)]"
           >
-            Open workspace
+            {signedIn ? "Open workspace" : "Judge demo · Sign in"}
           </button>
         </nav>
       )}
@@ -178,6 +191,8 @@ export function SiteFooter() {
     { label: "Opponent Intelligence", onClick: () => navigate("scouting") },
     { label: "Draft Room", onClick: () => navigate("draft") },
     { label: "Series Lab", onClick: () => navigate("series-lab") },
+    { label: "Playbook · Player Hub · VOD", onClick: () => navigate("playbook") },
+    { label: "Practice Planner", onClick: () => navigate("practice") },
     { label: "Evidence Ledger", onClick: () => navigate("evidence") },
   ];
 

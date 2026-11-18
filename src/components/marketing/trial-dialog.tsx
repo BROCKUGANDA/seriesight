@@ -116,7 +116,7 @@ export function TrialDialog({ open, onOpenChange, initialPlan = "coach" }: Props
           <div className="py-2 text-center">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[var(--accent-green)]/50 bg-[var(--accent-green)]/10">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 13l4 4L19 7" stroke="#55DBAA" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5 13l4 4L19 7" stroke="#3FE8A4" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <DialogHeader className="mt-4">
@@ -146,7 +146,7 @@ export function TrialDialog({ open, onOpenChange, initialPlan = "coach" }: Props
               <button
                 type="button"
                 onClick={resetForNewEntry}
-                className="min-h-[44px] rounded-lg bg-[var(--accent-cyan)] px-5 py-2.5 text-sm font-medium text-[#06121c] transition-opacity hover:opacity-90"
+                className="min-h-[44px] rounded-lg bg-[var(--accent-cyan)] px-5 py-2.5 text-sm font-medium text-[#0e1405] transition-opacity hover:opacity-90"
               >
                 Register another team
               </button>
@@ -277,7 +277,7 @@ export function TrialDialog({ open, onOpenChange, initialPlan = "coach" }: Props
                 <button
                   type="submit"
                   disabled={status === "submitting"}
-                  className="signal-gradient min-h-[44px] rounded-lg px-5 py-2.5 text-sm font-semibold text-[#06121c] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="signal-gradient min-h-[44px] rounded-lg px-5 py-2.5 text-sm font-semibold text-[#0e1405] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {status === "submitting" ? "Submitting…" : `Request ${TRIAL_DAYS}-day trial`}
                 </button>

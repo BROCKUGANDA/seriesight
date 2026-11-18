@@ -33,11 +33,11 @@ interface MacroAnalysis {
 interface TeamRow { id: string; shortName: string; name: string }
 
 const EVENT_META: Record<string, { label: string; color: string; Glyph: (p: { size?: number }) => React.ReactNode }> = {
-  dragon: { label: "Dragon", color: "#55DBAA", Glyph: DragonGlyph },
-  herald: { label: "Herald", color: "#9B8CFF", Glyph: HeraldGlyph },
-  baron: { label: "Baron", color: "#F3BD69", Glyph: BaronGlyph },
-  turret: { label: "Turret", color: "#42D9FF", Glyph: ObjectiveGlyph },
-  kill: { label: "Kill", color: "#FF7488", Glyph: PickGlyph },
+  dragon: { label: "Dragon", color: "#3FE8A4", Glyph: DragonGlyph },
+  herald: { label: "Herald", color: "#9D7BFF", Glyph: HeraldGlyph },
+  baron: { label: "Baron", color: "#FFC46B", Glyph: BaronGlyph },
+  turret: { label: "Turret", color: "#C6FF3E", Glyph: ObjectiveGlyph },
+  kill: { label: "Kill", color: "#FF6D5E", Glyph: PickGlyph },
 };
 
 export function MacroAtlas() {

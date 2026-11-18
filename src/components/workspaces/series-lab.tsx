@@ -286,8 +286,8 @@ export function SeriesLab() {
                 <svg viewBox="0 0 900 220" className="min-w-[720px]" role="img" aria-label="Series strategy map connecting picks to restrictions across games">
                   <defs>
                     <linearGradient id="map-line" x1="0" x2="1">
-                      <stop offset="0%" stopColor="#42D9FF" />
-                      <stop offset="100%" stopColor="#9B8CFF" />
+                      <stop offset="0%" stopColor="#C6FF3E" />
+                      <stop offset="100%" stopColor="#9D7BFF" />
                     </linearGradient>
                   </defs>
                   {restrictions.restrictions.map((r, i) => {
@@ -296,12 +296,12 @@ export function SeriesLab() {
                     return (
                       <g key={r.gameNumber}>
                         <line x1={x} y1="110" x2={x + 150} y2="110" stroke="url(#map-line)" strokeWidth="2" strokeDasharray={i < restrictions.restrictions.length - 1 ? "6 4" : undefined} opacity="0.7" />
-                        <circle cx={x} cy="110" r="26" fill="var(--surface-2)" stroke={r.gameNumber === session.currentGame ? "#9B8CFF" : "#3D5D78"} strokeWidth={r.gameNumber === session.currentGame ? 2.5 : 1.2} />
-                        <text x={x} y="114" textAnchor="middle" fill="#F2F6FC" fontSize="13" fontWeight="600">G{r.gameNumber}</text>
-                        <text x={x} y="66" textAnchor="middle" fill="#AAB9CB" fontSize="10">picks locked</text>
-                        <text x={x} y="80" textAnchor="middle" fill="#42D9FF" fontSize="12" fontWeight="700">{introduced}</text>
-                        <text x={x} y="150" textAnchor="middle" fill="#728399" fontSize="10">pool</text>
-                        <text x={x} y="166" textAnchor="middle" fill="#F3BD69" fontSize="12" fontWeight="700">{r.poolRemaining}</text>
+                        <circle cx={x} cy="110" r="26" fill="var(--surface-2)" stroke={r.gameNumber === session.currentGame ? "#9D7BFF" : "#464C5E"} strokeWidth={r.gameNumber === session.currentGame ? 2.5 : 1.2} />
+                        <text x={x} y="114" textAnchor="middle" fill="#F5F7FB" fontSize="13" fontWeight="600">G{r.gameNumber}</text>
+                        <text x={x} y="66" textAnchor="middle" fill="#C3CAD8" fontSize="10">picks locked</text>
+                        <text x={x} y="80" textAnchor="middle" fill="#C6FF3E" fontSize="12" fontWeight="700">{introduced}</text>
+                        <text x={x} y="150" textAnchor="middle" fill="#8D96A9" fontSize="10">pool</text>
+                        <text x={x} y="166" textAnchor="middle" fill="#FFC46B" fontSize="12" fontWeight="700">{r.poolRemaining}</text>
                       </g>
                     );
                   })}
@@ -311,13 +311,13 @@ export function SeriesLab() {
                       const x = 70 + (restrictions.restrictions.length - 1) * 190 + 150;
                       return (
                         <g>
-                          <circle cx={x} cy="110" r="22" fill="var(--surface-1)" stroke="#55DBAA" strokeWidth="1.4" />
-                          <text x={x} y="106" textAnchor="middle" fill="#55DBAA" fontSize="9">next</text>
-                          <text x={x} y="118" textAnchor="middle" fill="#55DBAA" fontSize="9">{last.poolRemaining} champs</text>
+                          <circle cx={x} cy="110" r="22" fill="var(--surface-1)" stroke="#3FE8A4" strokeWidth="1.4" />
+                          <text x={x} y="106" textAnchor="middle" fill="#3FE8A4" fontSize="9">next</text>
+                          <text x={x} y="118" textAnchor="middle" fill="#3FE8A4" fontSize="9">{last.poolRemaining} champs</text>
                         </g>
                       );
                     })()}
-                  <text x="20" y="20" fill="#728399" fontSize="10">Fearless mode: {restrictions.mode !== "none" ? `${restrictions.mode} (scope ${restrictions.scope})` : "standard"}</text>
+                  <text x="20" y="20" fill="#8D96A9" fontSize="10">Fearless mode: {restrictions.mode !== "none" ? `${restrictions.mode} (scope ${restrictions.scope})` : "standard"}</text>
                 </svg>
               </div>
             ) : (

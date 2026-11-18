@@ -11,7 +11,13 @@ export type WorkspaceRoute =
   | "series-lab"
   | "evidence"
   | "data-sources"
+  | "integration"
+  | "playbook"
+  | "players"
+  | "vod"
+  | "practice"
   | "settings"
+  | "signin"
   | "pricing"
   | "terms"
   | "privacy";
@@ -25,7 +31,13 @@ export const ROUTES: WorkspaceRoute[] = [
   "series-lab",
   "evidence",
   "data-sources",
+  "integration",
+  "playbook",
+  "players",
+  "vod",
+  "practice",
   "settings",
+  "signin",
   "pricing",
   "terms",
   "privacy",
@@ -33,6 +45,9 @@ export const ROUTES: WorkspaceRoute[] = [
 
 /** Commercial (marketing/legal) destinations rendered outside the app shell. */
 export const MARKETING_ROUTES: WorkspaceRoute[] = ["home", "pricing", "terms", "privacy"];
+
+/** The sign-in gateway is public but rendered outside the marketing chrome. */
+export const PUBLIC_ROUTES: WorkspaceRoute[] = [...MARKETING_ROUTES, "signin"];
 
 export function isMarketingRoute(route: WorkspaceRoute): boolean {
   return MARKETING_ROUTES.includes(route);

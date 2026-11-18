@@ -234,6 +234,56 @@ export const RiskGlyph = (p: GlyphProps) => (
   </Base>
 );
 
+/* 26. Playbook — strategy library */
+export const BookGlyph = (p: GlyphProps) => (
+  <Base {...p}>
+    <path d="M5 4.5h11.5a2 2 0 0 1 2 2V19.5H7a2 2 0 0 1-2-2V4.5Z" />
+    <path d="M18.5 19.5a2 2 0 0 1-2 2H7" />
+    <path d="M8.5 8.5h6M8.5 12h4.5" opacity="0.6" />
+  </Base>
+);
+
+/* 27. Player roster */
+export const TeamGlyph = (p: GlyphProps) => (
+  <Base {...p}>
+    <circle cx="8" cy="7.5" r="2.6" />
+    <circle cx="16.5" cy="9" r="2.2" opacity="0.75" />
+    <path d="M3.5 19c0-2.8 2-5 4.5-5s4.5 2.2 4.5 5" />
+    <path d="M13.5 19c.2-2.3 1.6-4 3.4-4s3.2 1.7 3.4 4" opacity="0.75" />
+    <path d="M8 10.1v1.4M16.5 11.2v1.3" opacity="0.6" />
+  </Base>
+);
+
+/* 28. VOD review — film strip */
+export const FilmGlyph = (p: GlyphProps) => (
+  <Base {...p}>
+    <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+    <path d="M7.5 5.5v13M16.5 5.5v13" opacity="0.6" />
+    <path d="M3.5 9.5h4M3.5 14.5h4M16.5 9.5h4M16.5 14.5h4" opacity="0.45" />
+  </Base>
+);
+
+/* 29. Practice planner — calendar */
+export const CalendarGlyph = (p: GlyphProps) => (
+  <Base {...p}>
+    <rect x="3.5" y="5" width="17" height="15" rx="2" />
+    <path d="M3.5 9.5h17" opacity="0.6" />
+    <path d="M8 3v4M16 3v4" />
+    <path d="M7.5 13.5h3M13.5 13.5h3M7.5 16.5h3" opacity="0.7" />
+  </Base>
+);
+
+/* 30. Integration seams — connected plug nodes */
+export const SeamGlyph = (p: GlyphProps) => (
+  <Base {...p}>
+    <circle cx="5" cy="12" r="2.2" />
+    <circle cx="19" cy="12" r="2.2" />
+    <path d="M7.2 12h3.3M13.5 12h3.3" />
+    <path d="M10.5 9.5h3v5h-3z" />
+    <path d="M12 3.5v2M12 18.5v2" opacity="0.45" />
+  </Base>
+);
+
 /** Role glyph lookup used across draft/scouting UIs. */
 export const ROLE_GLYPHS = {
   TOP: TopLaneGlyph,

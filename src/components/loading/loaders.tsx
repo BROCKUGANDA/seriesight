@@ -14,12 +14,12 @@ export function ApertureLoader({ label = "Seriesight" }: { label?: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-5" role="status" aria-label={`Starting ${label}`}>
       <svg width="84" height="84" viewBox="0 0 32 32" fill="none" className="aperture-loader">
-        <circle cx="16" cy="16" r="14" className="aperture-ring-1" style={{ transformOrigin: "center" }} stroke="#3D5D78" strokeWidth="1" strokeDasharray="4 6" />
-        <circle cx="16" cy="16" r="10.5" className="aperture-ring-2" style={{ transformOrigin: "center" }} stroke="#42D9FF" strokeWidth="1" strokeDasharray="2 5" opacity="0.8" />
-        {["#42D9FF", "#627DFF", "#EDF4FF", "#627DFF", "#9B8CFF"].map((c, i) => (
+        <circle cx="16" cy="16" r="14" className="aperture-ring-1" style={{ transformOrigin: "center" }} stroke="#464C5E" strokeWidth="1" strokeDasharray="4 6" />
+        <circle cx="16" cy="16" r="10.5" className="aperture-ring-2" style={{ transformOrigin: "center" }} stroke="#C6FF3E" strokeWidth="1" strokeDasharray="2 5" opacity="0.8" />
+        {["#C6FF3E", "#46E8B0", "#F5F7FB", "#9D7BFF", "#FF5CA8"].map((c, i) => (
           <rect key={i} x={7 + i * 4.2} y={i === 2 ? 8 : 10 - Math.abs(i - 2) * 1.5} width="2.4" height={i === 2 ? 16 : 12 + Math.abs(i - 2) * 3} rx="1.2" fill={c} />
         ))}
-        <circle cx="16" cy="16" r="2.1" fill="#080C14" stroke="#42D9FF" strokeWidth="1.2" />
+        <circle cx="16" cy="16" r="2.1" fill="#0A0A0E" stroke="#C6FF3E" strokeWidth="1.2" />
       </svg>
       <span className="text-xs tracking-[0.3em] text-[var(--text-muted)] uppercase">{label}</span>
     </div>
@@ -48,9 +48,9 @@ export function EvidenceReconstruction({ label = "Reconstructing evidence" }: { 
         {[
           [12, 44], [34, 18], [58, 40], [82, 14], [106, 36],
         ].map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="3" fill={i % 2 ? "#9B8CFF" : "#42D9FF"} className="evidence-node" />
+          <circle key={i} cx={x} cy={y} r="3" fill={i % 2 ? "#9D7BFF" : "#C6FF3E"} className="evidence-node" />
         ))}
-        <path d="M12 44 34 18 58 40 82 14 106 36" stroke="#3D5D78" strokeWidth="1" strokeDasharray="3 4" />
+        <path d="M12 44 34 18 58 40 82 14 106 36" stroke="#464C5E" strokeWidth="1" strokeDasharray="3 4" />
       </svg>
       <span className="text-[11px] tracking-wide text-[var(--text-muted)]">{label}</span>
     </div>

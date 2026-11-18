@@ -64,12 +64,12 @@ export function PricingCards({ onCta }: { onCta?: (plan: "scout" | "coach" | "or
               key={plan.id}
               className={`relative flex flex-col rounded-2xl border p-6 ${
                 plan.featured
-                  ? "border-[var(--accent-cyan)]/60 bg-[var(--surface-2)]/80 shadow-[0_0_44px_rgba(66,217,255,0.08)]"
+                  ? "border-[var(--accent-cyan)]/60 bg-[var(--surface-2)]/80 glow-volt"
                   : "border-[var(--border-subtle)] bg-[var(--surface-1)]/70"
               }`}
             >
               {plan.featured && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full signal-gradient px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#06121c]">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full signal-gradient px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0e1405]">
                   Most popular
                 </span>
               )}
@@ -108,7 +108,7 @@ export function PricingCards({ onCta }: { onCta?: (plan: "scout" | "coach" | "or
                 onClick={() => onCta?.(plan.id)}
                 className={`mt-6 min-h-[44px] rounded-lg px-4 py-2.5 text-sm font-semibold transition-opacity ${
                   plan.featured
-                    ? "signal-gradient text-[#06121c] hover:opacity-90"
+                    ? "signal-gradient text-[#0e1405] hover:opacity-90"
                     : "border border-[var(--border-active)] bg-[var(--surface-2)] text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
                 }`}
               >
@@ -198,7 +198,7 @@ export function PricingPage() {
             </div>
             <a
               href="mailto:sales@seriesight.ae?subject=Seriesight%20for%20organisations"
-              className="signal-gradient inline-flex min-h-[44px] shrink-0 items-center rounded-lg px-5 py-2.5 text-sm font-semibold text-[#06121c] transition-opacity hover:opacity-90"
+              className="signal-gradient inline-flex min-h-[44px] shrink-0 items-center rounded-lg px-5 py-2.5 text-sm font-semibold text-[#0e1405] transition-opacity hover:opacity-90"
             >
               Talk to sales
             </a>

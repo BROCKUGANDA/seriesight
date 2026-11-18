@@ -1,14 +1,14 @@
 {
   "name": "Seriesight — LoL Coaching & Fearless Draft Intelligence",
   "short_name": "Seriesight",
-  "description": "League of Legends coaching intelligence: opponent scouting, macro analytics, deterministic Fearless Draft engine and the five-game Series Lab. Built in Dubai, UAE.",
+  "description": "League of Legends coaching intelligence: opponent scouting, macro analytics, the Fearless Draft engine, Series Lab, Playbook, Player Hub, VOD Review and Practice Planner. Built in Dubai, UAE.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#080C14",
-  "theme_color": "#080C14",
+  "background_color": "#0a0a0e",
+  "theme_color": "#0a0a0e",
   "lang": "en",
   "dir": "ltr",
   "categories": ["sports", "productivity", "education"],
@@ -23,7 +23,8 @@
   "shortcuts": [
     { "name": "Command Center", "url": "/#/dashboard", "description": "Preparation overview" },
     { "name": "Draft Room", "url": "/#/draft", "description": "Pick/ban workspace" },
-    { "name": "Series Lab", "url": "/#/series-lab", "description": "Fearless series simulation" },
+    { "name": "Playbook", "url": "/#/playbook", "description": "Strategies & match briefs" },
+    { "name": "Practice Planner", "url": "/#/practice", "description": "Scrims, drills, reviews" },
     { "name": "Pricing", "url": "/#/pricing", "description": "Plans in AED" }
   ]
 }

@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import { ok, handler, parseBody } from "@/lib/api/respond";
 import { z } from "zod";
 import { runImport } from "@/services/datasources";
-import { registerLedgerRecords } from "@/services/evidence";
-import { ScoutingContext, buildInsights } from "@/domain/analytics/scouting-context";
-import { TEAMS } from "@/fixtures/teams";
+import { emitSeriesImported } from "@/lib/integration/controllers/ingestion-controller";
+import { ensureBusBootstrapped } from "@/lib/integration/bootstrap";
+import { FIXTURE_INFO } from "@/fixtures/dataset";
 
 export const dynamic = "force-dynamic";
 
@@ -16,22 +16,30 @@ const bodySchema = z.object({
 /**
  * Import series. With provider=grid this exercises the real adapter (fails with
  * typed errors when no credentials). With provider=fixture it imports the labelled
- * demo dataset through the same staged pipeline, then computes insight evidence.
+ * demo dataset through the same staged pipeline. On success the Ingestion
+ * Controller publishes `data.series.imported` on the integration bus — the
+ * evidence-refresh consumer recomputes the ledger and downstream sinks react.
  */
 export const POST = handler(async (req: NextRequest) => {
   const body = await parseBody(req, bodySchema);
+  ensureBusBootstrapped();
   const job = await runImport(body.provider, body.seriesId);
-  if (body.provider === "fixture" && job.status === "succeeded") {
-    for (const team of TEAMS) {
-      const ctx = new ScoutingContext(team.id);
-      buildInsights(ctx);
-      registerLedgerRecords(ctx.ledger);
-    }
+  let integration: { eventId: string; topic: string; status: string } | null = null;
+  if (job.status === "succeeded") {
+    const { event } = await emitSeriesImported({
+      provider: body.provider,
+      seriesCount: job.seriesCount,
+      gameCount: job.gameCount,
+      jobId: job.id,
+      datasetId: body.provider === "fixture" ? FIXTURE_INFO.datasetId : null,
+    });
+    integration = { eventId: event.id, topic: event.topic, status: event.status };
   }
   return ok(
     {
       job,
       ingested: job.status === "succeeded" ? { seriesCount: job.seriesCount, gameCount: job.gameCount } : null,
+      integration,
     },
     req,
   );

@@ -5,7 +5,7 @@ import { ApiClientError, apiFetch, apiPost } from "@/lib/api-client";
 import { useHashRoute } from "@/hooks/use-hash-route";
 import { Panel, StatTile, ConfidenceBadge, EvidenceChip, FixtureBadge, EmptyState, SkeletonBlock, ErrorState } from "@/components/common/primitives";
 import { SeriesCore } from "@/components/brand/logo";
-import { useWorkspaceStore } from "@/store/workspace";
+import { useWorkspaceStore, haptic } from "@/store/workspace";
 import type { DraftSession, Insight } from "@/domain/types";
 import { RadarGlyph, PickGlyph, SeriesGlyph, ImportGlyph, RiskGlyph } from "@/components/icons/seriesight-icons";
 
@@ -23,6 +23,7 @@ export function CommandCenter() {
   const [, navigate] = useHashRoute();
   const setActiveSession = useWorkspaceStore((s) => s.setActiveSession);
   const pushToast = useWorkspaceStore((s) => s.pushToast);
+  const hapticsEnabled = useWorkspaceStore((s) => s.hapticsEnabled);
   const [preparing, setPreparing] = useState(false);
 
   const load = useCallback(() => {
@@ -42,6 +43,7 @@ export function CommandCenter() {
 
   const prepare = async (opponent: string, format: "BO3" | "BO5", rulesetId: string, mode: "none" | "hard" | "soft") => {
     setPreparing(true);
+    haptic("pick", hapticsEnabled);
     try {
       const session = await apiPost<DraftSession>("/api/draft/sessions", {
         opponentTeamId: opponent,
@@ -50,6 +52,7 @@ export function CommandCenter() {
         modeOverride: mode,
       });
       setActiveSession(session);
+      haptic("complete", hapticsEnabled);
       pushToast(`Draft session ready vs ${opponent} (${format}, ${mode === "none" ? "standard" : `${mode} fearless`}). Opening the Draft Room…`);
       navigate("draft");
     } catch (e) {

@@ -165,10 +165,10 @@ export function EmptyState({
 function SeriesMark() {
   return (
     <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      {["#42D9FF", "#627DFF", "#EDF4FF", "#627DFF", "#9B8CFF"].map((c, i) => (
+      {["#C6FF3E", "#46E8B0", "#F5F7FB", "#9D7BFF", "#FF5CA8"].map((c, i) => (
         <rect key={i} x={7 + i * 4.2} y={i === 2 ? 8 : 10 - Math.abs(i - 2) * 1.5} width="2.4" height={i === 2 ? 16 : 12 + Math.abs(i - 2) * 3} rx="1.2" fill={c} opacity="0.5" />
       ))}
-      <circle cx="16" cy="16" r="14" stroke="#25364A" />
+      <circle cx="16" cy="16" r="14" stroke="#2A2D38" />
     </svg>
   );
 }

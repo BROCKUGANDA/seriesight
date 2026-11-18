@@ -7,6 +7,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { ok, handler, parseBody, fail } from "@/lib/api/respond";
 import { db } from "@/lib/db";
+import { emitLeadCaptured } from "@/lib/integration/controllers/commercial-controller";
+import { ensureBusBootstrapped } from "@/lib/integration/bootstrap";
 
 export const dynamic = "force-dynamic";
 
@@ -51,11 +53,23 @@ export const POST = handler(async (req: NextRequest) => {
     },
   });
 
+  // Commercial controller seam: publish to the integration bus so CRM sinks,
+  // revenue-ops webhooks and the notification feed react without coupling.
+  ensureBusBootstrapped();
+  const { event } = await emitLeadCaptured({
+    leadId: lead.id,
+    organization: lead.organization,
+    plan: lead.plan,
+    role: lead.role,
+    source: lead.source,
+  });
+
   return ok(
     {
       leadId: lead.id,
       reference: `L-${lead.id.slice(0, 8).toUpperCase()}`,
       receivedAt: lead.createdAt.toISOString(),
+      integration: { eventId: event.id, topic: event.topic, status: event.status },
     },
     req,
     { leadSource: "website-trial" },

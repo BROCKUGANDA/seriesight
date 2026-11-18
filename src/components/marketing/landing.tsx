@@ -20,9 +20,14 @@ import {
   EvidenceGlyph,
   ImportGlyph,
   CompositionGlyph,
+  BookGlyph,
+  TeamGlyph,
+  FilmGlyph,
+  CalendarGlyph,
 } from "@/components/icons/seriesight-icons";
 import { FAQS, HOWTO_STEPS, TRIAL_DAYS, CONTACT_EMAIL } from "@/lib/commercial";
 import { useHashRoute } from "@/hooks/use-hash-route";
+import { Tilt3D, CountUp, Reveal, StaggerContainer, RevealItem, Magnetic, Beat } from "@/components/fx/motion";
 
 const WORKSPACES = [
   {
@@ -56,6 +61,30 @@ const WORKSPACES = [
     copy: "The five-game series board where a pick in game one visibly reshapes what is possible in game two.",
   },
   {
+    glyph: BookGlyph,
+    name: "Playbook",
+    route: "playbook" as const,
+    copy: "Your strategy library: comps, win conditions, key timings and printable pre-match briefs for ban phase.",
+  },
+  {
+    glyph: TeamGlyph,
+    name: "Player Hub",
+    route: "players" as const,
+    copy: "Roster development: rolling form, confidence, availability protocol, goals and per-player coaching notes.",
+  },
+  {
+    glyph: FilmGlyph,
+    name: "VOD Review",
+    route: "vod" as const,
+    copy: "Timestamp the key moments, tag the lesson, and walk the staff through the film on review day.",
+  },
+  {
+    glyph: CalendarGlyph,
+    name: "Practice Planner",
+    route: "practice" as const,
+    copy: "Scrims, drills, veto meetings and VOD reviews on Gulf Standard Time — with result logging and staff alerts.",
+  },
+  {
     glyph: EvidenceGlyph,
     name: "Evidence Ledger",
     route: "evidence" as const,
@@ -75,11 +104,26 @@ const WORKSPACES = [
   },
 ];
 
-const STATS = [
-  { value: "17", label: "tournament series" },
-  { value: "47", label: "games incl. full BO5s" },
-  { value: "95%", label: "Wilson confidence intervals" },
-  { value: "44px", label: "minimum touch targets" },
+const TICKER_ITEMS = [
+  "Command Center",
+  "Opponent Intelligence",
+  "Macro Atlas",
+  "Draft Room",
+  "Series Lab",
+  "Playbook",
+  "Player Hub",
+  "VOD Review",
+  "Practice Planner",
+  "Evidence Ledger",
+  "GRID Data Pipeline",
+  "Judge Demo Ready",
+];
+
+const STATS: { value: number | string; suffix?: string; label: string }[] = [
+  { value: 17, label: "tournament series" },
+  { value: 47, label: "games incl. full BO5s" },
+  { value: 95, suffix: "%", label: "Wilson confidence intervals" },
+  { value: 12, label: "coach workspaces" },
   { value: "0.86s", label: "workspace boot to content" },
 ];
 
@@ -148,14 +192,17 @@ export function LandingPage() {
     setTrialOpen(true);
   };
 
+  const judgeDemo = () => navigate("signin");
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--bg-void)]">
       <SiteHeader />
 
       <main id="main" className="flex-1">
         {/* ---------------------------------------------------------- Hero */}
-        <section aria-labelledby="hero-title" className="relative overflow-hidden">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 pb-16 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-[1.15fr_0.85fr] lg:pb-24 lg:pt-20">
+        <section aria-labelledby="hero-title" className="relative overflow-hidden scanlines">
+          <div aria-hidden="true" className="grid-floor pointer-events-none absolute inset-0" />
+          <div className="relative mx-auto grid max-w-[1200px] items-center gap-10 px-4 pb-16 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-[1.15fr_0.85fr] lg:pb-24 lg:pt-20">
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--accent-cyan)]">
@@ -167,35 +214,39 @@ export function LandingPage() {
                 <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-1)] px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--text-secondary)]">
                   Works on phone, tablet, desktop
                 </span>
+                <span className="pulse-glow rounded-full border border-[var(--accent-violet)]/50 bg-[var(--accent-violet)]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--accent-violet)]">
+                  Judge demo ready
+                </span>
               </div>
 
               <h1 id="hero-title" className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-[var(--text-primary)] sm:text-5xl lg:text-[56px]">
-                The series,{" "}
-                <span className="signal-text">in focus.</span>
+                The series, <span className="volt-text">in focus.</span>
               </h1>
 
               {/* Answer-first lede: quotable by answer engines. */}
               <p className="mt-5 max-w-[620px] text-[15px] leading-relaxed text-[var(--text-secondary)] sm:text-base">
                 Seriesight is a League of Legends coaching platform that turns tournament history into pre-match
-                preparation: opponent scouting with evidence-backed tendencies, macro objective analytics, a
-                deterministic Fearless Draft engine and a five-game Series Lab. It runs in your browser — installed as
-                an app on phones and tablets, or full-screen on the bootcamp desktop.
+                preparation: opponent scouting with evidence-backed tendencies, a deterministic Fearless Draft engine,
+                a five-game Series Lab, a strategy Playbook, Player Hub development and VOD review — twelve workspaces
+                covering everything a coach needs before ban phase.
               </p>
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <Magnetic>
+                  <button
+                    type="button"
+                    onClick={judgeDemo}
+                    className="signal-gradient sheen press-fx min-h-[52px] w-full rounded-lg px-6 text-[15px] font-bold text-[#0e1405] shadow-lg transition-opacity hover:opacity-95 sm:w-auto"
+                  >
+                    Judge demo access — one click
+                  </button>
+                </Magnetic>
                 <button
                   type="button"
                   onClick={() => openTrial()}
-                  className="signal-gradient min-h-[48px] rounded-lg px-6 text-sm font-semibold text-[#06121c] transition-opacity hover:opacity-90"
+                  className="press-fx min-h-[52px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-6 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
                 >
                   Start your {TRIAL_DAYS}-day free trial
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("dashboard")}
-                  className="min-h-[48px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-6 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
-                >
-                  Explore the live demo
                 </button>
               </div>
               <p className="mt-3 text-xs text-[var(--text-muted)]">
@@ -204,17 +255,33 @@ export function LandingPage() {
             </div>
 
             <div className="hidden justify-center lg:flex" aria-hidden="true">
-              <SeriesCore size={380} />
+              <Tilt3D max={9} className="float-y">
+                <SeriesCore size={380} />
+              </Tilt3D>
+            </div>
+          </div>
+
+          {/* Workspace ticker */}
+          <div className="overflow-hidden border-y border-[var(--border-subtle)] bg-[var(--surface-1)]/40 py-2.5" aria-hidden="true">
+            <div className="ticker-track">
+              {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+                <span key={i} className="flex items-center whitespace-nowrap px-5 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <span className="mr-5 h-1.5 w-1.5 rounded-full bg-[var(--accent-cyan)]/60" />
+                  {item}
+                </span>
+              ))}
             </div>
           </div>
 
           {/* Stats strip */}
-          <div className="border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/60">
+          <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/60">
             <dl className="mx-auto grid max-w-[1200px] grid-cols-2 gap-x-4 gap-y-5 px-4 py-6 sm:grid-cols-3 sm:px-6 md:grid-cols-5">
               {STATS.map((s) => (
                 <div key={s.label} className="text-center">
                   <dt className="order-2 mt-1 block text-[11px] uppercase tracking-wider text-[var(--text-muted)]">{s.label}</dt>
-                  <dd className="tnum order-1 text-2xl font-semibold text-[var(--text-primary)]">{s.value}</dd>
+                  <dd className="tnum order-1 text-2xl font-semibold text-[var(--text-primary)]">
+                    {typeof s.value === "number" ? <CountUp value={s.value} suffix={s.suffix ?? ""} /> : s.value}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -225,36 +292,88 @@ export function LandingPage() {
         <section id="product" aria-labelledby="product-title" className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
           <SectionHeading
             eyebrow="Product"
-            title="Eight workspaces, one preparation pipeline"
-            lede="Seriesight replaces the spreadsheet-and-screenshots preparation stack. Each workspace feeds the next, and every number you present to players can be traced to its provenance in one tap."
+            title="Twelve workspaces, one preparation pipeline"
+            lede="Seriesight replaces the spreadsheet-and-screenshots preparation stack. Analytics feed the Draft Room, the Draft Room feeds the Series Lab, the Playbook and Player Hub carry the human side, and every number you present to players traces to its provenance in one tap."
           />
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StaggerContainer className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" gap={0.05}>
             {WORKSPACES.map((w) => {
               const Glyph = w.glyph;
               return (
-                <article
-                  key={w.name}
-                  className="group flex flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)]/70 p-5 transition-colors hover:border-[var(--border-active)]"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--accent-cyan)]">
-                    <Glyph size={20} />
-                  </span>
-                  <h3 className="mt-4 text-[15px] font-semibold text-[var(--text-primary)]">{w.name}</h3>
-                  <p className="mt-2 flex-1 text-[13px] leading-relaxed text-[var(--text-secondary)]">{w.copy}</p>
-                  <button
-                    type="button"
-                    onClick={() => navigate(w.route)}
-                    className="mt-4 inline-flex min-h-[40px] items-center gap-1.5 self-start text-[13px] font-medium text-[var(--accent-cyan)] transition-colors hover:text-[var(--accent-white)]"
-                    aria-label={`Open ${w.name} in the demo workspace`}
-                  >
-                    Open in demo
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                </article>
+                <RevealItem key={w.name}>
+                  <Tilt3D max={5} className="h-full">
+                    <article
+                      className="group flex h-full flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)]/70 p-5 transition-colors hover:border-[var(--border-active)]"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--accent-cyan)] transition-colors group-hover:border-[var(--accent-cyan)]/40">
+                        <Glyph size={20} />
+                      </span>
+                      <h3 className="mt-4 text-[15px] font-semibold text-[var(--text-primary)]">{w.name}</h3>
+                      <p className="mt-2 flex-1 text-[13px] leading-relaxed text-[var(--text-secondary)]">{w.copy}</p>
+                      <button
+                        type="button"
+                        onClick={() => navigate(w.route)}
+                        className="press-fx mt-4 inline-flex min-h-[40px] items-center gap-1.5 self-start text-[13px] font-medium text-[var(--accent-cyan)] transition-colors hover:text-[var(--accent-white)]"
+                        aria-label={`Open ${w.name} in the demo workspace`}
+                      >
+                        Open in demo
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </article>
+                  </Tilt3D>
+                </RevealItem>
               );
             })}
+          </StaggerContainer>
+        </section>
+
+        {/* ------------------------------------------ Flagship experience */}
+        <section aria-labelledby="experience-title" className="border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/50">
+          <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
+            <SectionHeading
+              eyebrow="Flagship experience"
+              title="Built like an arena client, not a spreadsheet"
+              lede="The VOLT ARENA interface ships with a full motion system: 3D depth, beat-timed reveals, magnetic controls and haptic confirmation — all tuned so film-room data stays readable at a glance, and all of it degrades gracefully when the OS asks for reduced motion."
+            />
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  title: "True 3D depth",
+                  copy: "Tilt-reactive cards with glare tracking on the hero, workspace grid and strategy library — perspective without gimmicks.",
+                },
+                {
+                  title: "Micro + macro motion",
+                  copy: "Magnetic buttons, press springs, sheen sweeps and count-up metrics; workspace transitions slide the whole stage between rooms.",
+                },
+                {
+                  title: "Haptic feedback",
+                  copy: "Picks, bans, saves and confirmations pulse in your hand on supported phones — configurable in Workspace Settings.",
+                },
+                {
+                  title: "⌘K command palette",
+                  copy: "Jump to any of the twelve workspaces or run account actions without touching the mouse.",
+                },
+                {
+                  title: "Staff notification centre",
+                  copy: "Tendency updates, availability flags and scrim results land in one bell — unread counts stay honest.",
+                },
+                {
+                  title: "Readability first",
+                  copy: "Near-black graphite surfaces, raised text luminance and tabular numerals: the palette is loud where it should be and calm where it must be.",
+                },
+              ].map((f) => (
+                <Reveal key={f.title}>
+                  <article className="h-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)]/70 p-5">
+                    <h3 className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-cyan)]" aria-hidden="true" />
+                      {f.title}
+                    </h3>
+                    <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">{f.copy}</p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -445,29 +564,37 @@ export function LandingPage() {
         </section>
 
         {/* --------------------------------------------------- Final CTA */}
-        <section aria-labelledby="cta-title" className="relative overflow-hidden border-t border-[var(--border-subtle)]">
-          <div className="mx-auto max-w-[860px] px-4 py-16 text-center sm:px-6 lg:py-24">
-            <h2 id="cta-title" className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
-              Walk into ban phase <span className="signal-text">already decided.</span>
+        <section aria-labelledby="cta-title" className="relative overflow-hidden border-t border-[var(--border-subtle)] scanlines">
+          <div aria-hidden="true" className="grid-floor pointer-events-none absolute inset-0" />
+          <div className="relative mx-auto max-w-[860px] px-4 py-16 text-center sm:px-6 lg:py-24">
+            <Beat className="mx-auto w-fit">
+              <span className="rounded-full border border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--accent-cyan)]">
+                Judging this submission? One click gets you in.
+              </span>
+            </Beat>
+            <h2 id="cta-title" className="mt-5 text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+              Walk into ban phase <span className="volt-text">already decided.</span>
             </h2>
             <p className="mx-auto mt-4 max-w-[620px] text-[15px] leading-relaxed text-[var(--text-secondary)]">
               Start with the Scout plan on the fixture dataset, or request a {TRIAL_DAYS}-day trial for your coaching
               staff. We activate workspaces within one business day, Gulf Standard Time.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Magnetic>
+                <button
+                  type="button"
+                  onClick={judgeDemo}
+                  className="signal-gradient sheen press-fx min-h-[52px] rounded-lg px-6 text-[15px] font-bold text-[#0e1405] shadow-lg transition-opacity hover:opacity-95"
+                >
+                  Enter judge demo
+                </button>
+              </Magnetic>
               <button
                 type="button"
                 onClick={() => openTrial()}
-                className="signal-gradient min-h-[48px] rounded-lg px-6 text-sm font-semibold text-[#06121c] transition-opacity hover:opacity-90"
+                className="press-fx min-h-[52px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-6 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
               >
                 Request {TRIAL_DAYS}-day trial
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("dashboard")}
-                className="min-h-[48px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-6 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
-              >
-                Explore the demo first
               </button>
             </div>
             <p className="mt-4 text-xs text-[var(--text-muted)]">

@@ -39,6 +39,8 @@ export const PLANS: Plan[] = [
       "Opponent Intelligence for one team",
       "Macro Atlas — all six objective modules",
       "Draft Room in Best-of-1",
+      "Playbook, Player Hub and Practice Planner",
+      "VOD Review with clip tagging",
       "Evidence Ledger (read-only provenance)",
       "17-series / 47-game fixture dataset",
     ],
@@ -57,6 +59,8 @@ export const PLANS: Plan[] = [
       "Everything in Scout, for every opponent in your league",
       "Draft Room BO1 / BO3 / BO5 with Hard, Soft and Standard Fearless",
       "Series Lab five-game simulation with counterfactual pick-swap",
+      "Printable pre-match briefs from the Playbook",
+      "Roster availability protocol and staff notifications",
       "Saved draft sessions with full audit trail",
       "Role policies and haptics preferences",
       "Email support, one business day response",
@@ -116,6 +120,16 @@ export const FAQS: FaqItem[] = [
     question: "Does Seriesight work on mobile and tablets?",
     answer:
       "Yes. Every workspace is designed mobile-first and is fully usable from 390-pixel phones through tablets to 1600-pixel desktops. Interactive elements meet a 44-pixel touch-target minimum, and Seriesight can be installed to a phone or tablet home screen as a Progressive Web App.",
+  },
+  {
+    question: "How do I try the Seriesight demo as a judge?",
+    answer:
+      "Open the app and choose Judge demo access — one click signs you into a fully populated demo workspace with all twelve coaching workspaces unlocked. No form, no credit card, and the session stays on your device until you sign out.",
+  },
+  {
+    question: "What is included in the coaching suite beyond analytics?",
+    answer:
+      "Beyond the analytics workspaces, Seriesight includes a strategy Playbook with printable pre-match briefs, a Player Hub for roster form and development goals, VOD Review for timestamped clip tagging, and a Practice Planner that schedules scrims, drills, veto meetings and film sessions on Gulf Standard Time.",
   },
   {
     question: "What is Fearless Draft and how does Seriesight support it?",

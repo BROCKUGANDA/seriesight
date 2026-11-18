@@ -19,6 +19,13 @@ export type ErrorCode =
   | "GRID_PARTIAL_GAME_DATA"
   | "GRID_MISSING_CHAMPION_ID"
   | "GRID_UNKNOWN_TEAM"
+  // Integration fabric
+  | "WEBHOOK_SIGNATURE_INVALID"
+  | "WEBHOOK_TOPIC_UNSUPPORTED"
+  | "WEBHOOK_PAYLOAD_INVALID"
+  | "INTEGRATION_ENDPOINT_UNREACHABLE"
+  | "INTEGRATION_ENDPOINT_BLOCKED"
+  | "INTEGRATION_EVENT_NOT_REPLAYABLE"
   // Analytics
   | "ANALYTICS_INSUFFICIENT_SAMPLE"
   | "ANALYTICS_INVALID_DENOMINATOR"
@@ -181,6 +188,41 @@ export const ERRORS = {
       message: `Undo is not available: ${reason}`,
       retryable: false,
       recovery: "Undo requires at least one applied action that is not finalized.",
+    }),
+  webhookSignatureInvalid: () =>
+    new AppError({
+      code: "WEBHOOK_SIGNATURE_INVALID",
+      message: "The webhook signature header is missing or does not match the payload.",
+      retryable: false,
+      recovery: "Sign the raw body with HMAC-SHA256 using the shared secret and resend.",
+    }),
+  webhookTopicUnsupported: (topic: string) =>
+    new AppError({
+      code: "WEBHOOK_TOPIC_UNSUPPORTED",
+      message: `Inbound webhook topic "${topic}" is not supported.`,
+      retryable: false,
+      recovery: "Use one of the documented inbound topics listed in the Integration Hub.",
+    }),
+  webhookPayloadInvalid: (message: string) =>
+    new AppError({
+      code: "WEBHOOK_PAYLOAD_INVALID",
+      message,
+      retryable: false,
+      recovery: "Correct the payload against the schema shown in the Integration Hub and resend.",
+    }),
+  endpointBlocked: (host: string) =>
+    new AppError({
+      code: "INTEGRATION_ENDPOINT_BLOCKED",
+      message: `Outbound endpoint host "${host}" is blocked by the SSRF allowlist policy.`,
+      retryable: false,
+      recovery: "Register an https:// endpoint on a public host or an approved internal hostname.",
+    }),
+  eventNotReplayable: (status: string) =>
+    new AppError({
+      code: "INTEGRATION_EVENT_NOT_REPLAYABLE",
+      message: `Only pending or dead-lettered events can be replayed (event is ${status}).`,
+      retryable: false,
+      recovery: "Replay dead-lettered events, or publish a fresh event instead.",
     }),
   notFound: (what: string) =>
     new AppError({
