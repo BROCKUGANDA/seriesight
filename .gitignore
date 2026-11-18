@@ -47,3 +47,6 @@ next-env.d.ts
 .idea/
 
 # databases recreated by tooling (tracked fixture DBs are the exception — see .gitattributes)
+
+*.db-journal
+*.sqlite-journal
