@@ -48,11 +48,12 @@ function run(cmd, cmdArgs, opts = {}) {
     return "";
   }
   try {
-    return execFileSync(cmd, cmdArgs, {
+    const out = execFileSync(cmd, cmdArgs, {
       cwd: ROOT,
       encoding: "utf8",
       stdio: opts.capture ? ["ignore", "pipe", "pipe"] : "inherit",
-    }).trim();
+    });
+    return out ? out.trim() : "";
   } catch (err) {
     if (opts.capture && opts.throwOnFail) throw err;
     if (opts.capture) {
