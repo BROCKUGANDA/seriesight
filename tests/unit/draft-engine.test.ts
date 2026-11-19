@@ -306,6 +306,7 @@ describe("finalization and roles", () => {
     expect(f.phase).toBe("COMPLETED");
     expect(f.status).toBe("finalized");
     expect(() => applyAction(f, { type: "ban", championId: "zz", actor: "t" }, opts())).toThrow(/completed/i);
+    expect(() => assignRole(f, "BLUE", 0, "TOP", "SGT-driftt")).toThrow(/completed/i);
   });
 
   it("assignRole updates a pick without consuming a turn and validates champion capability", () => {

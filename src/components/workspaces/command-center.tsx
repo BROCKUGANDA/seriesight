@@ -4,13 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import { ApiClientError, apiFetch, apiPost } from "@/lib/api-client";
 import { useHashRoute } from "@/hooks/use-hash-route";
 import { Panel, StatTile, ConfidenceBadge, EvidenceChip, FixtureBadge, EmptyState, SkeletonBlock, ErrorState } from "@/components/common/primitives";
-import { SeriesCore } from "@/components/brand/logo";
 import { useWorkspaceStore, haptic } from "@/store/workspace";
 import type { DraftSession, Insight } from "@/domain/types";
 import { RadarGlyph, PickGlyph, SeriesGlyph, ImportGlyph, RiskGlyph } from "@/components/icons/seriesight-icons";
 
 interface DashboardData {
-  dataset: { seriesCount: number; gameCount: number; opponents: number; championCoverage: number; freshness: string; datasetId: string };
+  dataset: {
+    seriesCount: number;
+    gameCount: number;
+    opponents: number;
+    championCoverage: number;
+    freshness: string;
+    datasetId: string;
+    evidenceIds: { seriesCount: string; gameCount: string; opponents: string; championCoverage: string; freshness: string };
+  };
+  opponentTeams: { id: string; name: string; shortName: string }[];
   upcoming: { id: string; opponent: string; tournament: string; date: string; format: string; fearless: string }[];
   priorityInsights: (Insight & { opponentName: string })[];
   recentSessions: DraftSession[];
@@ -25,6 +33,8 @@ export function CommandCenter() {
   const pushToast = useWorkspaceStore((s) => s.pushToast);
   const hapticsEnabled = useWorkspaceStore((s) => s.hapticsEnabled);
   const [preparing, setPreparing] = useState(false);
+  const primaryOpponent = data?.opponentTeams.find((team) => team.id === data.priorityInsights[0]?.opponentTeamId) ?? data?.opponentTeams[0];
+  const secondaryOpponent = data?.opponentTeams.find((team) => team.id !== primaryOpponent?.id) ?? primaryOpponent;
 
   const load = useCallback(() => {
     setError(null);
@@ -74,12 +84,12 @@ export function CommandCenter() {
   return (
     <div className="flex flex-col gap-6">
       {/* A. Header */}
-      <section className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)]/60 px-6 py-6">
+      <section className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-6 py-6 shadow-sm sm:px-8 sm:py-8">
         <div className="relative z-10 flex flex-wrap items-start justify-between gap-6">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-                Good session, coach.
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="editorial-title text-3xl leading-tight text-[var(--text-primary)] sm:text-4xl">
+                Prepare with the series in view.
               </h1>
               <FixtureBadge />
             </div>
@@ -90,17 +100,18 @@ export function CommandCenter() {
                   {data.upcoming[0].opponent} · {data.upcoming[0].tournament} · {data.upcoming[0].date} ({data.upcoming[0].format}, {data.upcoming[0].fearless})
                 </span>
               ) : (
-                "no scheduled series"
+                data ? "no scheduled series — start a practice draft below" : "loading fixture schedule…"
               )}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="rounded-full border border-[var(--border-active)] bg-[var(--surface-2)] px-2.5 py-1 font-mono text-[var(--accent-cyan)]">patch 16.10</span>
               <span className="rounded-full border border-[var(--border-active)] bg-[var(--surface-2)] px-2.5 py-1 font-mono text-[var(--text-secondary)]">dataset {data?.dataset.datasetId ?? "…"}</span>
-              <span className="rounded-full border border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10 px-2.5 py-1 text-[var(--accent-green)]">fixture workspace connected</span>
+              <span className="rounded-full border border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10 px-2.5 py-1 text-[var(--accent-green)]">Illustrative fixture workspace</span>
             </div>
           </div>
-          <div className="hidden xl:block">
-            <SeriesCore size={200} />
+          <div className="max-w-60 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Match-day sequence</p>
+            <p className="editorial-title mt-3 text-xl">Scout. Draft. Review.</p>
+            <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">Move from opponent tendencies to a versioned series plan.</p>
           </div>
         </div>
       </section>
@@ -109,11 +120,11 @@ export function CommandCenter() {
       <section aria-label="Intelligence overview" className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {data ? (
           <>
-            <StatTile label="Series processed" value={data.dataset.seriesCount} detail="completed, verified imports" />
-            <StatTile label="Games analyzed" value={data.dataset.gameCount} detail="with draft + event coverage" tone="accent" />
-            <StatTile label="Opponents available" value={data.dataset.opponents} detail="scoutable profiles" tone="violet" />
-            <StatTile label="Champion coverage" value={data.dataset.championCoverage} detail="distinct champions seen" />
-            <StatTile label="Dataset freshness" value={data.dataset.freshness} detail="most recent game in set" />
+            <StatTile label="Series processed" value={data.dataset.seriesCount} detail="completed fixture series" evidenceId={data.dataset.evidenceIds.seriesCount} />
+            <StatTile label="Games analyzed" value={data.dataset.gameCount} detail="with draft + result coverage" tone="accent" evidenceId={data.dataset.evidenceIds.gameCount} />
+            <StatTile label="Opponents available" value={data.dataset.opponents} detail="fixture roster profiles" tone="violet" evidenceId={data.dataset.evidenceIds.opponents} />
+            <StatTile label="Champion coverage" value={data.dataset.championCoverage} detail="distinct champions picked" evidenceId={data.dataset.evidenceIds.championCoverage} />
+            <StatTile label="Dataset freshness" value={data.dataset.freshness} detail="latest covered fixture game" evidenceId={data.dataset.evidenceIds.freshness} />
           </>
         ) : (
           Array.from({ length: 5 }).map((_, i) => <SkeletonBlock key={i} className="h-[86px]" />)
@@ -129,24 +140,28 @@ export function CommandCenter() {
           actions={<button type="button" onClick={() => navigate("scouting")} className="min-h-[36px] px-1 text-xs font-medium text-[var(--accent-cyan)] hover:underline">Open Opponent Intelligence →</button>}
         >
           {data ? (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {data.priorityInsights.map((insight) => (
-                <article key={insight.id} className="flex flex-col gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--accent-violet)]">{insight.insightType.replace("-", " ")}</span>
-                    <ConfidenceBadge strength={insight.metric.strength} />
-                  </div>
-                  <h3 className="text-sm font-medium leading-snug text-[var(--text-primary)]">{insight.title}</h3>
-                  <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{insight.summary}</p>
-                  <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-subtle)] pt-2.5">
-                    <span className="font-mono text-[10px] text-[var(--text-muted)]">
-                      vs {insight.opponentName} · {insight.side} · {insight.patchContext}
-                    </span>
-                    <EvidenceChip evidenceId={insight.evidenceId} compact />
-                  </div>
-                </article>
-              ))}
-            </div>
+            data.priorityInsights.length ? (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {data.priorityInsights.map((insight) => (
+                  <article key={insight.id} className="flex flex-col gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/60 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--accent-violet)]">{insight.insightType.replace("-", " ")}</span>
+                      <ConfidenceBadge strength={insight.metric.strength} />
+                    </div>
+                    <h3 className="text-sm font-medium leading-snug text-[var(--text-primary)]">{insight.title}</h3>
+                    <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{insight.summary}</p>
+                    <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-subtle)] pt-2.5">
+                      <span className="font-mono text-[10px] text-[var(--text-muted)]">
+                        vs {insight.opponentName} · {insight.side} · {insight.patchContext}
+                      </span>
+                      <EvidenceChip evidenceId={insight.evidenceId} compact />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="No priority findings" message="There are no qualifying fixture tendencies yet. Open scouting to inspect available opponent profiles." action={<button type="button" onClick={() => navigate("scouting")} className="min-h-[44px] rounded-md border border-[var(--border-active)] px-3 text-xs font-medium">Open scouting</button>} />
+            )
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -173,27 +188,27 @@ export function CommandCenter() {
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   type="button"
-                  disabled={preparing}
-                  onClick={() => prepare("NVX", "BO5", "ff-hard-bo5", "hard")}
+                  disabled={preparing || !primaryOpponent}
+                  onClick={() => primaryOpponent && prepare(primaryOpponent.id, "BO5", "ff-hard-bo5", "hard")}
                   className="flex items-center justify-center gap-2 rounded-lg border border-[var(--accent-cyan)]/50 bg-[var(--accent-cyan)]/10 px-3 py-2.5 text-xs font-medium text-[var(--accent-cyan)] transition-colors hover:bg-[var(--accent-cyan)]/20 disabled:opacity-50"
                 >
-                  <PickGlyph size={14} /> BO5 Hard Fearless vs NVX
+                  <PickGlyph size={14} /> BO5 Hard Fearless vs {primaryOpponent?.shortName ?? "opponent unavailable"}
                 </button>
                 <button
                   type="button"
-                  disabled={preparing}
-                  onClick={() => prepare("NVX", "BO3", "std-bo3", "none")}
+                  disabled={preparing || !primaryOpponent}
+                  onClick={() => primaryOpponent && prepare(primaryOpponent.id, "BO3", "std-bo3", "none")}
                   className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-3 py-2.5 text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)] disabled:opacity-50"
                 >
-                  <PickGlyph size={14} /> BO3 Standard vs NVX
+                  <PickGlyph size={14} /> BO3 Standard vs {primaryOpponent?.shortName ?? "opponent unavailable"}
                 </button>
                 <button
                   type="button"
-                  disabled={preparing}
-                  onClick={() => prepare("EST", "BO5", "ff-soft-bo5", "soft")}
+                  disabled={preparing || !secondaryOpponent}
+                  onClick={() => secondaryOpponent && prepare(secondaryOpponent.id, "BO5", "ff-soft-bo5", "soft")}
                   className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-3 py-2.5 text-xs font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-violet)] disabled:opacity-50"
                 >
-                  <SeriesGlyph size={14} /> BO5 Soft Fearless vs EST
+                  <SeriesGlyph size={14} /> BO5 Soft Fearless vs {secondaryOpponent?.shortName ?? "opponent unavailable"}
                 </button>
                 <button
                   type="button"
@@ -278,7 +293,7 @@ export function CommandCenter() {
         </div>
         <p className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--accent-amber)]/30 bg-[var(--accent-amber)]/5 px-3 py-2 text-[11px] leading-relaxed text-[var(--accent-amber)]">
           <RiskGlyph size={13} />
-          All metrics on this page are computed from the labelled fixture dataset — verified values only, no hardcoded impressive numbers.
+          Each statistic opens its evidence record. Fixture data is illustrative, not a live feed or official competition result.
         </p>
       </Panel>
     </div>

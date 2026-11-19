@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * Global application shell (PRD D1): left nav 248px on desktop (≥lg), a
+ * Global application shell: left nav 272px on desktop (≥lg), a
  * bottom tab bar with safe-area insets on phones/tablets (<lg), top command
  * bar 64px, flexible content. Selected nav state is visible via colour +
  * glyph + underline (never colour alone). Every control carries a label.
  *
- * VOLT ARENA additions: user session chip with sign-out, staff notification
- * centre, ⌘K command palette and haptic feedback on every navigation action.
+ * Local demo profile, notification centre, command palette and optional haptics.
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useHashRoute, type WorkspaceRoute } from "@/hooks/use-hash-route";
 import { useWorkspaceStore, haptic } from "@/store/workspace";
 import { useAuthStore } from "@/store/auth";
@@ -84,6 +83,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeNavButtonRef = useRef<HTMLButtonElement>(null);
+  const wasNavOpen = useRef(false);
 
   const unread = notifications.filter((n) => !n.read).length;
 
@@ -93,11 +97,40 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [toast, clearToast]);
 
-  // Close the nav drawer on Escape for keyboard users.
   useEffect(() => {
-    if (!navOpen) return;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  // Keep keyboard focus in the mobile navigation drawer while it is open.
+  useEffect(() => {
+    if (!navOpen) {
+      if (wasNavOpen.current) menuButtonRef.current?.focus();
+      wasNavOpen.current = false;
+      return;
+    }
+    wasNavOpen.current = true;
+    closeNavButtonRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setNavOpen(false);
+      if (e.key === "Escape") {
+        setNavOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const buttons = navRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+      if (!buttons?.length) return;
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -150,6 +183,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen">
       <a
         href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-[var(--surface-3)] focus:px-3 focus:py-2 focus:text-sm"
       >
         Skip to content
@@ -181,16 +218,23 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Left navigation — drawer on <lg, fixed column on ≥lg */}
       <aside
+        ref={navRef}
+        id="primary-navigation"
         className={`fixed inset-y-0 left-0 z-50 flex w-[272px] max-w-[86vw] flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-void)]/95 backdrop-blur transition-transform lg:z-40 lg:translate-x-0 lg:bg-[var(--bg-void)]/90 ${
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-label="Primary navigation"
+        aria-hidden={!isDesktop && !navOpen}
+        aria-modal={!isDesktop && navOpen ? true : undefined}
+        inert={!isDesktop && !navOpen}
+        role={!isDesktop && navOpen ? "dialog" : "complementary"}
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-5">
           <button type="button" onClick={() => go("dashboard")} className="text-left" aria-label="Seriesight home — Command Center">
             <SeriesightWordmark />
           </button>
           <button
+            ref={closeNavButtonRef}
             type="button"
             onClick={() => setNavOpen(false)}
             className="flex h-10 w-10 items-center justify-center rounded-md border border-[var(--border-subtle)] text-[var(--text-secondary)] lg:hidden"
@@ -254,14 +298,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main column */}
-      <div className="flex min-h-screen w-full flex-col lg:pl-[248px]">
+      <div className="flex min-h-screen w-full flex-col lg:pl-[272px]">
         {/* Command bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-void)]/85 px-3 backdrop-blur sm:px-4 lg:px-6">
           <button
+            ref={menuButtonRef}
             type="button"
             className="flex min-h-[40px] items-center gap-2 rounded-md border border-[var(--border-subtle)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] lg:hidden"
             onClick={() => setNavOpen(true)}
             aria-expanded={navOpen}
+            aria-controls="primary-navigation"
             aria-label="Open workspace navigation"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -417,6 +463,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main
           id="main-content"
+          tabIndex={-1}
+          aria-label="Workspace content"
           className="mx-auto w-full max-w-[1600px] flex-1 px-3 pb-28 pt-4 sm:px-4 sm:pt-6 lg:px-6 lg:pb-6"
         >
           {children}

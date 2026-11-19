@@ -2,22 +2,32 @@
 
 **The series, in focus.**
 
-Seriesight is a League of Legends esports coaching intelligence and Fearless Draft management platform — the Category 2 (LoL Macro Scouting & Draft Management System) submission for the **Cloud9 × JetBrains: Sky's the Limit 2026** hackathon.
+Seriesight is an interactive League of Legends pre-match coaching demo — the Category 2 (LoL Macro Scouting & Draft Management System) submission for the **Cloud9 × JetBrains: Sky's the Limit 2026** hackathon.
 
-It turns tournament history into a unified coaching workspace: opponent scouting with evidence-backed tendencies, macro objective analytics, a deterministic multi-game draft engine with Hard/Soft Fearless support, and a five-game Series Lab where a pick in one game visibly reshapes the strategic possibilities of the next.
+Explore the workflow from opponent scouting to a versioned draft and multi-game Fearless restrictions. The demo uses independently authored, labelled fixture data and makes no claim to official or live competition results.
 
-> **Data notice.** The public demo runs entirely on an independently authored fixture dataset. It is illustrative only — **not actual Cloud9 performance and not an official GRID dataset.** Every screen in the product carries this marker. A GRID Open Access key is wired server-side on deployments that enable live provider probes; raw GRID data is never persisted to the repository or shared publicly.
+> **Data notice.** The public demo uses independently authored fixture records. They are illustrative only—not actual Cloud9 performance, official GRID data, or a live feed. Optional GRID provider access requires deployment configuration and compliance with the applicable data terms; credentials remain server-side.
 
 [![CI](https://github.com/BROCKUGANDA/seriesight/actions/workflows/ci.yml/badge.svg)](https://github.com/BROCKUGANDA/seriesight/actions/workflows/ci.yml)
 [![Release](https://github.com/BROCKUGANDA/seriesight/actions/workflows/release.yml/badge.svg)](https://github.com/BROCKUGANDA/seriesight/actions/workflows/release.yml)
 
 ---
 
+## Judges: open the demo
+
+Visit **https://seriesight.aiazimara.com/#/signin** and click **Enter fixture demo**. No registration, email, password, payment, or GRID account is required. This is a demo entry, not authentication; do not enter private coaching information. Start with the five-minute walkthrough below.
+
+The demo answers opponent tendency and later-game Fearless availability questions using clearly labelled deterministic fixtures. Recommendation scores are explainable heuristics, **not predicted win rates** or evidence of causal win-rate improvements. Official GRID access is optional and server-side; the fixture experience remains reproducible without a key.
+
+Reproduce locally with Bun 1.x: `bun install --frozen-lockfile`, `bun run db:generate`, `bunx prisma db push`, then `bun run dev`. Open `http://localhost:3000/#/signin`. Run `bun run test`, `bun run typecheck`, `bun run lint`, and `bun run build` separately for cross-platform verification. See [the VPS runbook](docs/VPS_DEPLOY.md) for block-storage deployment and persistent PostgreSQL verification.
+
+Run `node scripts/judge-smoke.mjs https://seriesight.aiazimara.com` for read-only API checks. Append `--draft` to create one illustrative BO5 draft and verify legal actions, persistence, and stale-write rejection. This leaves the created fixture draft available for inspection; it does not modify existing drafts.
+
 ## What is implemented
 
 | Workspace | Route | Highlights |
 |---|---|---|
-| Command Center | `#/dashboard` | Verified dataset metrics, top-3 priority intelligence with evidence links, one-click draft preparation, signal activity |
+| Command Center | `#/dashboard` | Fixture-derived metrics with evidence links, priority scouting notes, draft preparation |
 | Opponent Intelligence | `#/scouting` | Team directory, tournament/patch/side/game filters, pick/ban frequency with Wilson 95% intervals, engine-detected tendencies, observed-fact vs interpretation briefs, player pools |
 | Macro Atlas | `#/macro` | Six objective modules + an explicitly **unavailable** economy module, configurable interval breakdowns, clickable per-game event timeline |
 | Draft Room | `#/draft` | BO1/BO3/BO5, tournament 10-ban/10-pick sequence, Hard/Soft/Standard Fearless, role assignment, undo/redo/reset, optimistic-concurrency version stamps, transparent 0-100 recommendation scores |
@@ -32,11 +42,11 @@ It turns tournament history into a unified coaching workspace: opponent scouting
 - **Analytics engine** (`src/domain/analytics/`) — explicit denominator definitions, Wilson confidence intervals, documented recency half-life, composition scoring that excludes unknown dimensions instead of inventing them, recommendation scores with per-component breakdowns.
 - **Evidence system** — every insight/recommendation carries a deterministic `EV-XXXXXXXX` id resolvable through `GET /api/evidence/:id`.
 - **GRID provider adapter** (`src/lib/providers/grid/`) — host allowlist, request timeouts, bounded retries with jitter, Retry-After support, circuit breaker, schema-mismatch handling; the UI never talks to GRID.
-- **Fixture dataset** (`src/fixtures/`) — seeded deterministic generator (17 series / 47 games incl. full BO5s under Fearless), with deliberate coverage gaps that drive honest "unavailable" states.
-- **API layer** — 19 endpoints, uniform envelope, Zod validation on every mutation, `DRAFT_STALE_VERSION` (409) optimistic-concurrency checks.
-- **Persistence** — Prisma; SQLite for zero-config demo/dev (`prisma/schema.prisma`), **PostgreSQL for production** (`prisma/schema.production.prisma`), with a parity test that fails CI if the schemas drift.
-- **Tests** — 109 Vitest unit/integration/contract tests covering the draft engine, Fearless modes, analytics, dataset integrity, provider security and API contracts.
-- **Design system** — exact PRD color tokens, original SVG identity (aperture logo, 25 first-party glyphs), four purposeful loaders, skeletons, reduced-motion support, responsive 390 px → 1600 px.
+- **Fixture dataset** (`src/fixtures/`) — seeded deterministic generator with deliberate coverage gaps that drive honest "unavailable" states.
+- **API layer** — uniform response envelope, Zod validation on mutations, and `DRAFT_STALE_VERSION` (409) optimistic-concurrency checks.
+- **Persistence** — Prisma; SQLite for zero-config demo/dev (`prisma/schema.prisma`) and a PostgreSQL schema path (`prisma/schema.production.prisma`). Database support does not make this demo production-ready.
+- **Tests** — Vitest unit/integration/contract coverage for the draft engine, Fearless modes, analytics, dataset integrity, provider security and API contracts.
+- **Design system** — original SVG identity, responsive workspace layouts, reduced-motion support, keyboard focus handling, loading and recovery states.
 - **HTTP hardening** — CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy` on every response (see `next.config.ts`).
 
 ## Quick start
@@ -57,7 +67,7 @@ PROD_DATABASE_URL=postgresql://…               # production PostgreSQL (see be
 Quality gates:
 
 ```bash
-bun run verify         # typecheck (strict) + lint + 109 tests
+bun run verify         # generated Prisma client + typecheck + lint + tests + schema validation
 bun run build          # production standalone build
 ```
 
@@ -74,6 +84,12 @@ bun run db:migrate:pg                           # subsequent deploys: prisma mig
 ```
 
 See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full runbook (managed databases, secrets, hardening checklist).
+
+## Readiness and commercial deployment
+
+Seriesight is a hackathon/demo application, not a production-ready multi-tenant service. The current demo has no authentication, workspace authorization, session ownership checks, or HTTP rate limiting; draft version checks protect concurrent state updates but do not protect access. Experimental billing routes are also unauthenticated and must not be used with real funds or exposed to untrusted users. Integration webhook delivery can reach arbitrary HTTPS destinations and loopback addresses, so a public deployment also needs trusted endpoint administration and outbound network controls that block unapproved/private destinations.
+
+Before a public production deployment, add and verify identity and per-workspace access controls, request throttling, outbound egress restrictions, payment-flow authentication and ownership checks, an independent payment review, operational monitoring, and tested backup/restore procedures. Production use also requires separate authorization under the Business Source License and compliance with applicable GRID data terms; non-production use and redistribution are governed by the license itself. See [`docs/SECURITY.md`](docs/SECURITY.md) and [`LICENSE`](LICENSE).
 
 ## Branches & release automation
 
@@ -110,12 +126,14 @@ GET  /api/draft/sessions/:id/restrictions
 POST /api/series-lab/counterfactual
 ```
 
+Experimental payment endpoints are omitted from this user-facing API list. They are unauthenticated, unsupported for real payments, and documented in [`docs/SECURITY.md`](docs/SECURITY.md).
+
 ## Judge walkthrough (5 minutes)
 
 1. **Command Center** — note the fixture badge; every number is computed from the dataset.
 2. **Opponent Intelligence → Nova Vanguard** — open a tendency card, click its evidence chip and read the full provenance record.
-3. **Draft Room** — create *BO5 · Hard Fearless vs Nova Vanguard*, play the draft (you control both sides for planning), assign roles, **Finalize game**.
-4. **Series Lab** — see the restriction ledger (pool 80 → 70), then use the **Counterfactual simulator** to swap a Game 1 pick and diff the Fearless fallout.
+3. **Draft Room** — create a BO5 session, play the draft (you control both sides for planning), assign roles, then **Finalize game**.
+4. **Series Lab** — inspect the Fearless restriction ledger and use the **Counterfactual simulator** to compare how a pick swap changes later-game availability.
 5. **Data Sources** — run the staged fixture import; without `GRID_API_KEY`, the GRID panel shows the honest `GRID_CREDENTIAL_MISSING` state while the workspace keeps working.
 6. **Evidence Ledger** — filter and inspect any record behind any number you saw.
 
@@ -133,10 +151,10 @@ POST /api/series-lab/counterfactual
 
 ## Scope and boundaries
 
-Seriesight is a **pre-match** tool. It does not replace the game client, execute game actions, inject information into live games, lock picks, or claim data its sources do not provide. Recommendation scores are draft-suitability heuristics, never win probabilities. GRID Open Access is used (when configured) strictly within its non-commercial terms; no licensed raw data is committed to this repository.
+Seriesight is a **pre-match** tool. It does not replace the game client, execute game actions, inject information into live games, lock picks, or claim data its sources do not provide. Recommendation scores are draft-suitability heuristics, never win probabilities. Any configured GRID access is subject to applicable GRID data terms; no licensed raw data is committed to this repository.
 
 ## License
 
 **Business Source License 1.1** — see [LICENSE](LICENSE).
 
-In short: you may read, use, modify and redistribute Seriesight for **non-production** purposes (including study, evaluation and hackathon judging). **Production and commercial use require a separate written license** from the Licensor (contact `hello@seriesight.ae`). On **2030-11-18**, the code converts automatically to **Apache License 2.0**. This is a source-available license, not an open-source license today, and it keeps Seriesight-related IP and commercialization rights with its author — see [NOTICE.md](NOTICE.md) for third-party components.
+In short: you may read, use, modify and redistribute Seriesight as allowed by the BSL 1.1 terms. **Production use requires separate authorization** before the change date; the license does not prohibit all commercial non-production activity. On **2030-11-18**, the code converts to **GNU GPL version 2.0 or later**. BSL 1.1 is source-available, not an OSI-approved open-source license; see [NOTICE.md](NOTICE.md) for third-party components and their separate licenses.

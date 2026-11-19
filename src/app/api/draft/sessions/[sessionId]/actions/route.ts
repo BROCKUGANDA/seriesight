@@ -12,7 +12,7 @@ const actionSchema = z.object({
   role: z.enum(["TOP", "JUNGLE", "MID", "BOT", "SUPPORT"]).nullable().optional(),
   actor: z.string().min(1).max(80).default("coach"),
   /** Optimistic concurrency: server rejects when it does not match the stored version. */
-  expectedStateVersion: z.number().int().min(1).optional(),
+  expectedStateVersion: z.number().int().min(1),
 });
 
 export const POST = handler(async (req: NextRequest, { params }: { params: Promise<{ sessionId: string }> }) => {

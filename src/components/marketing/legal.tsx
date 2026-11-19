@@ -1,14 +1,13 @@
 "use client";
 
 /**
- * Legal documents (hash routes #/terms and #/privacy).
- * UAE-aligned commercial copy: Dubai governing law, 5% VAT handling,
- * data-residency commitments and a plain-language rights section.
+ * Demo-use and data-handling notes for hash routes #/terms and #/privacy.
+ * These summaries are not formal legal terms or a production privacy notice.
  */
 import { SiteHeader, SiteFooter } from "./site-chrome";
-import { COMPANY, CONTACT_EMAIL, TRIAL_DAYS } from "@/lib/commercial";
+import { CONTACT_EMAIL } from "@/lib/commercial";
 
-const LAST_UPDATED = "18 November 2026";
+const LAST_UPDATED = "19 November 2026";
 
 interface Doc {
   title: string;
@@ -17,142 +16,105 @@ interface Doc {
 }
 
 const TERMS: Doc = {
-  title: "Terms of Service",
-  intro: `These Terms govern your use of the Seriesight coaching intelligence platform operated by ${COMPANY.legalName} (${COMPANY.city}, ${COMPANY.country}). By opening a workspace, starting a trial or subscribing to a plan, you agree to them.`,
+  title: "Demo use notes",
+  intro: "Seriesight is an interactive fixture-data demo, not a hosted commercial service. These notes describe current boundaries; they are not a negotiated contract or legal advice.",
   sections: [
     {
-      heading: "1. The service",
+      heading: "1. Demo scope",
       paragraphs: [
-        `Seriesight is a pre-match preparation tool for League of Legends coaching staff. It provides opponent scouting, macro analytics, draft simulation and evidence provenance through a browser workspace. It does not inject information into live games, lock picks or replace the game client.`,
-        "The public demo runs on an independently authored fixture dataset. Figures shown in the demo are illustrative and are not official Riot Games, GRID or any team's performance data.",
+        "The public workspace provides an interactive pre-match draft and scouting demonstration using independently authored fixture data. The data is illustrative—not a live feed or official competition result.",
+        "The demo does not provide a paid subscription, trial provisioning, service-level agreement, or production-ready authentication and workspace authorization.",
       ],
     },
     {
-      heading: "2. Trials and plans",
+      heading: "2. Source license",
       paragraphs: [
-        `Paid plans begin with a ${TRIAL_DAYS}-day free trial. No payment method is required to start a trial. When a trial ends, the workspace moves to read-only unless a subscription is active.`,
-        "Plan features, seat counts and prices are published on the pricing page and are quoted in UAE dirham (AED), exclusive of 5% UAE VAT. Applicable VAT is added at checkout and shown separately on every invoice.",
+        "The source repository is licensed under the Business Source License 1.1. Redistribution and non-production use are governed by its terms; production use requires separate authorization before the change date.",
+        "This is a summary only. The LICENSE file controls; third-party components may be governed by separate licenses.",
       ],
     },
     {
-      heading: "3. Billing, renewal and cancellation",
+      heading: "3. Payments and service commitments",
       paragraphs: [
-        "Monthly subscriptions renew on the same calendar day each month; annual subscriptions renew yearly. You can cancel at any time from Workspace Settings or by contacting support; access continues to the end of the paid period and no further charges are made.",
-        "Refunds for duplicate or erroneous charges are issued to the original payment method within five business days of confirmation.",
+        "There is no supported public payment flow or paid subscription. Experimental billing APIs exist in the repository but are unauthenticated and must not be used with real funds or exposed to untrusted users.",
       ],
     },
     {
-      heading: "4. Acceptable use and competitive integrity",
+      heading: "4. Safe use",
       bullets: [
-        "Do not use Seriesight during live professional matches in ways your tournament's integrity rules prohibit.",
-        "Do not attempt to extract, resell or republish licensed third-party data accessed through the GRID integration.",
-        "Do not share seat access beyond the seats included in your plan; contact us for additional seats.",
-        "Do not probe, scan or attack the service, or bypass rate limits and access controls.",
+        "Do not submit personal, confidential, or licensed third-party data to this unauthenticated demo.",
+        "Do not use fixture records as official match results or as a basis for live competitive decisions.",
+        "Do not expose an unmodified deployment to untrusted users; it lacks authentication, ownership checks and HTTP rate limiting.",
       ],
       paragraphs: [],
     },
     {
-      heading: "5. Data sources and licensing",
+      heading: "5. Data sources",
       paragraphs: [
-        "GRID Open Access is used, when configured by you, strictly within its non-commercial terms through a server-side adapter. No licensed raw data is stored beyond the imported working set required to operate your workspace, and no licensed raw data is included in the public demo.",
+        "The GRID adapter is optional and requires server-side configuration. Any use of GRID data is subject to applicable GRID terms; this demo does not grant rights to third-party data.",
       ],
     },
     {
-      heading: "6. Availability and support",
+      heading: "6. Availability",
       paragraphs: [
-        "We target continuous availability of the workspace during Gulf Standard Time business hours and publish incidents to affected workspaces in-app. Coach plans receive a one-business-day response commitment; Organisation plans receive a same-business-day response commitment.",
+        "The demo is provided without an availability target, incident-notification commitment, or support-response time.",
       ],
     },
     {
-      heading: "7. Liability",
+      heading: "7. Deployment boundary",
       paragraphs: [
-        "The service is provided as-is during the demo and trial periods. To the maximum extent permitted by applicable law, our aggregate liability under a paid subscription is limited to the fees paid in the three months preceding the claim. Nothing in these Terms excludes liability that cannot be excluded under UAE law.",
+        "Do not use this page as a production contract. A public deployment needs reviewed legal terms and privacy disclosures that match its operator, jurisdiction, hosting, data flows and service commitments.",
       ],
     },
     {
-      heading: "8. Governing law and disputes",
+      heading: "8. Contact",
       paragraphs: [
-        `These Terms are governed by the laws of the Emirate of Dubai and the applicable federal laws of the United Arab Emirates. Disputes will first be addressed in good faith through support within 30 days, and may thereafter be submitted to the competent courts of Dubai.`,
-      ],
-    },
-    {
-      heading: "9. Contact",
-      paragraphs: [
-        `Questions about these Terms: ${CONTACT_EMAIL}. Postal address: ${COMPANY.legalName}, ${COMPANY.addressLine}, ${COMPANY.city}, ${COMPANY.country}.`,
+        `Questions about the demo notes: ${CONTACT_EMAIL}.`,
       ],
     },
   ],
 };
 
 const PRIVACY: Doc = {
-  title: "Privacy Policy",
-  intro: `This Policy explains what personal data ${COMPANY.legalName} (${COMPANY.city}, ${COMPANY.country}) collects through the Seriesight platform and public site, why we collect it, and the rights you have over it.`,
+  title: "Privacy & data notes",
+  intro: "These notes describe the current demo implementation, not a complete privacy policy for a public production service. Data handling depends on the hosting and database configuration used by each deployment.",
   sections: [
     {
-      heading: "1. What we collect",
-      bullets: [
-        "Trial and demo requests: full name, work email, team or organisation, role and any message you choose to include.",
-        "Support correspondence: the content of emails you send us.",
-        "Operational telemetry: anonymous request identifiers and error traces needed to run and secure the service.",
-        "Workspace preferences (role policy, haptics, reduced motion) are stored in your browser, not on our servers.",
-      ],
-      paragraphs: [],
-    },
-    {
-      heading: "2. What we do not do",
-      bullets: [
-        "We do not sell personal data, ever.",
-        "We do not run advertising networks or third-party ad trackers on the platform.",
-        "The analytics dataset in the demo is fictional and contains no personal data.",
-        "We never ask for game account credentials — the workspace does not connect to your Riot account.",
-      ],
-      paragraphs: [],
-    },
-    {
-      heading: "3. Why we process data",
+      heading: "1. Demo profile and browser storage",
       paragraphs: [
-        "Legal bases are: performance of a contract (activating and operating your trial or subscription), legitimate interests (securing and improving the service), and consent (anything you submit voluntarily through forms). You can withdraw consent at any time.",
+        "Entering the fixture workspace creates a local demo profile without requesting a real account or password. The profile and workspace preferences may be stored in this browser when storage is available.",
+        "Browser storage is not authentication. It does not prevent other people from accessing API routes or draft sessions.",
       ],
     },
     {
-      heading: "4. Storage and residency",
+      heading: "2. Draft requests and persistence",
       paragraphs: [
-        "Lead and account records are stored on infrastructure operated under our control with access limited to staff who need it. When you connect GRID Open Access, requests are proxied server-side and credentials are kept in server environment configuration — never in the browser.",
+        "Creating or changing a draft sends the requested state to the application's API. Draft sessions and action audit records are persisted using the database configured by the operator.",
+        "The operator is responsible for documenting the hosting provider, database location, access policy, backups, logs, retention and deletion process for a deployed instance.",
       ],
     },
     {
-      heading: "5. Retention",
+      heading: "3. Fixture content",
       paragraphs: [
-        "Trial requests are retained for 24 months from last contact, then deleted or anonymised. Billing records are retained for the period required by UAE tax law. You can request earlier deletion as described below.",
+        "The public demo's match and champion records are independently authored fixtures. They are illustrative and should not contain personal player data or be treated as official match records.",
       ],
     },
     {
-      heading: "6. Your rights",
-      bullets: [
-        "Request a copy of the personal data we hold about you.",
-        "Ask us to correct or complete inaccurate data.",
-        "Ask us to delete your data, subject to legal retention duties.",
-        "Object to or restrict processing, and withdraw consent at any time.",
-        `Exercise any right by emailing ${CONTACT_EMAIL}; we respond within one business day and complete requests within 14 days.`,
-      ],
-      paragraphs: [],
-    },
-    {
-      heading: "7. International transfers",
+      heading: "4. Optional integrations",
       paragraphs: [
-        "Where a supplier or data centre sits outside the UAE, we apply appropriate safeguards and only transfer the minimum data required to deliver the service.",
+        "When GRID access is configured, credentials are read server-side and requests are made through the provider adapter. GRID data remains subject to its own terms. Integration webhooks may transmit event payloads to configured endpoints; operators must verify destination, payload and retention controls.",
       ],
     },
     {
-      heading: "8. Changes to this policy",
+      heading: "5. Avoid sensitive information",
       paragraphs: [
-        "Material changes are announced in-app at least 14 days before they take effect, and the date below is always current.",
+        "This demo has no authentication or workspace ownership checks. Do not enter sensitive personal, team, credential or licensed data. Review database, hosting and logging behavior before operating a public instance.",
       ],
     },
     {
-      heading: "9. Contact",
+      heading: "6. Contact",
       paragraphs: [
-        `Privacy questions and data requests: ${CONTACT_EMAIL}. Postal address: ${COMPANY.legalName}, ${COMPANY.addressLine}, ${COMPANY.city}, ${COMPANY.country}.`,
+        `Questions about these demo notes: ${CONTACT_EMAIL}.`,
       ],
     },
   ],
@@ -165,8 +127,8 @@ export function LegalPage({ document }: { document: "terms" | "privacy" }) {
     <div className="flex min-h-screen flex-col bg-[var(--bg-void)]">
       <SiteHeader />
       <main id="main" className="mx-auto w-full max-w-[860px] flex-1 px-4 pb-16 pt-12 sm:px-6 sm:pt-16">
-        <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[var(--accent-cyan)]">Legal</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{doc.title}</h1>
+        <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[var(--accent-cyan)]">Demo notes</p>
+        <h1 className="editorial-title mt-3 text-4xl tracking-tight text-[var(--text-primary)] sm:text-5xl">{doc.title}</h1>
         <p className="mt-2 text-xs text-[var(--text-muted)]">Last updated {LAST_UPDATED}</p>
         <p className="mt-6 text-[15px] leading-relaxed text-[var(--text-secondary)]">{doc.intro}</p>
 

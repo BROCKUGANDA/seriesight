@@ -86,7 +86,7 @@ export function FixtureBadge({ className = "" }: { className?: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded border border-[var(--accent-amber)]/40 bg-[var(--accent-amber)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-amber)] ${className}`}
-      title="Illustrative fixture data. Not actual Cloud9 performance and not an official GRID dataset."
+      title="Illustrative fixture data; not a live feed or official competition result."
     >
       <IntegrityGlyph size={11} />
       Fixture data
@@ -98,12 +98,14 @@ export function StatTile({
   label,
   value,
   detail,
+  evidenceId,
   tone = "default",
   className = "",
 }: {
   label: string;
   value: ReactNode;
   detail?: ReactNode;
+  evidenceId?: string;
   tone?: "default" | "accent" | "violet" | "warn";
   className?: string;
 }) {
@@ -113,7 +115,12 @@ export function StatTile({
     <div className={`rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)]/70 px-4 py-3 metric-in ${className}`}>
       <p className="text-[11px] uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
       <p className={`tnum mt-1 text-2xl font-semibold ${toneCls}`}>{value}</p>
-      {detail && <p className="mt-1 text-xs text-[var(--text-secondary)]">{detail}</p>}
+      {(detail || evidenceId) && (
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
+          {detail && <p className="text-xs text-[var(--text-secondary)]">{detail}</p>}
+          {evidenceId && <EvidenceChip evidenceId={evidenceId} compact />}
+        </div>
+      )}
     </div>
   );
 }
@@ -163,12 +170,13 @@ export function EmptyState({
 }
 
 function SeriesMark() {
+  const colors = ["var(--accent-cyan)", "var(--accent-green)", "var(--text-primary)", "var(--accent-indigo)", "var(--accent-violet)"];
   return (
     <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      {["#C6FF3E", "#46E8B0", "#F5F7FB", "#9D7BFF", "#FF5CA8"].map((c, i) => (
-        <rect key={i} x={7 + i * 4.2} y={i === 2 ? 8 : 10 - Math.abs(i - 2) * 1.5} width="2.4" height={i === 2 ? 16 : 12 + Math.abs(i - 2) * 3} rx="1.2" fill={c} opacity="0.5" />
+      {colors.map((color, i) => (
+        <rect key={color} x={7 + i * 4.2} y={i === 2 ? 8 : 10 - Math.abs(i - 2) * 1.5} width="2.4" height={i === 2 ? 16 : 12 + Math.abs(i - 2) * 3} rx="1.2" fill={color} opacity="0.5" />
       ))}
-      <circle cx="16" cy="16" r="14" stroke="#2A2D38" />
+      <circle cx="16" cy="16" r="14" stroke="var(--border-subtle)" />
     </svg>
   );
 }

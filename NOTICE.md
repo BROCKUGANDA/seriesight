@@ -1,8 +1,8 @@
 # Third-party notices
 
-Seriesight's own source code is licensed under the Business Source License 1.1
-(see [LICENSE](LICENSE)). The following bundled third-party code retains its
-original MIT license:
+The root [LICENSE](LICENSE) applies to Seriesight's original source code; it is
+Business Source License 1.1, not MIT. Third-party components keep their own
+licenses and must not be relicensed under the root license. Examples include:
 
 | Component | Where | License |
 |---|---|---|

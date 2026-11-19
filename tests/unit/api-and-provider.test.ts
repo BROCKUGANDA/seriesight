@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET as healthGET } from "@/app/api/health/route";
+import { GET as dashboardGET } from "@/app/api/dashboard/route";
 import { POST as sessionsPOST } from "@/app/api/draft/sessions/route";
 import { wilsonInterval } from "@/domain/analytics/stats";
 import { GridError, GRID_ALLOWED_HOSTS } from "@/lib/providers/grid/grid-types";
@@ -12,6 +13,7 @@ import { gridRequest, circuitSnapshot, resetCircuitForTests, assertUrlAllowed, D
 import { mapGridSeriesState } from "@/lib/providers/grid/grid-mapper";
 import { toAppError } from "@/lib/providers/grid/grid-errors";
 import { buildEvidence, EvidenceLedger } from "@/domain/evidence/builder";
+import { getEvidence } from "@/services/evidence";
 import { counterfactual } from "@/services/draft";
 import type { DraftSession } from "@/domain/types";
 
@@ -42,6 +44,25 @@ describe("API response envelope", () => {
     expect(json.error.retryable).toBe(false);
     expect(json.error.recovery).toBeTruthy();
     expect(json.meta.requestId).toBeTruthy();
+  });
+});
+
+describe("dashboard metric evidence", () => {
+  it("returns resolvable fixture evidence ids for every displayed metric", async () => {
+    const response = await dashboardGET(new NextRequest("http://localhost:3000/api/dashboard"));
+    const json = await response.json();
+    const { dataset } = json.data;
+    const evidenceIds = Object.values(dataset.evidenceIds) as string[];
+
+    expect(response.status).toBe(200);
+    expect(evidenceIds).toHaveLength(5);
+    for (const evidenceId of evidenceIds) {
+      expect(getEvidence(evidenceId)).toMatchObject({
+        id: evidenceId,
+        provider: "fixture",
+        datasetId: dataset.datasetId,
+      });
+    }
   });
 });
 

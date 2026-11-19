@@ -3,13 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ---------------------------------------------------------------------------
-   Seriesight "VOLT ARENA" gaming theme — arena-grade contrast tuned for
-   coaching film rooms: near-black graphite surfaces, electric volt-lime
-   primary, plasma purple and magenta accents, mint success, ember danger.
-   Token names are stable (accent-cyan etc. are legacy aliases kept so every
-   primitive keeps working); the VALUES are the new gaming palette.
---------------------------------------------------------------------------- */
+/* Seriesight editorial theme: warm paper, graphite type and a restrained lime signal. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -29,7 +23,7 @@
   --color-secondary: var(--surface-2);
   --color-secondary-foreground: var(--text-primary);
   --color-primary: var(--accent-cyan);
-  --color-primary-foreground: #0e1405;
+  --color-primary-foreground: #ffffff;
   --color-popover: var(--surface-3);
   --color-popover-foreground: var(--text-primary);
   --color-card: var(--surface-1);
@@ -65,27 +59,27 @@
 }
 
 :root {
-  /* Backgrounds — graphite arena stack */
-  --bg-void: #0a0a0e;
-  --bg-primary: #101015;
-  --surface-1: #15161c;
-  --surface-2: #1c1e26;
-  --surface-3: #252833;
-  --border-subtle: #2a2d38;
-  --border-active: #464c5e;
-  /* Text — raised luminance for film-room readability */
-  --text-primary: #f5f7fb;
-  --text-secondary: #c3cad8;
-  --text-muted: #8d96a9;
-  --text-disabled: #5c6476;
-  /* Accents — volt lime primary, plasma purple, magenta flare */
-  --accent-cyan: #c6ff3e;    /* VOLT primary (legacy token name) */
-  --accent-violet: #ff5ca8;  /* magenta flare (legacy token name) */
-  --accent-indigo: #9d7bff;  /* plasma purple (legacy token name) */
-  --accent-amber: #ffc46b;
-  --accent-green: #3fe8a4;
-  --accent-coral: #ff6d5e;
-  --accent-white: #f5f7fb;
+  color-scheme: light;
+  /* Backgrounds — warm paper and restrained graphite */
+  --bg-void: #f1f0e9;
+  --bg-primary: #faf9f4;
+  --surface-1: #fffefa;
+  --surface-2: #f0efe8;
+  --surface-3: #e6e5dc;
+  --border-subtle: #d9d8cd;
+  --border-active: #8f9383;
+  /* Text and accents meet contrast on the light canvas */
+  --text-primary: #20231d;
+  --text-secondary: #50564b;
+  --text-muted: #687064;
+  --text-disabled: #858a7d;
+  --accent-cyan: #58750b;    /* lime signal (legacy token name) */
+  --accent-violet: #9a3e68;
+  --accent-indigo: #6350a2;
+  --accent-amber: #805500;
+  --accent-green: #176d43;
+  --accent-coral: #b83e31;
+  --accent-white: #20231d;
 
   --background: var(--bg-primary);
   --foreground: var(--text-primary);
@@ -94,17 +88,23 @@
 
 body {
   background:
-    radial-gradient(ellipse at 18% 0%, rgba(198, 255, 62, 0.09), transparent 44%),
-    radial-gradient(ellipse at 88% 16%, rgba(157, 123, 255, 0.11), transparent 40%),
-    radial-gradient(ellipse at 50% 110%, rgba(255, 92, 168, 0.07), transparent 46%),
+    radial-gradient(ellipse at 14% 0%, rgba(174, 202, 92, 0.12), transparent 42%),
+    radial-gradient(ellipse at 92% 18%, rgba(109, 91, 158, 0.06), transparent 38%),
     var(--bg-void);
   color: var(--text-primary);
+  font-family: var(--font-geist-sans), sans-serif;
   font-feature-settings: "tnum" 1;
   min-height: 100vh;
 }
 
+.editorial-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
 ::selection {
-  background: rgba(198, 255, 62, 0.30);
+  background: rgba(174, 202, 92, 0.42);
 }
 
 /* Metric numerals stay tabular everywhere */
@@ -138,22 +138,22 @@ body {
 
 /* --------------------------- Signal gradients ---------------------------- */
 .signal-gradient {
-  background: linear-gradient(115deg, #c6ff3e 0%, #46e8b0 46%, #9d7bff 100%);
+  background: linear-gradient(115deg, #cfe77e 0%, #b8d95b 100%);
 }
 .series-gradient {
-  background: linear-gradient(90deg, #c6ff3e 0%, #46e8b0 45%, #9d7bff 100%);
+  background: linear-gradient(90deg, #cfe77e 0%, #b8d95b 100%);
 }
 .critical-gradient {
-  background: linear-gradient(120deg, #ff6d5e 0%, #ffc46b 100%);
+  background: linear-gradient(120deg, #d95f51 0%, #e0a244 100%);
 }
 .signal-text {
-  background: linear-gradient(115deg, #c6ff3e 0%, #46e8b0 52%, #9d7bff 100%);
+  background: linear-gradient(115deg, #4c6508 0%, #687e1d 52%, #836a1b 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .volt-text {
-  background: linear-gradient(100deg, #eaffb0 0%, #c6ff3e 38%, #9d7bff 78%, #ff5ca8 100%);
+  background: linear-gradient(100deg, #526d0a 0%, #738c21 60%, #8a6c1a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -174,7 +174,7 @@ body {
   inset-block: 0;
   left: 0;
   width: 30%;
-  background: linear-gradient(90deg, transparent, rgba(198, 255, 62, 0.75), rgba(157, 123, 255, 0.75), transparent);
+  background: linear-gradient(90deg, transparent, rgba(174, 202, 92, 0.65), rgba(136, 126, 69, 0.48), transparent);
   animation: signal-sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
@@ -348,8 +348,8 @@ body {
 /* Arena grid floor + scanline overlays for hero surfaces */
 .grid-floor {
   background-image:
-    linear-gradient(rgba(198, 255, 62, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(157, 123, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(88, 117, 11, 0.065) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 80, 162, 0.035) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 78%);
 }
@@ -360,7 +360,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(0deg, rgba(245, 247, 251, 0.022) 0 1px, transparent 1px 3px);
+  background: repeating-linear-gradient(0deg, rgba(32, 35, 29, 0.018) 0 1px, transparent 1px 3px);
   pointer-events: none;
   border-radius: inherit;
 }
@@ -394,15 +394,15 @@ body {
 /* Volt glow ring for featured cards */
 .glow-volt {
   box-shadow:
-    0 0 0 1px rgba(198, 255, 62, 0.22),
-    0 0 26px rgba(198, 255, 62, 0.10),
-    0 14px 40px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(88, 117, 11, 0.18),
+    0 0 24px rgba(88, 117, 11, 0.08),
+    0 12px 32px rgba(32, 35, 29, 0.10);
 }
 .glow-plasma {
   box-shadow:
-    0 0 0 1px rgba(157, 123, 255, 0.26),
-    0 0 26px rgba(157, 123, 255, 0.12),
-    0 14px 40px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(99, 80, 162, 0.12),
+    0 0 24px rgba(99, 80, 162, 0.06),
+    0 12px 32px rgba(32, 35, 29, 0.08);
 }
 
 /* Navigation underline */
@@ -417,7 +417,7 @@ body {
   bottom: 4px;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #c6ff3e, #9d7bff);
+  background: linear-gradient(90deg, #aeca5c, #8b8b4e);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
@@ -442,9 +442,9 @@ body {
 
 /* Integration bus node: quiet attention pulse on the Hub seam map */
 @keyframes bus-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(198, 255, 62, 0.22); }
-  60% { box-shadow: 0 0 0 8px rgba(198, 255, 62, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(198, 255, 62, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(174, 202, 92, 0.22); }
+  60% { box-shadow: 0 0 0 8px rgba(174, 202, 92, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(174, 202, 92, 0); }
 }
 .pulse-border {
   animation: bus-pulse 2.6s ease-out infinite;

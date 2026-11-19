@@ -3,7 +3,7 @@
   "version": "0.3.0-rc.4",
   "private": true,
   "license": "BSL-1.1",
-  "description": "The series, in focus. LoL coaching intelligence and Fearless Draft management platform.",
+  "description": "Interactive League of Legends pre-match coaching demo with Fearless Draft planning.",
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build && node scripts/postbuild.mjs",

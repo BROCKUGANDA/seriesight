@@ -10,7 +10,7 @@ const bodySchema = z.object({
   pickIndex: z.number().int().min(0).max(4),
   role: z.enum(["TOP", "JUNGLE", "MID", "BOT", "SUPPORT"]),
   playerId: z.string().nullable().optional(),
-  expectedStateVersion: z.number().int().min(1).optional(),
+  expectedStateVersion: z.number().int().min(1),
 });
 
 /** Assign player/role to a pick without consuming a draft turn. */
