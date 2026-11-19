@@ -22,7 +22,7 @@ export function PricingPage() {
         </div>
 
         <div className="mx-auto mt-10 grid max-w-[820px] gap-4 sm:grid-cols-2">
-          <a href="https://github.com/BROCKUGANDA/seriesight/blob/main/LICENSE" target="_blank" rel="noreferrer" className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6 transition-colors hover:border-[var(--accent-cyan)]">
+          <a href="https://github.com/BROCKUGANDA/seriesight/blob/staging/LICENSE" target="_blank" rel="noreferrer" className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6 transition-colors hover:border-[var(--accent-cyan)]">
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">Read the BSL 1.1 terms</h2>
             <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">The license permits redistribution and non-production use as specified; production use requires separate authorization.</p>
           </a>
