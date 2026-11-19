@@ -9,8 +9,8 @@
 
 generator client {
   provider = "prisma-client-js"
-  # The build stage is Debian-based (oven/bun:1); the runner is Alpine (musl).
-  # Generate both engines so the standalone bundle can start on either.
+  // The build stage is Debian-based (oven/bun:1); the runner is Alpine (musl).
+  // Generate both engines so the standalone bundle can start on either.
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 

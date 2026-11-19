@@ -35,6 +35,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Validate production Prisma schema
+        run: PROD_DATABASE_URL=postgresql://validate:validate@localhost:5432/validate bunx prisma validate --schema prisma/schema.production.prisma
+
       - name: Unit / contract tests
         run: bun run test
 

@@ -22,7 +22,7 @@
     "docker:db:down": "docker compose down",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "verify": "tsc --noEmit && eslint . && vitest run",
+    "verify": "prisma generate && prisma db push --skip-generate && tsc --noEmit && eslint . && vitest run && PROD_DATABASE_URL=postgresql://validate:validate@localhost:5432/validate prisma validate --schema prisma/schema.production.prisma",
     "dispatch:tick": "node scripts/dispatch-cron-worker.mjs --once",
     "dispatch:worker": "node scripts/dispatch-cron-worker.mjs",
     "integration:seed": "node scripts/seed-integration-endpoints.mjs",
