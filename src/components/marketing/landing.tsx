@@ -1,15 +1,11 @@
 "use client";
 
 /**
- * Seriesight commercial landing page (hash route `#/`).
- * Structure is answer-first for AEO: each section opens with a direct,
- * quotable statement before elaborating. GEO signals (Dubai, UAE, MENA,
- * AED, Gulf Standard Time) appear in visible copy, not just metadata.
+ * Seriesight fixture-demo landing page (hash route `#/`).
+ * The page describes the interactive demo without implying live data access,
+ * commercial availability, or unauthenticated production readiness.
  */
-import { useState } from "react";
 import { SiteHeader, SiteFooter } from "./site-chrome";
-import { PricingCards } from "./pricing";
-import { TrialDialog } from "./trial-dialog";
 import { SeriesCore } from "@/components/brand/logo";
 import {
   ApertureGlyph,
@@ -25,64 +21,64 @@ import {
   FilmGlyph,
   CalendarGlyph,
 } from "@/components/icons/seriesight-icons";
-import { FAQS, HOWTO_STEPS, TRIAL_DAYS, CONTACT_EMAIL } from "@/lib/commercial";
+import { FAQS, HOWTO_STEPS, CONTACT_EMAIL } from "@/lib/commercial";
 import { useHashRoute } from "@/hooks/use-hash-route";
-import { Tilt3D, CountUp, Reveal, StaggerContainer, RevealItem, Magnetic, Beat } from "@/components/fx/motion";
+import { Tilt3D, Reveal, StaggerContainer, RevealItem, Magnetic, Beat } from "@/components/fx/motion";
 
 const WORKSPACES = [
   {
     glyph: ApertureGlyph,
     name: "Command Center",
     route: "dashboard" as const,
-    copy: "One preparation overview: verified dataset metrics, the top-3 priority intelligence items and one-click draft preparation.",
+    copy: "Fixture-based prep overview with evidence-linked counts, priority scouting notes and draft shortcuts.",
   },
   {
     glyph: RadarGlyph,
     name: "Opponent Intelligence",
     route: "scouting" as const,
-    copy: "Pick/ban frequencies with Wilson 95% intervals, engine-detected tendencies and player pools — every claim carries evidence.",
+    copy: "Inspect opponent pick/ban tendencies, sample sizes and the evidence records behind available findings.",
   },
   {
     glyph: TimelineGlyph,
     name: "Macro Atlas",
     route: "macro" as const,
-    copy: "Six objective modules with configurable interval breakdowns and a clickable per-game event timeline.",
+    copy: "Review covered match events and objective timing in the fixture dataset.",
   },
   {
     glyph: PickGlyph,
     name: "Draft Room",
     route: "draft" as const,
-    copy: "A deterministic pick/ban engine for BO1, BO3 and BO5 with Hard, Soft and Standard Fearless rulesets.",
+    copy: "Run versioned pick-and-ban actions with standard, hard and soft Fearless settings.",
   },
   {
     glyph: SeriesGlyph,
     name: "Series Lab",
     route: "series-lab" as const,
-    copy: "The five-game series board where a pick in game one visibly reshapes what is possible in game two.",
+    copy: "Inspect multi-game Fearless restrictions and compare how a pick changes the next-game pool.",
   },
   {
     glyph: BookGlyph,
     name: "Playbook",
     route: "playbook" as const,
-    copy: "Your strategy library: comps, win conditions, key timings and printable pre-match briefs for ban phase.",
+    copy: "Organize draft ideas, team goals and match notes in the workspace.",
   },
   {
     glyph: TeamGlyph,
     name: "Player Hub",
     route: "players" as const,
-    copy: "Roster development: rolling form, confidence, availability protocol, goals and per-player coaching notes.",
+    copy: "Review roster profiles, player goals and coach notes from illustrative fixture records.",
   },
   {
     glyph: FilmGlyph,
     name: "VOD Review",
     route: "vod" as const,
-    copy: "Timestamp the key moments, tag the lesson, and walk the staff through the film on review day.",
+    copy: "Use the VOD workspace to organize review notes and timestamped moments.",
   },
   {
     glyph: CalendarGlyph,
     name: "Practice Planner",
     route: "practice" as const,
-    copy: "Scrims, drills, veto meetings and VOD reviews on Gulf Standard Time — with result logging and staff alerts.",
+    copy: "Keep practice activities and staff preparation notes together in one view.",
   },
   {
     glyph: EvidenceGlyph,
@@ -94,13 +90,13 @@ const WORKSPACES = [
     glyph: ImportGlyph,
     name: "Data Sources",
     route: "data-sources" as const,
-    copy: "GRID Open Access import through a hardened server-side adapter — credentials never reach the browser.",
+    copy: "Review provider status and the server-side GRID integration settings.",
   },
   {
     glyph: CompositionGlyph,
     name: "Workspace Settings",
     route: "settings" as const,
-    copy: "Role policies, haptics, reduced-motion and data-retention controls for your whole coaching staff.",
+    copy: "Set local workspace preferences, including reduced motion and haptic feedback.",
   },
 ];
 
@@ -115,44 +111,16 @@ const TICKER_ITEMS = [
   "VOD Review",
   "Practice Planner",
   "Evidence Ledger",
-  "GRID Data Pipeline",
-  "Judge Demo Ready",
+  "Fixture Data",
+  "Evidence IDs",
+  "Versioned Drafts",
 ];
 
-const STATS: { value: number | string; suffix?: string; label: string }[] = [
-  { value: 17, label: "tournament series" },
-  { value: 47, label: "games incl. full BO5s" },
-  { value: 95, suffix: "%", label: "Wilson confidence intervals" },
-  { value: 12, label: "coach workspaces" },
-  { value: "0.86s", label: "workspace boot to content" },
-];
-
-const TESTIMONIALS = [
-  {
-    quote:
-      "The restriction ledger alone is worth it. We used to track Fearless bans in a spreadsheet — now the Series Lab shows us game-two fallout before ban phase even starts.",
-    name: "A. Rahimi",
-    role: "Head Coach, Signal Nine Academy (demo squad)",
-  },
-  {
-    quote:
-      "Every tendency card links to its evidence. If I quote a number to my players, I can show the denominator behind it in one tap.",
-    name: "M. Haddad",
-    role: "Performance Analyst, Nova Vanguard (fixture team)",
-  },
-  {
-    quote:
-      "We prepare on iPads at the venue and review on the big screen back at the bootcamp. The layout holds on both.",
-    name: "J. Okonkwo",
-    role: "Coach, Dubai Nomads Esports (trial programme)",
-  },
-];
-
-function SectionHeading({ eyebrow, title, lede }: { eyebrow: string; title: string; lede: string }) {
+function SectionHeading({ id, eyebrow, title, lede }: { id?: string; eyebrow: string; title: string; lede: string }) {
   return (
     <div className="mx-auto max-w-[760px] text-center">
       <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[var(--accent-cyan)]">{eyebrow}</p>
-      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl md:text-[34px]">{title}</h2>
+      <h2 id={id} className="editorial-title mt-3 text-3xl tracking-tight text-[var(--text-primary)] sm:text-4xl">{title}</h2>
       <p className="mx-auto mt-4 max-w-[680px] text-[15px] leading-relaxed text-[var(--text-secondary)]">{lede}</p>
     </div>
   );
@@ -184,15 +152,7 @@ function LandingFaq() {
 
 export function LandingPage() {
   const [, navigate] = useHashRoute();
-  const [trialOpen, setTrialOpen] = useState(false);
-  const [plan, setPlan] = useState<"scout" | "coach" | "org">("coach");
-
-  const openTrial = (p?: "scout" | "coach" | "org") => {
-    setPlan(p ?? "coach");
-    setTrialOpen(true);
-  };
-
-  const judgeDemo = () => navigate("signin");
+  const openDemo = () => navigate("signin");
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--bg-void)]">
@@ -206,51 +166,44 @@ export function LandingPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--accent-cyan)]">
-                  Built in Dubai, UAE
+                  League of Legends · pre-match
                 </span>
                 <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-1)] px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--text-secondary)]">
-                  Pricing in AED
-                </span>
-                <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-1)] px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--text-secondary)]">
-                  Works on phone, tablet, desktop
-                </span>
-                <span className="pulse-glow rounded-full border border-[var(--accent-violet)]/50 bg-[var(--accent-violet)]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--accent-violet)]">
-                  Judge demo ready
+                  Fixture demo · no live feed
                 </span>
               </div>
 
-              <h1 id="hero-title" className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-[var(--text-primary)] sm:text-5xl lg:text-[56px]">
-                The series, <span className="volt-text">in focus.</span>
+              <h1 id="hero-title" className="editorial-title mt-5 max-w-[760px] text-5xl leading-[0.98] tracking-tight text-[var(--text-primary)] sm:text-6xl lg:text-[76px]">
+                Draft the next game with the <span className="volt-text">whole series in view.</span>
               </h1>
 
               {/* Answer-first lede: quotable by answer engines. */}
               <p className="mt-5 max-w-[620px] text-[15px] leading-relaxed text-[var(--text-secondary)] sm:text-base">
-                Seriesight is a League of Legends coaching platform that turns tournament history into pre-match
-                preparation: opponent scouting with evidence-backed tendencies, a deterministic Fearless Draft engine,
-                a five-game Series Lab, a strategy Playbook, Player Hub development and VOD review — twelve workspaces
-                covering everything a coach needs before ban phase.
+                Move from opponent tendencies to a versioned draft and see how finalized picks shape later games.
+                Explore the workflow with labelled fixture data; it is an interactive product demo, not a live service
+                or a source of official competition results.
               </p>
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Magnetic>
                   <button
                     type="button"
-                    onClick={judgeDemo}
+                    onClick={openDemo}
                     className="signal-gradient sheen press-fx min-h-[52px] w-full rounded-lg px-6 text-[15px] font-bold text-[#0e1405] shadow-lg transition-opacity hover:opacity-95 sm:w-auto"
                   >
-                    Judge demo access — one click
+                    Explore the fixture demo
                   </button>
                 </Magnetic>
                 <button
                   type="button"
-                  onClick={() => openTrial()}
+                  onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}
                   className="press-fx min-h-[52px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-6 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
                 >
-                  Start your {TRIAL_DAYS}-day free trial
+                  See how the workflow works
                 </button>
               </div>
               <p className="mt-3 text-xs text-[var(--text-muted)]">
-                No credit card required · {TRIAL_DAYS}-day trial on paid plans · Demo runs on an illustrative fixture dataset
+                No account or password is required to explore the local fixture workspace.
               </p>
             </div>
 
@@ -273,15 +226,16 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Stats strip */}
           <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/60">
-            <dl className="mx-auto grid max-w-[1200px] grid-cols-2 gap-x-4 gap-y-5 px-4 py-6 sm:grid-cols-3 sm:px-6 md:grid-cols-5">
-              {STATS.map((s) => (
-                <div key={s.label} className="text-center">
-                  <dt className="order-2 mt-1 block text-[11px] uppercase tracking-wider text-[var(--text-muted)]">{s.label}</dt>
-                  <dd className="tnum order-1 text-2xl font-semibold text-[var(--text-primary)]">
-                    {typeof s.value === "number" ? <CountUp value={s.value} suffix={s.suffix ?? ""} /> : s.value}
-                  </dd>
+            <dl className="mx-auto grid max-w-[1200px] gap-5 px-4 py-6 sm:grid-cols-3 sm:px-6">
+              {[
+                { label: "Data source", value: "Labelled fixture dataset" },
+                { label: "Draft state", value: "Versioned server mutations" },
+                { label: "Traceability", value: "Evidence record per metric" },
+              ].map((item) => (
+                <div key={item.label} className="border-l-2 border-[var(--accent-cyan)] pl-4">
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">{item.label}</dt>
+                  <dd className="mt-1 text-sm font-medium text-[var(--text-primary)]">{item.value}</dd>
                 </div>
               ))}
             </dl>
@@ -291,9 +245,10 @@ export function LandingPage() {
         {/* ----------------------------------------------------- Product */}
         <section id="product" aria-labelledby="product-title" className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
           <SectionHeading
+            id="product-title"
             eyebrow="Product"
-            title="Twelve workspaces, one preparation pipeline"
-            lede="Seriesight replaces the spreadsheet-and-screenshots preparation stack. Analytics feed the Draft Room, the Draft Room feeds the Series Lab, the Playbook and Player Hub carry the human side, and every number you present to players traces to its provenance in one tap."
+            title="One preparation loop, connected views"
+            lede="Start with an opponent profile, move into a versioned pick-and-ban, and carry finalized picks into the next game. Supporting workspaces show the wider product direction; fixture data remains clearly labelled throughout this demo."
           />
           <StaggerContainer className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" gap={0.05}>
             {WORKSPACES.map((w) => {
@@ -332,35 +287,36 @@ export function LandingPage() {
         <section aria-labelledby="experience-title" className="border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/50">
           <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
             <SectionHeading
-              eyebrow="Flagship experience"
-              title="Built like an arena client, not a spreadsheet"
-              lede="The VOLT ARENA interface ships with a full motion system: 3D depth, beat-timed reveals, magnetic controls and haptic confirmation — all tuned so film-room data stays readable at a glance, and all of it degrades gracefully when the OS asks for reduced motion."
+              id="experience-title"
+              eyebrow="What is working in this demo"
+              title="A draft workflow you can inspect"
+              lede="The interface makes state visible: see the current action, track completion, assign pick roles, and understand why a champion is unavailable before finalizing a game."
             />
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 {
-                  title: "True 3D depth",
-                  copy: "Tilt-reactive cards with glare tracking on the hero, workspace grid and strategy library — perspective without gimmicks.",
+                  title: "Versioned draft actions",
+                  copy: "Every board mutation sends the expected state version; stale writes are rejected instead of silently overwriting newer picks.",
                 },
                 {
-                  title: "Micro + macro motion",
-                  copy: "Magnetic buttons, press springs, sheen sweeps and count-up metrics; workspace transitions slide the whole stage between rooms.",
+                  title: "Fearless carry-over",
+                  copy: "Finalized picks shape later game availability according to the selected series ruleset.",
                 },
                 {
-                  title: "Haptic feedback",
-                  copy: "Picks, bans, saves and confirmations pulse in your hand on supported phones — configurable in Workspace Settings.",
+                  title: "Evidence you can open",
+                  copy: "Fixture statistics link to records that identify their source and covered games.",
                 },
                 {
-                  title: "⌘K command palette",
-                  copy: "Jump to any of the twelve workspaces or run account actions without touching the mouse.",
+                  title: "Clear recovery states",
+                  copy: "When a catalogue or recommendation request fails, the Draft Room offers a retry without discarding the board.",
                 },
                 {
-                  title: "Staff notification centre",
-                  copy: "Tendency updates, availability flags and scrim results land in one bell — unread counts stay honest.",
+                  title: "Fixture labels stay visible",
+                  copy: "Sample data is identified as illustrative so it cannot be mistaken for an official live competition feed.",
                 },
                 {
-                  title: "Readability first",
-                  copy: "Near-black graphite surfaces, raised text luminance and tabular numerals: the palette is loud where it should be and calm where it must be.",
+                  title: "Responsive navigation",
+                  copy: "Desktop navigation and a compact mobile tab bar keep the same workspace routes reachable across screen sizes.",
                 },
               ].map((f) => (
                 <Reveal key={f.title}>
@@ -381,9 +337,10 @@ export function LandingPage() {
         <section id="how" aria-labelledby="how-title" className="border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/50">
           <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
             <SectionHeading
+              id="how-title"
               eyebrow="How it works"
-              title="From raw history to a five-game plan"
-              lede="A repeatable preparation loop your staff can run every week — the same five steps the demo workspace performs end-to-end."
+              title="From opponent read to series plan"
+              lede="Use the fixture workspace to explore the intended match-day sequence, then inspect each result and its state transitions."
             />
             <ol className="mx-auto mt-10 max-w-[860px] space-y-4">
               {HOWTO_STEPS.map((step, i) => (
@@ -405,22 +362,21 @@ export function LandingPage() {
         <section aria-labelledby="mobile-title" className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[var(--accent-cyan)]">Mobile &amp; tablets</p>
-              <h2 id="mobile-title" className="mt-3 text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl">
-                Preparation that follows you to the venue
+              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[var(--accent-cyan)]">Responsive interface</p>
+              <h2 id="mobile-title" className="editorial-title mt-3 text-3xl tracking-tight text-[var(--text-primary)] sm:text-4xl">
+                A board that stays readable at every size
               </h2>
               <p className="mt-4 max-w-[560px] text-[15px] leading-relaxed text-[var(--text-secondary)]">
-                Seriesight is designed mobile-first, then scaled up. Install it to your phone or tablet home screen as
-                a Progressive Web App, and the whole workspace — scouting, draft room, series lab — is usable between
-                games without a laptop.
+                The demo adapts its navigation and board layout for smaller screens. It is not an offline application,
+                and network-backed draft actions require the configured service to be available.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
-                  "Installable PWA with offline-friendly brand shell and app icons on iOS, Android and iPadOS.",
-                  "Bottom tab navigation and 44px minimum touch targets sized for bench-side use.",
-                  "Tables and timelines scroll horizontally in place — never clipped, never squeezed.",
-                  "Haptic confirmation on picks and bans where the device supports it.",
-                  "Reduced-motion support honoured from the operating system setting.",
+                  "Mobile workspace tabs keep the primary destinations within reach.",
+                  "The navigation drawer supports Escape, focus return and keyboard movement.",
+                  "Draft progress and readiness are described for assistive technology.",
+                  "Browser storage failures do not trap the demo at a loading screen.",
+                  "Reduced-motion preferences are respected by interface transitions.",
                 ].map((item) => (
                   <li key={item} className="flex gap-3 text-[14px] leading-relaxed text-[var(--text-secondary)]">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--accent-green)]">
@@ -437,7 +393,7 @@ export function LandingPage() {
                 <div className="rounded-[20px] border border-[var(--border-subtle)] bg-[var(--bg-void)] p-4">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10px] tracking-[0.2em] text-[var(--text-muted)]">SERIESIGHT · DRAFT</span>
-                    <span className="rounded-full bg-[var(--accent-cyan)]/15 px-2 py-0.5 text-[9px] font-semibold text-[var(--accent-cyan)]">G5</span>
+                    <span className="rounded-full bg-[var(--accent-cyan)]/15 px-2 py-0.5 text-[9px] font-semibold text-[var(--accent-cyan)]">DEMO</span>
                   </div>
                   <div className="mt-4 space-y-2.5">
                     {[0, 1, 2, 3, 4].map((i) => (
@@ -453,7 +409,7 @@ export function LandingPage() {
                     ))}
                   </div>
                   <div className="mt-4 rounded-md border border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/8 px-3 py-2.5 text-center">
-                    <span className="text-[11px] font-semibold text-[var(--accent-cyan)]">Finalize game five</span>
+                    <span className="text-[11px] font-semibold text-[var(--accent-cyan)]">Finalize when ready</span>
                   </div>
                 </div>
               </div>
@@ -477,26 +433,25 @@ export function LandingPage() {
           <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
             <div className="grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr]">
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[var(--accent-cyan)]">UAE &amp; MENA</p>
-                <h2 id="uae-title" className="mt-3 text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl">
-                  Built in Dubai, for teams across the region
+                <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[var(--accent-cyan)]">Data &amp; deployment</p>
+                <h2 id="uae-title" className="editorial-title mt-3 text-3xl tracking-tight text-[var(--text-primary)] sm:text-4xl">
+                  Know what the demo includes—and what it does not
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-[var(--text-secondary)]">
-                  Seriesight is built and operated from Dubai Silicon Oasis. Coaching staff across the UAE, Saudi
-                  Arabia and the wider MENA region get dirham pricing, Gulf Standard Time support hours and a team
-                  that understands the local competitive calendar.
+                  The workspace uses independently authored, labelled fixture data. It is not a live feed, a source of
+                  official match results, or a production-ready multi-tenant service.
                 </p>
-                <p className="mt-3 text-[15px] leading-relaxed text-[var(--text-secondary)]" lang="ar" dir="rtl">
-                  سيريسايت منصة إماراتية لإعداد فرق دوري الأساطير: تحليل المنافسين، إدارة درافت بلا خوف، وأدلة
-                  على كل رقم — بأسعار بالدرهم الإماراتي ودعم بتوقيت الخليج.
+                <p className="mt-3 text-[15px] leading-relaxed text-[var(--text-secondary)]">
+                  Before a public commercial deployment, add authentication, workspace authorization, rate limiting,
+                  approved outbound destinations, monitoring and verified backup procedures.
                 </p>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {[
-                  { title: "AED pricing, no surprises", copy: "Plans quoted in dirham, 5% VAT handled transparently, invoiced billing for organisations." },
-                  { title: "Gulf Standard Time support", copy: "Sun–Thu 09:00–18:00 GST, one-business-day response on Coach, same-day on Organisation." },
-                  { title: "Regional rollout support", copy: "Onboarding sessions delivered remotely or on-site in Dubai for staff programmes." },
-                  { title: "Data done properly", copy: "GRID Open Access through a server-side adapter; no licensed raw data is stored or resold." },
+                  { title: "Fixture-labelled", copy: "The demo does not mix its sample records into official-data views." },
+                  { title: "Evidence-linked", copy: "Dashboard metrics expose evidence IDs that resolve to source records and covered games." },
+                  { title: "Credential-aware", copy: "GRID credentials stay server-side; provider access depends on deployment configuration and data terms." },
+                  { title: "Not production-ready", copy: "Authentication, ownership checks and request throttling are not implemented in this demo." },
                 ].map((card) => (
                   <article key={card.title} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)]/70 p-5">
                     <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">{card.title}</h3>
@@ -508,46 +463,47 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ------------------------------------------------------ Pricing */}
+        {/* ------------------------------------------------------ License */}
         <section id="pricing" aria-labelledby="pricing-title" className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
           <SectionHeading
-            eyebrow="Pricing"
-            title="Straightforward plans in dirham"
-            lede="Start free on the fixture dataset. Upgrade when your staff is ready — every paid plan includes a 14-day trial, VAT quoted transparently, cancel any time."
+            id="pricing-title"
+            eyebrow="License & availability"
+            title="A public demo, not a paid service"
+            lede="This repository is licensed under the Business Source License 1.1. Redistribution and non-production use follow the license; production use requires the separate authorization described there. Experimental billing APIs are unauthenticated and are not for use with real funds."
           />
-          <div className="mt-10">
-            <PricingCards
-              onCta={(p) => {
-                if (p === "scout") navigate("dashboard");
-                else openTrial(p);
-              }}
-            />
+          <div className="mx-auto mt-10 grid max-w-[900px] gap-4 sm:grid-cols-2">
+            <a href="https://github.com/BROCKUGANDA/seriesight/blob/staging/LICENSE" target="_blank" rel="noreferrer" className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--accent-cyan)]">
+              <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Read the source license</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">Review the BSL 1.1 parameters, change date and change license before redistribution or deployment.</p>
+            </a>
+            <a href="https://github.com/BROCKUGANDA/seriesight/blob/staging/docs/SECURITY.md" target="_blank" rel="noreferrer" className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5 transition-colors hover:border-[var(--accent-cyan)]">
+              <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Review deployment boundaries</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">Authentication, workspace ownership, HTTP throttling and outbound destination controls remain required for public deployment.</p>
+            </a>
           </div>
-          <p className="mt-6 text-center text-[13px] text-[var(--text-muted)]">
-            Full plan comparison, annual billing and enterprise rollout options on the{" "}
-            <a href="#/pricing" className="text-[var(--accent-cyan)] underline underline-offset-2">pricing page</a>.
-          </p>
+          <p className="mt-6 text-center text-[13px] text-[var(--text-muted)]">There is no supported public payment flow. Do not expose the experimental billing endpoints or use them with real funds.</p>
         </section>
 
-        {/* ------------------------------------------------- Testimonials */}
+        {/* --------------------------------------------------- Judge route */}
         <section aria-labelledby="voices-title" className="border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/50">
           <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
             <SectionHeading
-              eyebrow="From the demo programme"
-              title="What preparation teams highlight"
-              lede="Feedback themes from the demo and trial programme. Personas reference the illustrative fixture teams that ship with the demo dataset."
+              id="voices-title"
+              eyebrow="Judge walkthrough"
+              title="Three minutes through the core loop"
+              lede="Follow the same evidence-to-draft path the interface is built around; every step stays inside the labelled fixture workspace."
             />
             <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {TESTIMONIALS.map((t) => (
-                <figure key={t.name} className="flex flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)]/70 p-6">
-                  <blockquote className="flex-1 text-[14px] leading-relaxed text-[var(--text-secondary)]">
-                    “{t.quote}”
-                  </blockquote>
-                  <figcaption className="mt-5 border-t border-[var(--border-subtle)] pt-4">
-                    <p className="text-[13px] font-semibold text-[var(--text-primary)]">{t.name}</p>
-                    <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">{t.role}</p>
-                  </figcaption>
-                </figure>
+              {[
+                { title: "01 · Read the evidence", copy: "Open the Command Center and select a metric’s evidence chip to inspect its fixture source.", route: "dashboard" as const },
+                { title: "02 · Make a draft choice", copy: "Enter the Draft Room, choose an available champion, and watch the versioned board advance.", route: "draft" as const },
+                { title: "03 · Carry picks forward", copy: "Finalize a complete game and inspect how the selected Fearless rules affect the next game.", route: "series-lab" as const },
+              ].map((step) => (
+                <article key={step.title} className="flex flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6">
+                  <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--accent-cyan)]">{step.title}</h3>
+                  <p className="mt-3 flex-1 text-[14px] leading-relaxed text-[var(--text-secondary)]">{step.copy}</p>
+                  <button type="button" onClick={() => navigate(step.route)} className="mt-5 min-h-[44px] self-start text-[13px] font-semibold text-[var(--accent-cyan)] underline underline-offset-4">Open this workspace</button>
+                </article>
               ))}
             </div>
           </div>
@@ -556,6 +512,7 @@ export function LandingPage() {
         {/* ---------------------------------------------------------- FAQ */}
         <section id="faq" aria-labelledby="faq-title" className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
           <SectionHeading
+            id="faq-title"
             eyebrow="FAQ"
             title="Questions, answered directly"
             lede="The answers below are the same ones we publish to search and answer engines — plain, specific and current."
@@ -569,43 +526,42 @@ export function LandingPage() {
           <div className="relative mx-auto max-w-[860px] px-4 py-16 text-center sm:px-6 lg:py-24">
             <Beat className="mx-auto w-fit">
               <span className="rounded-full border border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[var(--accent-cyan)]">
-                Judging this submission? One click gets you in.
+                Explore the labelled fixture workspace
               </span>
             </Beat>
             <h2 id="cta-title" className="mt-5 text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
-              Walk into ban phase <span className="volt-text">already decided.</span>
+              Put the next pick <span className="volt-text">in context.</span>
             </h2>
             <p className="mx-auto mt-4 max-w-[620px] text-[15px] leading-relaxed text-[var(--text-secondary)]">
-              Start with the Scout plan on the fixture dataset, or request a {TRIAL_DAYS}-day trial for your coaching
-              staff. We activate workspaces within one business day, Gulf Standard Time.
+              Follow evidence into the Draft Room and see how a finalized game affects the next one. The data is
+              illustrative, and this release does not provide paid accounts or production authorization.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Magnetic>
                 <button
                   type="button"
-                  onClick={judgeDemo}
+                  onClick={openDemo}
                   className="signal-gradient sheen press-fx min-h-[52px] rounded-lg px-6 text-[15px] font-bold text-[#0e1405] shadow-lg transition-opacity hover:opacity-95"
                 >
-                  Enter judge demo
+                  Explore the demo
                 </button>
               </Magnetic>
               <button
                 type="button"
-                onClick={() => openTrial()}
+                onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}
                 className="press-fx min-h-[52px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-6 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)]"
               >
-                Request {TRIAL_DAYS}-day trial
+                Read license terms
               </button>
             </div>
             <p className="mt-4 text-xs text-[var(--text-muted)]">
-              Prefer email? Write to <a href={`mailto:${CONTACT_EMAIL}`} className="text-[var(--accent-cyan)] underline underline-offset-2">{CONTACT_EMAIL}</a>.
+              For commercial-use authorization, contact <a href={`mailto:${CONTACT_EMAIL}`} className="text-[var(--accent-cyan)] underline underline-offset-2">{CONTACT_EMAIL}</a>.
             </p>
           </div>
         </section>
       </main>
 
       <SiteFooter />
-      <TrialDialog open={trialOpen} onOpenChange={setTrialOpen} initialPlan={plan} />
     </div>
   );
 }

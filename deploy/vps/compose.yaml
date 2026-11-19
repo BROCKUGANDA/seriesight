@@ -1,0 +1,76 @@
+# Seriesight — single-project VPS stack (OVH: aiazimara.com shared front door).
+#
+#   Internet → Cloudflare → shared nginx front door (L4, SNI 443 / Host 80)
+#            → seriesight-edge-caddy-1 (loopback 8089/8453)
+#            → seriesight-app (docker DNS app:4180, no host port)
+#            → seriesight-db (internal only, no published port)
+#
+# Deploy:  docker compose -f deploy/vps/compose.yaml up -d --build
+# Migrate: docker compose -f deploy/vps/compose.yaml --profile migrate run --rm migrate
+# Cert:    see docs/VPS_DEPLOY.md (Origin CA wildcard *.aiazimara.com)
+
+name: seriesight
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: seriesight-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: seriesight
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (see .env)}
+      POSTGRES_DB: seriesight
+    volumes:
+      - seriesight-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seriesight -d seriesight"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    profiles: ["migrate"]
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: build
+    container_name: seriesight-migrate
+    command: bunx prisma db push --schema prisma/schema.production.prisma
+    environment:
+      PROD_DATABASE_URL: postgresql://seriesight:${POSTGRES_PASSWORD}@db:5432/seriesight
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: seriesight-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4180
+      HOSTNAME: 0.0.0.0
+      PROD_DATABASE_URL: postgresql://seriesight:${POSTGRES_PASSWORD}@db:5432/seriesight
+      GRID_API_KEY: ${GRID_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  edge:
+    image: caddy:2-alpine
+    container_name: seriesight-edge-caddy-1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8089:80"
+      - "127.0.0.1:8453:443"
+    volumes:
+      - ../edge/Caddyfile:/etc/caddy/Caddyfile:ro
+      - seriesight-edge-certs:/data/certs:ro
+    depends_on:
+      - app
+
+volumes:
+  seriesight-pgdata:
+  seriesight-edge-certs:

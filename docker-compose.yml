@@ -1,0 +1,29 @@
+# Seriesight — local production-parity PostgreSQL.
+# Used by prisma/schema.production.prisma (bun run db:push:pg).
+# The demo/dev workspace needs none of this: SQLite is embedded in the dev schema.
+#
+#   docker compose up -d db
+#   PROD_DATABASE_URL=postgresql://seriesight:seriesight@localhost:55432/seriesight bun run db:push:pg
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: seriesight-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-seriesight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seriesight}
+      POSTGRES_DB: ${POSTGRES_DB:-seriesight}
+    ports:
+      # Host 55432 — 5432 is commonly claimed by other local Postgres instances
+      - "55432:5432"
+    volumes:
+      - seriesight-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-seriesight} -d $${POSTGRES_DB:-seriesight}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  seriesight-pgdata:

@@ -8,8 +8,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiClientError, apiFetch, apiPost } from "@/lib/api-client";
-import { Panel, EmptyState, SkeletonBlock, ErrorState, ConfidenceBadge, EvidenceChip } from "@/components/common/primitives";
-import { ROLE_GLYPHS, PickGlyph, BanGlyph, HardFearlessGlyph, SoftFearlessGlyph, CompositionGlyph, ConfidenceGlyph, RiskGlyph, SeriesGlyph } from "@/components/icons/seriesight-icons";
+import { Panel, EmptyState, SkeletonBlock, ErrorState, EvidenceChip } from "@/components/common/primitives";
+import { ROLE_GLYPHS, PickGlyph, BanGlyph, HardFearlessGlyph, SoftFearlessGlyph, CompositionGlyph, ConfidenceGlyph, SeriesGlyph } from "@/components/icons/seriesight-icons";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useWorkspaceStore, haptic } from "@/store/workspace";
 import type { Champion, DraftGameState, DraftSession, Recommendation, CompositionProfile, Role, Side } from "@/domain/types";
@@ -33,9 +33,11 @@ export function DraftRoom() {
 
   // catalogue
   const [catalogue, setCatalogue] = useState<ChampionCatalogue | null>(null);
+  const [catalogueError, setCatalogueError] = useState(false);
   const [teams, setTeams] = useState<TeamRow[]>([]);
+  const [teamsError, setTeamsError] = useState(false);
   // config
-  const [cfgOpponent, setCfgOpponent] = useState("NVX");
+  const [cfgOpponent, setCfgOpponent] = useState("");
   const [cfgFormat, setCfgFormat] = useState<"BO1" | "BO3" | "BO5">("BO3");
   const [cfgMode, setCfgMode] = useState<"none" | "hard" | "soft">("hard");
   const [cfgScope, setCfgScope] = useState<"both" | "own">("both");
@@ -48,23 +50,54 @@ export function DraftRoom() {
   const [error, setError] = useState<ApiClientError | null>(null);
   const [recs, setRecs] = useState<RecommendationsPayload | null>(null);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [recsError, setRecsError] = useState(false);
   const [expandedRec, setExpandedRec] = useState<string | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    apiFetch<ChampionCatalogue>("/api/champions").then(setCatalogue).catch(() => setCatalogue(null));
-    apiFetch<TeamRow[]>("/api/teams").then(setTeams).catch(() => setTeams([]));
+  const loadCatalogue = useCallback(() => {
+    setCatalogue(null);
+    setCatalogueError(false);
+    apiFetch<ChampionCatalogue>("/api/champions").then(setCatalogue).catch(() => setCatalogueError(true));
   }, []);
+
+  const loadTeams = useCallback(() => {
+    setTeamsError(false);
+    apiFetch<TeamRow[]>("/api/teams").then((rows) => {
+      const opponents = rows.filter((team) => !team.isOurTeam);
+      setTeams(rows);
+      setCfgOpponent((current) => opponents.some((team) => team.id === current) ? current : opponents[0]?.id ?? "");
+    }).catch(() => {
+        setTeams([]);
+        setTeamsError(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadCatalogue();
+    loadTeams();
+  }, [loadCatalogue, loadTeams]);
 
   const session = activeSession;
   const game = session?.games.find((g) => g.gameNumber === session.currentGame) ?? null;
+  const opponentTeams = teams.filter((team) => !team.isOurTeam);
+  const missingRoleCount = game ? [...game.blue.picks, ...game.red.picks].filter((pick) => !pick.role).length : 0;
+  const finalizeBlocker = game && game.actions.length < SEQUENCE_TYPE.length
+    ? `Lock all ${SEQUENCE_TYPE.length} actions first.`
+    : missingRoleCount > 0
+      ? `Assign roles to ${missingRoleCount} remaining pick${missingRoleCount === 1 ? "" : "s"}.`
+      : null;
 
   const refreshRecs = useCallback((sessionId: string) => {
+    setRecs(null);
     setRecsLoading(true);
+    setRecsError(false);
     apiPost<RecommendationsPayload>("/api/draft/recommendations", { sessionId })
       .then(setRecs)
-      .catch(() => setRecs(null))
+      .catch(() => {
+        setRecs(null);
+        setRecsError(true);
+      })
       .finally(() => setRecsLoading(false));
   }, []);
 
@@ -132,7 +165,7 @@ export function DraftRoom() {
   const currentTurn = useMemo(() => {
     if (!game || !session) return null;
     const idx = game.actions.length;
-    if (game.status !== "drafting" || idx >= 20) return null;
+    if (game.status !== "drafting" || idx >= SEQUENCE_TYPE.length) return null;
     return { index: idx, type: SEQUENCE_TYPE[idx] as "ban" | "pick", side: (SEQUENCE_LABEL[idx] === "B" ? "BLUE" : "RED") as Side };
   }, [game, session]);
 
@@ -156,7 +189,7 @@ export function DraftRoom() {
       }
     }
     const idx = game.actions.length;
-    const actingSide = idx < 20 ? (SEQUENCE_LABEL[idx] === "B" ? "BLUE" : "RED") : null;
+    const actingSide = idx < SEQUENCE_LABEL.length ? (SEQUENCE_LABEL[idx] === "B" ? "BLUE" : "RED") : null;
     const actingTeamId = actingSide === "BLUE" ? game.blueTeamId : actingSide === "RED" ? game.redTeamId : null;
     const restrictedFor = (championId: string): string | null => {
       if (session.mode === "none") return null;
@@ -227,11 +260,18 @@ export function DraftRoom() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <Field label="Opponent">
               <select value={cfgOpponent} onChange={(e) => setCfgOpponent(e.target.value)} className="cfg-select" aria-label="Opponent">
-                {teams.filter((t) => !t.isOurTeam).map((t) => (
+                {opponentTeams.length === 0 && <option value="">{teamsError ? "Opponent list unavailable" : teams.length ? "No opponents available" : "Loading opponents…"}</option>}
+                {opponentTeams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
             </Field>
+            {teamsError && (
+              <p className="flex items-center gap-2 text-xs text-[var(--accent-coral)]" role="alert">
+                Opponent list unavailable.
+                <button type="button" onClick={loadTeams} className="min-h-[36px] underline underline-offset-2">Retry</button>
+              </p>
+            )}
             <Field label="Format">
               <select value={cfgFormat} onChange={(e) => setCfgFormat(e.target.value as "BO1" | "BO3" | "BO5")} className="cfg-select" aria-label="Series format">
                 {["BO1", "BO3", "BO5"].map((f) => <option key={f}>{f}</option>)}
@@ -266,10 +306,10 @@ export function DraftRoom() {
             <button
               type="button"
               onClick={createSession}
-              disabled={busy}
+              disabled={busy || opponentTeams.length === 0}
               className="rounded-lg border border-[var(--accent-cyan)]/60 bg-[var(--accent-cyan)]/10 px-5 py-2.5 text-sm font-semibold text-[var(--accent-cyan)] transition-colors hover:bg-[var(--accent-cyan)]/20 disabled:opacity-50"
             >
-              {busy ? "Creating…" : "Create draft session"}
+              {busy ? "Creating…" : teamsError ? "Retry opponent list above" : opponentTeams.length === 0 ? "No opponents available" : "Create draft session"}
             </button>
           </div>
         </Panel>
@@ -294,12 +334,12 @@ export function DraftRoom() {
               <button type="button" disabled={busy || game.status !== "drafting"} onClick={() => setResetConfirmOpen(true)} className="ctrl-btn">Reset</button>
               <button
                 type="button"
-                disabled={busy || game.status !== "drafting" || game.actions.length < 20}
+                disabled={busy || game.status !== "drafting" || Boolean(finalizeBlocker)}
                 onClick={() => mutate((id, v) => apiPost(`/api/draft/sessions/${id}/finalize`, { expectedStateVersion: v }), "Game finalized — Fearless restrictions propagate to the next game.")}
                 className="rounded-md border border-[var(--accent-green)]/60 bg-[var(--accent-green)]/10 px-3 py-1.5 text-xs font-medium text-[var(--accent-green)] disabled:opacity-40"
-                title={game.actions.length < 20 ? "All 20 actions must be locked first" : "Assign roles to all picks, then finalize"}
+                title={finalizeBlocker ?? "All picks are assigned; finalize to lock this game"}
               >
-                Finalize game
+                {finalizeBlocker ? "Complete draft to finalize" : "Finalize game"}
               </button>
               {game.status === "finalized" && session.currentGame < (session.format === "BO1" ? 1 : session.format === "BO3" ? 3 : 5) && (
                 <button
@@ -343,9 +383,9 @@ export function DraftRoom() {
                       "Sequence complete — assign roles and finalize."
                     )}
                   </p>
-                  <span className="tnum font-mono text-[11px] text-[var(--text-muted)]">{game.actions.length}/20 · phase {game.phase.replace("_", " ")}</span>
+                  <span className="tnum font-mono text-[11px] text-[var(--text-muted)]">{game.actions.length}/{SEQUENCE_TYPE.length} actions · phase {game.phase.replace("_", " ")}</span>
                 </div>
-                <div className="mt-2 flex gap-1" aria-hidden="true">
+                <div className="mt-2 flex gap-1" role="progressbar" aria-label="Draft actions completed" aria-valuemin={0} aria-valuemax={SEQUENCE_TYPE.length} aria-valuenow={game.actions.length}>
                   {SEQUENCE_TYPE.map((t, i) => (
                     <div
                       key={i}
@@ -353,6 +393,9 @@ export function DraftRoom() {
                     />
                   ))}
                 </div>
+                <p className="mt-2 text-[11px] text-[var(--text-secondary)]" role="status">
+                  {game.status === "finalized" ? "Ready — this game is locked and its restrictions carry forward." : finalizeBlocker ?? "Ready to finalize when you are."}
+                </p>
               </div>
 
               {/* Draft board */}
@@ -382,9 +425,20 @@ export function DraftRoom() {
                 }
               >
                 {!catalogue ? (
-                  <SkeletonBlock className="h-56" />
+                  catalogueError ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-[var(--accent-coral)]/40 p-4" role="alert">
+                      <p className="text-sm text-[var(--text-secondary)]">Champion catalogue could not be loaded.</p>
+                      <button type="button" onClick={loadCatalogue} className="min-h-[44px] rounded-md border border-[var(--border-active)] px-3 text-xs font-medium text-[var(--text-primary)]">Retry catalogue</button>
+                    </div>
+                  ) : <SkeletonBlock className="h-56" />
                 ) : (
-                  <div ref={gridRef} className="grid max-h-[340px] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-6 lg:grid-cols-8" role="listbox" aria-label="Champion grid">
+                  <div ref={gridRef} className="grid max-h-[340px] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-6 lg:grid-cols-8" role="group" aria-label="Champion availability">
+                    {filteredChampions.length === 0 && (
+                      <div className="col-span-full flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-[var(--border-subtle)] p-4">
+                        <p className="text-sm text-[var(--text-secondary)]">No champions match the current filters.</p>
+                        <button type="button" onClick={() => { setSearch(""); setRoleFilter("all"); }} className="min-h-[44px] rounded-md border border-[var(--border-active)] px-3 text-xs font-medium text-[var(--text-primary)]">Clear filters</button>
+                      </div>
+                    )}
                     {filteredChampions.map((c) => {
                       const av = availability?.[c.id] ?? { available: true, reasons: [] };
                       const isTurnTypeOk = currentTurn?.type;
@@ -468,7 +522,9 @@ export function DraftRoom() {
             <div className="order-3 flex flex-col gap-4">
               <Panel title="Recommended picks" subtitle={recsLoading ? "Refreshing…" : "Transparent 0–100 suitability score — not a win probability"}>
                 {!recs ? (
-                  recsLoading ? <SkeletonBlock className="h-44" /> : <EmptyState title="No recommendations yet" message="Make the first draft action to refresh the recommendation engine." />
+                  recsLoading ? <SkeletonBlock className="h-44" /> : recsError ? (
+                    <EmptyState title="Recommendations unavailable" message="The recommendation service did not respond. Retry it without changing the draft board." action={<button type="button" onClick={() => session && refreshRecs(session.id)} className="min-h-[44px] rounded-md border border-[var(--border-active)] px-3 text-xs font-medium">Retry recommendations</button>} />
+                  ) : <EmptyState title="No recommendations yet" message="Make the first draft action to refresh the recommendation engine." />
                 ) : (
                   <div className="flex flex-col gap-2">
                     {recs.picks.map((r) => (
@@ -480,7 +536,9 @@ export function DraftRoom() {
 
               <Panel title="Candidate bans" subtitle="Deny value from observed opponent usage">
                 {!recs ? (
-                  <SkeletonBlock className="h-36" />
+                  recsLoading ? <SkeletonBlock className="h-36" /> : recsError ? (
+                    <button type="button" onClick={() => session && refreshRecs(session.id)} className="min-h-[44px] w-full rounded-md border border-[var(--border-active)] px-3 text-xs font-medium text-[var(--text-secondary)]">Retry recommendation service</button>
+                  ) : <p className="text-xs text-[var(--text-muted)]">Recommendations appear after the first draft action.</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {recs.bans.map((r) => (

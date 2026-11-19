@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Demo-grade auth session — sufficient for the sandbox preview and judge
- * evaluation. The session persists in localStorage so a judge can reload the
- * page and stay in the workspace. Production deployments replace this module
- * with NextAuth (already wired in package.json) without touching call sites.
+ * Local fixture-demo session state. This is not authentication or authorization;
+ * the workspace must not be exposed to untrusted users.
  */
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -19,23 +17,63 @@ export interface SessionUser {
   signedInAt: string;
 }
 
+type SessionStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+export function createSafeSessionStorage(getStorage: () => SessionStorage) {
+  return {
+    getItem(name: string): string | null {
+      try {
+        const value = getStorage().getItem(name);
+        if (value === null) return null;
+        const envelope = JSON.parse(value) as { state?: { user?: unknown } };
+        if (!envelope || typeof envelope !== "object" || !envelope.state || typeof envelope.state !== "object" || Array.isArray(envelope.state)) return null;
+        const user = envelope?.state?.user;
+        if (user === null || user === undefined) return value;
+        if (typeof user !== "object" || Array.isArray(user)) return null;
+        const candidate = user as Record<string, unknown>;
+        if (
+          typeof candidate.name !== "string" ||
+          typeof candidate.email !== "string" ||
+          typeof candidate.role !== "string" ||
+          typeof candidate.signedInAt !== "string" ||
+          (candidate.kind !== "judge" && candidate.kind !== "coach")
+        ) return null;
+        return value;
+      } catch {
+        return null;
+      }
+    },
+    setItem(name: string, value: string): void {
+      try {
+        getStorage().setItem(name, value);
+      } catch {
+        // Demo sessions remain usable when browser storage is blocked.
+      }
+    },
+    removeItem(name: string): void {
+      try {
+        getStorage().removeItem(name);
+      } catch {
+        // Clearing an unavailable storage area is a no-op.
+      }
+    },
+  };
+}
+
 interface AuthStore {
   user: SessionUser | null;
   hydrated: boolean;
   signInJudge: () => void;
-  signInCoach: (email: string, name?: string) => void;
   signOut: () => void;
   markHydrated: () => void;
 }
 
 const JUDGE: Omit<SessionUser, "signedInAt"> = {
-  name: "Judge Demo",
-  email: "judge@seriesight.ae",
-  role: "Competition judge — full platform access",
+  name: "Fixture Demo Guest",
+  email: "demo@local.invalid",
+  role: "Local fixture demo; no authenticated access",
   kind: "judge",
 };
-
-export const JUDGE_CREDENTIALS = { email: JUDGE.email, password: "arena-volt-2026" } as const;
 
 function stamp(): string {
   return new Date().toISOString();
@@ -47,22 +85,12 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       hydrated: false,
       signInJudge: () => set({ user: { ...JUDGE, signedInAt: stamp() } }),
-      signInCoach: (email, name) =>
-        set({
-          user: {
-            name: name?.trim() || email.split("@")[0] || "Head Coach",
-            email,
-            role: "Head Coach — Signal Nine (demo squad)",
-            kind: "coach",
-            signedInAt: stamp(),
-          },
-        }),
       signOut: () => set({ user: null }),
       markHydrated: () => set({ hydrated: true }),
     }),
     {
       name: "seriesight-session",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => createSafeSessionStorage(() => localStorage)),
       partialize: (s) => ({ user: s.user }) as AuthStore,
       onRehydrateStorage: () => (state) => {
         state?.markHydrated();

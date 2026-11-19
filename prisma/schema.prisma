@@ -9,9 +9,10 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  // Absolute path so the dev server, Vitest and the standalone production
-  // bundle all resolve the same database file regardless of cwd.
-  url      = "file:/home/z/my-project/prisma/db/seriesight.db"
+  // Relative to this schema file → prisma/db/seriesight.db, so the demo
+  // database resolves identically for any contributor, any OS, no .env needed.
+  // Production deployments use PostgreSQL via prisma/schema.production.prisma.
+  url = "file:./db/seriesight.db"
 }
 
 model DraftSessionRecord {

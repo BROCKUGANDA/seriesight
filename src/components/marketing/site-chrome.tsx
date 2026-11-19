@@ -1,17 +1,13 @@
 "use client";
 
 /**
- * Commercial site chrome: sticky header + commercial footer shared by the
- * landing, pricing and legal pages. Footer implements the sticky-footer rule
- * (mt-auto inside a min-h-screen flex column) and carries the UAE company
- * identity, legal links and language markers.
+ * Public site chrome shared by the landing, license and legal pages.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SeriesightWordmark } from "@/components/brand/logo";
 import { useHashRoute } from "@/hooks/use-hash-route";
 import { useAuthStore } from "@/store/auth";
-import { COMPANY, CONTACT_EMAIL, TRIAL_DAYS } from "@/lib/commercial";
-import { TrialDialog } from "./trial-dialog";
+import { CONTACT_EMAIL } from "@/lib/commercial";
 
 /** Module-level helpers — hash writes stay outside component render scope. */
 function setHash(hash: string) {
@@ -25,16 +21,31 @@ function scrollToSection(href: string) {
 const HEADER_LINKS: { label: string; href: string }[] = [
   { label: "Product", href: "#product" },
   { label: "How it works", href: "#how" },
-  { label: "Pricing", href: "#/pricing" },
+  { label: "License", href: "#/pricing" },
   { label: "FAQ", href: "#faq" },
 ];
 
 export function SiteHeader() {
   const [, navigate] = useHashRoute();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [trialOpen, setTrialOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const wasMenuOpen = useRef(false);
   const signedIn = useAuthStore((s) => s.user !== null);
   const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      if (wasMenuOpen.current) menuButtonRef.current?.focus();
+      wasMenuOpen.current = false;
+      return;
+    }
+    wasMenuOpen.current = true;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
 
   // Anchor links only work on the landing page; if we are on pricing/legal,
   // first route home, then let the browser scroll to the anchor.
@@ -99,35 +110,20 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          {signedIn ? (
-            <button
-              type="button"
-              onClick={() => navigate("dashboard")}
-              className="hidden min-h-[40px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-4 text-[13px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)] sm:block"
-            >
-              Open workspace — {user?.name ?? "Coach"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => navigate("signin")}
-              className="hidden min-h-[40px] rounded-lg border border-[var(--border-active)] bg-[var(--surface-2)] px-4 text-[13px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--accent-cyan)] sm:block"
-            >
-              Judge demo · Sign in
-            </button>
-          )}
           <button
+            ref={menuButtonRef}
             type="button"
-            onClick={() => setTrialOpen(true)}
+            onClick={() => navigate(signedIn ? "dashboard" : "signin")}
             className="signal-gradient min-h-[40px] rounded-lg px-4 text-[13px] font-semibold text-[#0e1405] transition-opacity hover:opacity-90"
           >
-            Start free trial
+            {signedIn ? `Open ${user?.name ?? "workspace"}` : "Explore demo"}
           </button>
           <button
             type="button"
             className="min-h-[40px] rounded-lg border border-[var(--border-subtle)] px-3 text-[var(--text-secondary)] md:hidden"
             onClick={() => setMenuOpen((v) => !v)}
             aria-expanded={menuOpen}
+            aria-controls="site-mobile-navigation"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -142,7 +138,7 @@ export function SiteHeader() {
       </div>
 
       {menuOpen && (
-        <nav aria-label="Site mobile" className="border-t border-[var(--border-subtle)] bg-[var(--bg-void)] px-4 py-3 md:hidden">
+        <nav id="site-mobile-navigation" aria-label="Site mobile" className="border-t border-[var(--border-subtle)] bg-[var(--bg-void)] px-4 py-3 md:hidden">
           {HEADER_LINKS.map((l) =>
             isHashLink(l.href) ? (
               <a
@@ -172,12 +168,10 @@ export function SiteHeader() {
             }}
             className="block w-full rounded-lg px-3 py-3 text-left text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--text-primary)]"
           >
-            {signedIn ? "Open workspace" : "Judge demo · Sign in"}
+            {signedIn ? "Open workspace" : "Explore fixture demo"}
           </button>
         </nav>
       )}
-
-      <TrialDialog open={trialOpen} onOpenChange={setTrialOpen} />
     </header>
   );
 }
@@ -197,9 +191,9 @@ export function SiteFooter() {
   ];
 
   const companyLinks: { label: string; onClick: () => void }[] = [
-    { label: "Pricing", onClick: () => navigate("pricing") },
-    { label: "Terms of Service", onClick: () => navigate("terms") },
-    { label: "Privacy Policy", onClick: () => navigate("privacy") },
+    { label: "License & availability", onClick: () => navigate("pricing") },
+    { label: "Demo use notes", onClick: () => navigate("terms") },
+    { label: "Privacy & data notes", onClick: () => navigate("privacy") },
     { label: "Data Sources & GRID", onClick: () => navigate("data-sources") },
     { label: "Workspace Settings", onClick: () => navigate("settings") },
   ];
@@ -211,10 +205,7 @@ export function SiteFooter() {
           <div>
             <SeriesightWordmark />
             <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-[var(--text-secondary)]">
-              League of Legends coaching intelligence and Fearless Draft management — the series, in focus.
-            </p>
-            <p className="mt-3 text-[13px] text-[var(--text-muted)]" lang="ar" dir="rtl">
-              منصة التحليل والتخطيط لفرق دوري الأساطير — انطلاقاً من دبي إلى العالم.
+              League of Legends pre-match coaching demo with labelled fixture data and an inspectable Fearless Draft workflow.
             </p>
           </div>
 
@@ -232,7 +223,7 @@ export function SiteFooter() {
           </nav>
 
           <nav aria-label="Company links">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Company</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Project</p>
             <ul className="mt-3 space-y-2.5">
               {companyLinks.map((l) => (
                 <li key={l.label}>
@@ -250,24 +241,17 @@ export function SiteFooter() {
           </nav>
 
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Registered office</p>
-            <address className="mt-3 text-[13px] not-italic leading-relaxed text-[var(--text-secondary)]">
-              {COMPANY.legalName}
-              <br />
-              {COMPANY.addressLine}
-              <br />
-              {COMPANY.city}, {COMPANY.country}
-            </address>
-            <p className="mt-3 text-[12px] text-[var(--text-muted)]">
-              Support hours Sun–Thu, 09:00–18:00 Gulf Standard Time (UTC+4).
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Status</p>
+            <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              Public fixture-data demo. No paid plans, trial provisioning, or production-ready authentication is included.
             </p>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-3 border-t border-[var(--border-subtle)] pt-6 text-[11px] text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
-          <span>© {year} {COMPANY.legalName}. All rights reserved. Prices in AED, VAT exclusive.</span>
+          <span>© {year} Seriesight. Source licensed under BSL 1.1.</span>
           <span className="font-mono">
-            Demo runs on an illustrative fixture dataset — not official Riot Games or GRID data. {TRIAL_DAYS}-day trial on paid plans.
+            Fixture data is illustrative—not a live feed or official competition result.
           </span>
         </div>
       </div>

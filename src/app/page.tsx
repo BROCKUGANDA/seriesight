@@ -1,14 +1,12 @@
 "use client";
 
 /**
- * Seriesight — League of Legends esports coaching intelligence and Fearless Draft
- * management platform. The sandbox preview exposes only `/`, so the commercial
- * site (landing, pricing, legal), the sign-in gateway and the twelve workspace
- * destinations live on hash routes inside this client shell (PRD Part D
- * information architecture preserved).
+ * Seriesight — fixture-based pre-match coaching demo. The public landing page,
+ * demo entry, license notes and workspace destinations use hash routes inside
+ * this client shell.
  *
- * Auth gate: workspace routes require a session. Judges get one-click demo
- * access from the sign-in gateway; marketing routes stay public.
+ * Local demo-state gate: workspace routes require a browser session flag.
+ * This is not authentication or authorization; marketing routes stay public.
  */
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/app-shell";
