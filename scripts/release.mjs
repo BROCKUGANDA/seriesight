@@ -165,8 +165,19 @@ function assertCleanTree() {
   }
 }
 
-const branchExists = (name) =>
-  git(["rev-parse", "--verify", "--quiet", `refs/heads/${name}`], { capture: true, allowInDryRun: true }).length > 0;
+const refExists = (ref) => {
+  try {
+    git(["rev-parse", "--verify", "--quiet", ref], { capture: true, allowInDryRun: true, throwOnFail: true });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// A fresh CI checkout only has the triggering branch locally; the other branch
+// is available as origin/<name>. Accept either and resolve to the ref to use.
+const branchExists = (name) => refExists(`refs/heads/${name}`) || refExists(`refs/remotes/origin/${name}`);
+const resolveBranch = (name) => (refExists(`refs/heads/${name}`) ? name : `origin/${name}`);
 
 function currentBranch() {
   return git(["rev-parse", "--abbrev-ref", "HEAD"], { capture: true, allowInDryRun: true });
@@ -187,13 +198,13 @@ function cmdVersion() {
   log(`── version ${kind}: ${readPackage().version} → ${next} ──`);
   assertCleanTree();
   setVersion(next);
-  git(["add", "package.json"], { allowInDryRun: true });
-  git(["commit", "-m", `chore(release): v${next}`], { allowInDryRun: true });
+  git(["add", "package.json"]);
+  git(["commit", "-m", `chore(release): v${next}`]);
   if (has("--tag")) {
-    git(["tag", `-a`, `v${next}`, "-m", `Seriesight v${next}`], { allowInDryRun: true });
+    git(["tag", `-a`, `v${next}`, "-m", `Seriesight v${next}`]);
   }
   if (has("--push") && hasRemote()) {
-    git(["push", "origin", currentBranch(), ...(has("--tag") ? [`v${next}`] : [])], { allowInDryRun: true });
+    git(["push", "origin", currentBranch(), ...(has("--tag") ? [`v${next}`] : [])]);
   }
   log(`✓ version ${next}${has("--tag") ? ` — tagged v${next}` : ""}`);
 }
@@ -210,12 +221,12 @@ function cmdPromote() {
   if (!branchExists(to)) die(`branch not found: ${to}`);
 
   const startingBranch = currentBranch();
-  const toShaBefore = git(["rev-parse", to], { capture: true, allowInDryRun: true });
+  const toShaBefore = git(["rev-parse", resolveBranch(to)], { capture: true, allowInDryRun: true });
 
-  // 1. merge
-  git(["checkout", to], { allowInDryRun: true });
+  // 1. merge (state-changing git calls are only logged under --dry-run)
+  git(["checkout", to]);
   try {
-    git(["merge", "--no-ff", from, "-m", `merge: promote ${from} into ${to}`], { allowInDryRun: true });
+    git(["merge", "--no-ff", resolveBranch(from), "-m", `merge: promote ${from} into ${to}`]);
   } catch {
     if (!DRY) {
       git(["reset", "--hard", toShaBefore]);
@@ -225,7 +236,9 @@ function cmdPromote() {
   }
 
   // 2. schema must exist for DB-backed gates (dev checkouts have it gitignored/untracked)
-  try {
+  // Never touch the configured database under --dry-run.
+  if (DRY) log("  [dry-run] skipping database setup (db:generate, db:push)");
+  else try {
     log("── database ──");
     log("▸ setup: bun run db:generate");
     execFileSync(RUNNER, RUNNER === "bun" ? ["run", "db:generate"] : ["run", "db:generate"], { cwd: ROOT, stdio: "inherit" });
@@ -241,7 +254,8 @@ function cmdPromote() {
   }
 
   // 3. gates on the merged tree; roll back on failure
-  try {
+  if (DRY) log("  [dry-run] skipping quality gates");
+  else try {
     runGates(to === "main");
   } catch {
     log("✗ gates failed — rolling back the merge");
@@ -262,19 +276,19 @@ function cmdPromote() {
   if (to === "main" && parsed.pre) die(`main releases must be final versions — ${next} has a prerelease tag`);
 
   setVersion(next);
-  git(["add", "package.json"], { allowInDryRun: true });
-  git(["commit", "-m", `chore(release): v${next}`], { allowInDryRun: true });
-  git(["tag", "-a", `v${next}`, "-m", `Seriesight v${next}`], { allowInDryRun: true });
+  git(["add", "package.json"]);
+  git(["commit", "-m", `chore(release): v${next}`]);
+  git(["tag", "-a", `v${next}`, "-m", `Seriesight v${next}`]);
 
   // 4. push — the Release workflow creates the GitHub release from the tag
   if (hasRemote()) {
-    git(["push", "origin", to, `v${next}`], { allowInDryRun: true });
+    git(["push", "origin", to, `v${next}`]);
     if (to === "main") log(`▸ GitHub Release for v${next} is created by .github/workflows/release.yml after CI gates`);
   } else {
     log("⚠ no git remote — skipped push (tag exists locally)");
   }
 
-  git(["checkout", startingBranch], { allowInDryRun: true });
+  git(["checkout", startingBranch]);
   log(`✓ ${to} is now v${next} (tag v${next})`);
 }
 
@@ -288,4 +302,8 @@ else {
   log("  node scripts/release.mjs version <major|minor|patch|prerelease> [--preid rc] [--tag] [--push]");
   log("  node scripts/release.mjs promote --from dev --to staging [--version X.Y.Z-rc.N] [--dry-run] [--skip-gates]");
   log("  node scripts/release.mjs promote --from staging --to main [--version X.Y.Z] [--dry-run] [--skip-gates]");
+}
+X.Y.Z] [--dry-run] [--skip-gates]");
+}
+]sion X.Y.Z] [--dry-run] [--skip-gates]");
 }
