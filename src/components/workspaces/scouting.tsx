@@ -21,6 +21,8 @@ export interface ScoutingFiltersLike {
 
 interface TeamRow { id: string; name: string; shortName: string; region: string; isOurTeam: boolean }
 interface Profile {
+  provider: "fixture" | "grid";
+  label: string;
   team: { id: string; name: string; shortName: string; region: string; roster: Player[] };
   isOurTeam: boolean;
   summary: OpponentSummary;
@@ -47,7 +49,10 @@ export function OpponentIntelligence() {
   const [openInsight, setOpenInsight] = useState<Insight | null>(null);
 
   useEffect(() => {
-    apiFetch<TeamRow[]>("/api/teams").then(setTeams).catch(() => setTeams([]));
+    apiFetch<TeamRow[]>("/api/teams").then((rows) => {
+      setTeams(rows);
+      setSelected((current) => rows.some((team) => team.id === current) ? current : rows[0]?.id ?? "");
+    }).catch(() => setTeams([]));
     apiFetch<TournamentRow[]>("/api/tournaments").then(setTournaments).catch(() => setTournaments([]));
     apiFetch<Series[]>("/api/series").then(setSeries).catch(() => setSeries([]));
   }, []);
@@ -201,7 +206,7 @@ export function OpponentIntelligence() {
               <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {/* Champion selection frequency */}
                 <Panel title="Champion selection frequency" subtitle={`Top ${CHAMPION_USAGE_LIMIT} by combined pick+ban weight · denominator = eligible games`}>
-                  <div className="overflow-x-auto rounded-lg border border-[var(--border-subtle)]">
+                  <div className="scroll-x overflow-x-auto rounded-lg border border-[var(--border-subtle)]" role="region" aria-label="Pick frequency table, scrollable horizontally" tabIndex={0}>
                     <table className="w-full min-w-[560px] text-left text-xs">
                       <thead className="bg-[var(--surface-2)] text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                         <tr>

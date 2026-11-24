@@ -20,9 +20,38 @@ after each change.
 
 ## First deploy
 
+### Block-storage placement
+
+The application source/release directory is `/mnt/data/apps/seriesight` on `/dev/sdb`, mounted at `/mnt/data`. Docker's `/var/lib/docker` is also mounted on `/dev/sdb`, so images and the existing `seriesight_seriesight-pgdata` named volume remain on block storage. Do not remove/recreate the database volume during redeployment. The original `/home/ubuntu/seriesight` checkout is retained as a fallback, not the active deployment directory.
+
+Confirm placement with `df -h /mnt/data/apps/seriesight /var/lib/docker` and `docker volume inspect seriesight_seriesight-pgdata`. Runtime secrets stay in the deployment directory's private `.env`; never include that file in source archives. Use `--env-file /mnt/data/apps/seriesight/.env` explicitly with Compose because the Compose file is nested.
+
+For subsequent deployments, copy the reviewed source (excluding `.env`, `.git`, `node_modules`, and `.next`) into `/mnt/data/apps/seriesight`, then run:
+
 ```bash
-git clone --branch staging https://github.com/BROCKUGANDA/seriesight.git ~/seriesight
-cd ~/seriesight
+cd /mnt/data/apps/seriesight
+docker compose --env-file .env -f deploy/vps/compose.yaml build app
+docker compose --env-file .env -f deploy/vps/compose.yaml up -d --no-deps app
+curl --fail https://seriesight.aiazimara.com/api/health
+node scripts/judge-smoke.mjs https://seriesight.aiazimara.com --draft
+```
+
+The Dockerfile explicitly includes the generated Prisma client and Alpine query engine; a successful health response alone does not prove database-backed routes work. Always check Data Sources and a persisted draft session as well. Back up PostgreSQL before schema changes; apply schema changes separately, never using a destructive reset.
+
+### Authentication upgrade
+
+Back up PostgreSQL before adding the additive `AuthUserRecord`, `AuthSessionRecord`, and `AuthThrottleRecord` tables. Build the new image, run the migration profile against the existing volume, then recreate the app. No existing draft is assigned to a new account: old shared `ws-demo` drafts intentionally remain inaccessible through private accounts.
+
+Run `node scripts/ensure-auth-env.mjs` in the private deployment directory (or with the Node container) to create a random `AUTH_INVITE_CODE` without printing it. The script preserves existing invitations and locks `.env` to mode 600. Retrieve that code via your secure server administration channel, then use **Have an invitation? Create account** at `/#/signin`. Do not put the invitation in judge instructions or commit it. The compose configuration sets the exact external `APP_ORIGIN` for same-origin mutation checks.
+
+`GRID_API_KEY` still requires an authorized GRID account with completed LoL series access and schema introspection. Set it privately in `.env`, recreate the app, sign in as a coach, and import official completed series IDs in Data Sources. Train the model there after importing enough real history; fixture data cannot activate probabilities. See `GRID_INTEGRATION.md` and `WIN_PROBABILITY.md` for access and validation boundaries.
+
+### Original bootstrap reference
+
+```bash
+mkdir -p /mnt/data/apps
+git clone --branch staging https://github.com/BROCKUGANDA/seriesight.git /mnt/data/apps/seriesight
+cd /mnt/data/apps/seriesight
 
 # .env — POSTGRES_PASSWORD strong+unique (openssl rand -hex 24), GRID_API_KEY optional
 printf 'POSTGRES_PASSWORD=%s\nGRID_API_KEY=%s\n' "$(openssl rand -hex 24)" "$GRID_API_KEY" > .env
@@ -53,9 +82,10 @@ curl -sI https://seriesight.aiazimara.com/                                  # vi
 ## Redeploy
 
 ```bash
-cd ~/seriesight && git fetch && git checkout staging && git pull
-docker compose -f deploy/vps/compose.yaml up -d --build
-docker compose -f deploy/vps/compose.yaml --profile migrate run --rm migrate   # when the schema changed
+cd /mnt/data/apps/seriesight
+# Update the reviewed source here, preserving the private .env and database volume.
+docker compose --env-file .env -f deploy/vps/compose.yaml up -d --build
+docker compose --env-file .env -f deploy/vps/compose.yaml --profile migrate run --rm migrate   # review first; only when the schema changed
 ```
 
 ## Production notes

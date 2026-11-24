@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { ZodError, ZodType } from "zod";
 import { AppError, type ErrorCode } from "@/domain/errors";
+import { assertSameOrigin, authError, identityContext, resolveIdentity } from "@/lib/auth";
+import { withSelectedDataset } from "@/services/dataset";
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -53,6 +55,8 @@ export function fail(
 
 const STATUS_BY_CODE: Partial<Record<ErrorCode, number>> = {
   VALIDATION_ERROR: 400,
+  SESSION_EXPIRED: 401,
+  ACCESS_DENIED: 403,
   NOT_FOUND: 404,
   DRAFT_STALE_VERSION: 409,
   DRAFT_SESSION_COMPLETED: 409,
@@ -82,7 +86,19 @@ export function handler<A extends unknown[]>(
 ): (req: NextRequest, ...rest: A) => Promise<NextResponse> {
   return async (req: NextRequest, ...rest: A) => {
     try {
-      return await fn(req, ...rest);
+      assertSameOrigin(req);
+      const path = req.nextUrl.pathname;
+      if (path === "/api/health" || path === "/api/leads" || path.startsWith("/api/auth/")) return await fn(req, ...rest);
+      const identity = await resolveIdentity(req);
+      if (!identity) throw authError();
+      // These experimental global stores have no workspace ownership model.
+      if (path.startsWith("/api/billing/") || path.startsWith("/api/integration/")) {
+        throw authError("Experimental billing and integrations are disabled until workspace isolation is implemented.", true);
+      }
+      if (identity.kind !== "coach" && ((path === "/api/data-sources" && req.method !== "GET") || path.startsWith("/api/ingestion/"))) {
+        throw authError("Only authenticated coaches can import provider data.", true);
+      }
+      return await identityContext.run(identity, () => withSelectedDataset(() => fn(req, ...rest)));
     } catch (err) {
       if (err instanceof AppError) {
         return fail(

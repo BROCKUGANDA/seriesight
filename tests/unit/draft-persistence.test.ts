@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { NextRequest } from "next/server";
+import { AuthenticatedRequest as NextRequest } from "../helpers/auth";
 import { db } from "@/lib/db";
 import { AppError } from "@/domain/errors";
 import { createSession, applyDraftAction, resetGame } from "@/services/draft";

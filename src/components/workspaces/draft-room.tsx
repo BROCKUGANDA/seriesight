@@ -16,6 +16,7 @@ import type { Champion, DraftGameState, DraftSession, Recommendation, Compositio
 import { ALL_ROLES } from "@/domain/types";
 import { getChampion } from "@/fixtures/champions";
 import { formatPct } from "@/domain/analytics/stats";
+import { WinProbability } from "@/components/workspaces/win-probability";
 
 interface ChampionCatalogue { champions: Champion[]; metadataVersion: string; metadataSource: string; warnings: string[] }
 interface RecommendationsPayload { picks: Recommendation[]; bans: Recommendation[]; alternatives: CompositionProfile[] }
@@ -38,6 +39,7 @@ export function DraftRoom() {
   const [teamsError, setTeamsError] = useState(false);
   // config
   const [cfgOpponent, setCfgOpponent] = useState("");
+  const [cfgOurTeam, setCfgOurTeam] = useState("");
   const [cfgFormat, setCfgFormat] = useState<"BO1" | "BO3" | "BO5">("BO3");
   const [cfgMode, setCfgMode] = useState<"none" | "hard" | "soft">("hard");
   const [cfgScope, setCfgScope] = useState<"both" | "own">("both");
@@ -64,7 +66,9 @@ export function DraftRoom() {
   const loadTeams = useCallback(() => {
     setTeamsError(false);
     apiFetch<TeamRow[]>("/api/teams").then((rows) => {
-      const opponents = rows.filter((team) => !team.isOurTeam);
+      const ourTeam = rows.find((team) => team.isOurTeam)?.id ?? rows[0]?.id ?? "";
+      const opponents = rows.filter((team) => team.id !== ourTeam);
+      setCfgOurTeam(ourTeam);
       setTeams(rows);
       setCfgOpponent((current) => opponents.some((team) => team.id === current) ? current : opponents[0]?.id ?? "");
     }).catch(() => {
@@ -80,7 +84,7 @@ export function DraftRoom() {
 
   const session = activeSession;
   const game = session?.games.find((g) => g.gameNumber === session.currentGame) ?? null;
-  const opponentTeams = teams.filter((team) => !team.isOurTeam);
+  const opponentTeams = teams.filter((team) => team.id !== cfgOurTeam);
   const missingRoleCount = game ? [...game.blue.picks, ...game.red.picks].filter((pick) => !pick.role).length : 0;
   const finalizeBlocker = game && game.actions.length < SEQUENCE_TYPE.length
     ? `Lock all ${SEQUENCE_TYPE.length} actions first.`
@@ -112,6 +116,7 @@ export function DraftRoom() {
       const rulesetId = cfgMode === "none" ? `std-${cfgFormat.toLowerCase()}` : `ff-${cfgMode}-${cfgFormat.toLowerCase()}`;
       const s = await apiPost<DraftSession>("/api/draft/sessions", {
         opponentTeamId: cfgOpponent,
+        ourTeamId: cfgOurTeam,
         format: cfgFormat,
         rulesetId,
         modeOverride: cfgMode,
@@ -258,6 +263,15 @@ export function DraftRoom() {
         <Panel title="Draft configuration" subtitle="Opponent, format, tournament sequence, Fearless ruleset, sides">
           {error && <ErrorState code={error.code} message={error.message} recovery={error.recovery} />}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <Field label="Our team">
+              <select value={cfgOurTeam} onChange={(e) => {
+                const id = e.target.value;
+                setCfgOurTeam(id);
+                if (cfgOpponent === id) setCfgOpponent(teams.find((team) => team.id !== id)?.id ?? "");
+              }} className="cfg-select" aria-label="Our team">
+                {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+              </select>
+            </Field>
             <Field label="Opponent">
               <select value={cfgOpponent} onChange={(e) => setCfgOpponent(e.target.value)} className="cfg-select" aria-label="Opponent">
                 {opponentTeams.length === 0 && <option value="">{teamsError ? "Opponent list unavailable" : teams.length ? "No opponents available" : "Loading opponents…"}</option>}
@@ -359,7 +373,8 @@ export function DraftRoom() {
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[240px_1fr_320px]">
             {/* Left: opponent profile */}
             <div className="order-2 flex flex-col gap-4 xl:order-1">
-              <Panel title="Opponent profile" subtitle="Fixture-scouted priorities">
+              <WinProbability key={`${session.id}:${session.stateVersion}`} session={session} />
+              <Panel title="Opponent profile" subtitle="Selected-dataset scouting priorities">
                 <OpponentMini teamId={session.opponentTeamId} />
               </Panel>
             </div>
@@ -432,7 +447,7 @@ export function DraftRoom() {
                     </div>
                   ) : <SkeletonBlock className="h-56" />
                 ) : (
-                  <div ref={gridRef} className="grid max-h-[340px] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-6 lg:grid-cols-8" role="group" aria-label="Champion availability">
+                  <div ref={gridRef} className="scroll-x grid max-h-[340px] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-4 lg:grid-cols-8" role="group" aria-label="Champion availability">
                     {filteredChampions.length === 0 && (
                       <div className="col-span-full flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-[var(--border-subtle)] p-4">
                         <p className="text-sm text-[var(--text-secondary)]">No champions match the current filters.</p>
@@ -452,7 +467,7 @@ export function DraftRoom() {
                           onClick={() => setSelected(selected === c.id ? null : c.id)}
                           title={av.available ? `${c.displayName} — available (${c.primaryRole}${c.flexRoles.length ? ` / ${c.flexRoles.join("/")}` : ""})` : `Unavailable: ${av.reasons.join("; ")}`}
                           aria-label={`${c.displayName}, ${av.available ? "available" : `unavailable: ${av.reasons.join("; ")}`}`}
-                          className={`champ-tile flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-center ${
+                          className={`champ-tile flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-center ${
                             !av.available
                               ? "border-[var(--border-subtle)] bg-[var(--surface-1)]/40 opacity-45"
                               : selected === c.id

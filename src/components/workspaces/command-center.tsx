@@ -10,6 +10,8 @@ import { RadarGlyph, PickGlyph, SeriesGlyph, ImportGlyph, RiskGlyph } from "@/co
 
 interface DashboardData {
   dataset: {
+    provider: "fixture" | "grid";
+    label: string;
     seriesCount: number;
     gameCount: number;
     opponents: number;
@@ -52,6 +54,11 @@ export function CommandCenter() {
   }, [load]);
 
   const prepare = async (opponent: string, format: "BO3" | "BO5", rulesetId: string, mode: "none" | "hard" | "soft") => {
+    if (data?.dataset.provider === "grid") {
+      navigate("draft");
+      pushToast("Choose our team and opponent from the imported GRID teams.");
+      return;
+    }
     setPreparing(true);
     haptic("pick", hapticsEnabled);
     try {
@@ -91,7 +98,7 @@ export function CommandCenter() {
               <h1 className="editorial-title text-3xl leading-tight text-[var(--text-primary)] sm:text-4xl">
                 Prepare with the series in view.
               </h1>
-              <FixtureBadge />
+              {data?.dataset.provider === "fixture" && <FixtureBadge />}
             </div>
             <p className="mt-1.5 max-w-xl text-sm text-[var(--text-secondary)]">
               Upcoming preparation:{" "}
@@ -105,7 +112,7 @@ export function CommandCenter() {
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
               <span className="rounded-full border border-[var(--border-active)] bg-[var(--surface-2)] px-2.5 py-1 font-mono text-[var(--text-secondary)]">dataset {data?.dataset.datasetId ?? "…"}</span>
-              <span className="rounded-full border border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10 px-2.5 py-1 text-[var(--accent-green)]">Illustrative fixture workspace</span>
+              <span className="rounded-full border border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10 px-2.5 py-1 text-[var(--accent-green)]">{data?.dataset.label ?? "Loading data source…"}</span>
             </div>
           </div>
           <div className="max-w-60 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-4">

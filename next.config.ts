@@ -48,6 +48,13 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
+  // Modern formats with an automatic JPEG fallback for browsers that lack them.
+  // Device sizes cover phones, tablets and high-DPI desktops.
+  images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [360, 430, 640, 768, 1024, 1280, 1536, 1920],
+    imageSizes: [16, 32, 48, 96, 192, 384],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

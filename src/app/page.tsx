@@ -5,8 +5,7 @@
  * demo entry, license notes and workspace destinations use hash routes inside
  * this client shell.
  *
- * Local demo-state gate: workspace routes require a browser session flag.
- * This is not authentication or authorization; marketing routes stay public.
+ * Workspace identity is resolved from the server session; marketing stays public.
  */
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/app-shell";
@@ -82,6 +81,10 @@ export default function SeriesightApp() {
   const hydrated = useAuthStore((s) => s.hydrated);
   const [booted, setBooted] = useState(false);
   const [bootPhase, setBootPhase] = useState(0);
+
+  useEffect(() => {
+    void useAuthStore.getState().refresh();
+  }, []);
 
   // Brand boot sequence: aperture loader → content (PRD F5/F2 motion-hero window).
   useEffect(() => {

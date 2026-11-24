@@ -13,7 +13,7 @@ export const GET = handler(async (req) => {
 const actionSchema = z.object({
   action: z.enum(["import", "verify"]),
   provider: z.enum(["fixture", "grid"]).default("fixture"),
-  seriesId: z.string().optional(),
+  seriesId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).optional(),
 });
 
 export const POST = handler(async (req: NextRequest) => {

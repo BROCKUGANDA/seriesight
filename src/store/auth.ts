@@ -1,15 +1,16 @@
 "use client";
 
 /**
- * Local fixture-demo session state. This is not authentication or authorization;
- * the workspace must not be exposed to untrusted users.
+ * UI identity cache; the server cookie is the only authentication authority.
  */
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { useWorkspaceStore } from "@/store/workspace";
+import { useCoachStore } from "@/store/coach";
 
 export type AccountKind = "judge" | "coach";
 
 export interface SessionUser {
+  workspaceId?: string;
   name: string;
   email: string;
   role: string;
@@ -63,41 +64,47 @@ export function createSafeSessionStorage(getStorage: () => SessionStorage) {
 interface AuthStore {
   user: SessionUser | null;
   hydrated: boolean;
-  signInJudge: () => void;
-  signOut: () => void;
+  signInJudge: () => Promise<void>;
+  signInCoach: (input: { action: "login" | "register"; email: string; password: string; name?: string; inviteCode?: string }) => Promise<void>;
+  signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
   markHydrated: () => void;
 }
 
-const JUDGE: Omit<SessionUser, "signedInAt"> = {
-  name: "Fixture Demo Guest",
-  email: "demo@local.invalid",
-  role: "Local fixture demo; no authenticated access",
-  kind: "judge",
-};
-
-function stamp(): string {
-  return new Date().toISOString();
+async function sessionRequest(method: string, body?: unknown) {
+  const response = await fetch("/api/auth/session", {
+    method, headers: body ? { "Content-Type": "application/json" } : {},
+    ...(body ? { body: JSON.stringify(body) } : {}), cache: "no-store",
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error?.message || "Unable to update your session.");
+  return result.data;
 }
 
-export const useAuthStore = create<AuthStore>()(
-  persist(
-    (set) => ({
-      user: null,
-      hydrated: false,
-      signInJudge: () => set({ user: { ...JUDGE, signedInAt: stamp() } }),
-      signOut: () => set({ user: null }),
-      markHydrated: () => set({ hydrated: true }),
-    }),
-    {
-      name: "seriesight-session",
-      storage: createJSONStorage(() => createSafeSessionStorage(() => localStorage)),
-      partialize: (s) => ({ user: s.user }) as AuthStore,
-      onRehydrateStorage: () => (state) => {
-        state?.markHydrated();
-      },
-    },
-  ),
-);
+export const useAuthStore = create<AuthStore>((set, get) => ({
+  user: null,
+  hydrated: false,
+  refresh: async () => {
+    try {
+      const user = await sessionRequest("GET");
+      if (user?.workspaceId !== get().user?.workspaceId) {
+        useWorkspaceStore.setState({ activeSession: null, evidenceDrawer: { open: false, evidenceId: null }, toast: null });
+        useCoachStore.setState(useCoachStore.getInitialState());
+      }
+      set({ user, hydrated: true });
+    }
+    catch { set({ user: null, hydrated: true }); }
+  },
+  signInJudge: async () => { await sessionRequest("POST", { action: "demo" }); await get().refresh(); },
+  signInCoach: async (input) => { await sessionRequest("POST", input); await get().refresh(); },
+  signOut: async () => {
+    await sessionRequest("POST", { action: "logout" });
+    useWorkspaceStore.setState({ activeSession: null, evidenceDrawer: { open: false, evidenceId: null }, toast: null });
+    useCoachStore.setState(useCoachStore.getInitialState());
+    set({ user: null });
+  },
+  markHydrated: () => set({ hydrated: true }),
+}));
 
 /** True once hydration settled and a user is present. SSR-safe default: false. */
 export function useIsSignedIn(): boolean {

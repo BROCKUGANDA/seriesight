@@ -2,12 +2,11 @@
 
 /**
  * Coach operations store — the coaching-suite data layer for Playbook,
- * Player Hub, VOD Review and the Practice Planner. Persists to localStorage
- * so every judge action survives a reload, and ships pre-seeded with a
+ * Player Hub, VOD Review and the Practice Planner. These illustrative tools are
+ * memory-only and reset on account changes; they ship pre-seeded with a
  * realistic Signal Nine (SGT) preparation week against Nova Vanguard (NVX).
  */
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 
 /* ------------------------------------------------------------------ types */
 export type StrategyStatus = "ready" | "draft" | "retired";
@@ -373,7 +372,6 @@ interface CoachStore {
 }
 
 export const useCoachStore = create<CoachStore>()(
-  persist(
     (set, get) => ({
       strategies: SEED_STRATEGIES,
       players: SEED_PLAYERS,
@@ -449,10 +447,4 @@ export const useCoachStore = create<CoachStore>()(
           notifications: [{ ...n, id: uid("n"), at: now(), read: false }, ...get().notifications].slice(0, 30),
         }),
     }),
-    {
-      name: "seriesight-coach-suite",
-      storage: createJSONStorage(() => localStorage),
-      version: 1,
-    },
-  ),
 );

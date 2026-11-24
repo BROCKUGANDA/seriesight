@@ -11,6 +11,7 @@ import { Panel, EmptyState, SkeletonBlock, ErrorState, FixtureBadge } from "@/co
 import { ImportGlyph, IntegrityGlyph, RiskGlyph, HardFearlessGlyph } from "@/components/icons/seriesight-icons";
 import { useWorkspaceStore } from "@/store/workspace";
 import type { DataSourceConnection, IngestionJob } from "@/domain/types";
+import { useAuthStore } from "@/store/auth";
 
 interface Overview {
   connections: DataSourceConnection[];
@@ -38,6 +39,9 @@ export function DataSources() {
   const [error, setError] = useState<ApiClientError | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const pushToast = useWorkspaceStore((s) => s.pushToast);
+  const isCoach = useAuthStore((s) => s.user?.kind === "coach");
+  const [seriesId, setSeriesId] = useState("");
+  const [training, setTraining] = useState<{ status: string; reason?: string; metrics?: unknown } | null>(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -58,7 +62,7 @@ export function DataSources() {
         const r = await apiPost<{ status: string; detail: string }>("/api/data-sources", { action, provider: "grid" });
         pushToast(`GRID probe: ${r.status} — ${r.detail}`, r.status === "connected" ? "ok" : "warn");
       } else {
-        const job = await apiPost<IngestionJob>("/api/data-sources", { action, provider });
+        const job = await apiPost<IngestionJob>("/api/data-sources", { action, provider, ...(provider === "grid" ? { seriesId: seriesId.trim() } : {}) });
         pushToast(
           job.status === "succeeded"
             ? `Import succeeded: ${job.seriesCount} series, ${job.gameCount} games through all 6 stages.`
@@ -81,6 +85,13 @@ export function DataSources() {
     }
   };
 
+  const train = async () => {
+    setBusy("train");
+    try { setTraining(await apiPost("/api/prediction", { action: "train" })); }
+    catch (e) { pushToast(e instanceof Error ? e.message : "Training failed.", "error"); }
+    finally { setBusy(null); }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -89,6 +100,20 @@ export function DataSources() {
           GRID is reached only through the server-side provider adapter with host allowlisting, timeouts and a circuit breaker. The demo workspace never requires GRID credentials.
         </p>
       </header>
+
+      <Panel title="Real match history and win model" subtitle="Coach-only · licensed data stays in your workspace">
+        <p className="text-sm text-[var(--text-secondary)]">Import completed LoL series by official GRID series ID, then train from the accumulated history. The model requires at least 500 games split chronologically across training, calibration and test sets, with sufficient series and outcome diversity. It withholds probabilities when stage-specific validation fails.</p>
+        {isCoach ? <div className="mt-3 space-y-3">
+          <label className="block text-sm">GRID series ID<input value={seriesId} onChange={(e) => setSeriesId(e.target.value)} maxLength={128} placeholder="Official completed series ID" className="ml-2 min-h-11 rounded border px-3" /></label>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="ctrl-btn" disabled={busy !== null || !/^[A-Za-z0-9_-]{1,128}$/.test(seriesId.trim())} onClick={() => act("import", "grid")}>Import GRID series</button>
+            <button type="button" className="ctrl-btn" disabled={busy !== null} onClick={train}>{busy === "train" ? "Training…" : "Train and validate win model"}</button>
+          </div>
+          {training && <div role="status" className="text-sm">{training.status === "ready" ? "Model fitted. Draft Room displays probabilities only for stages passing quality gates." : training.reason}
+            {training.metrics !== undefined && <details><summary>Calibration and held-out diagnostics</summary><pre className="overflow-auto text-xs">{JSON.stringify(training.metrics, null, 2)}</pre></details>}
+          </div>}
+        </div> : <p className="mt-3 text-sm text-[var(--accent-amber)]">You are in an isolated fixture sandbox. Sign in with an invited coach account to import GRID data or train a model.</p>}
+      </Panel>
 
       {error ? (
         <ErrorState code={error.code} message={error.message} recovery={error.recovery} retryable={error.retryable} onRetry={load} />
@@ -103,8 +128,8 @@ export function DataSources() {
               return (
                 <Panel key={conn.provider} title="GRID Central Data" subtitle="Provider adapter — server-side only" actions={
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => act("verify", "grid")} disabled={busy !== null} className="ctrl-btn">Verify connection</button>
-                    <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null} className="ctrl-btn">Run import</button>
+                    <button type="button" onClick={() => act("verify", "grid")} disabled={busy !== null || !isCoach} className="ctrl-btn">Verify connection</button>
+                    <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null || !isCoach || !seriesId.trim()} className="ctrl-btn">Run import</button>
                   </div>
                 }>
                   <div className="flex flex-wrap items-center gap-2">
@@ -231,7 +256,7 @@ export function DataSources() {
               <span className="mx-1 rounded bg-[var(--surface-3)] px-1.5 py-0.5 font-mono text-[10px]">GRID_CREDENTIAL_MISSING</span>
               error and the circuit breaker reports its state — while the fixture workspace above stays fully functional. Nothing silently mixes real and synthetic records.
             </p>
-            <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null} className="ctrl-btn mt-3">
+            <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null || !isCoach || !seriesId.trim()} className="ctrl-btn mt-3">
               Trigger GRID import (expected failure in demo mode)
             </button>
           </Panel>

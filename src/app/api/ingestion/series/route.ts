@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   provider: z.enum(["fixture", "grid"]).default("fixture"),
-  seriesId: z.string().optional(),
+  seriesId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).optional(),
 });
 
 /**
@@ -25,7 +25,9 @@ export const POST = handler(async (req: NextRequest) => {
   ensureBusBootstrapped();
   const job = await runImport(body.provider, body.seriesId);
   let integration: { eventId: string; topic: string; status: string } | null = null;
-  if (job.status === "succeeded") {
+  // The integration bus is not workspace-scoped yet. Never publish licensed
+  // GRID imports to its global subscribers or fixture evidence refresh consumer.
+  if (job.status === "succeeded" && body.provider === "fixture") {
     const { event } = await emitSeriesImported({
       provider: body.provider,
       seriesCount: job.seriesCount,

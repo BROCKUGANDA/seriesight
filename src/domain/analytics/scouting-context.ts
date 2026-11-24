@@ -3,7 +3,6 @@
  * Deterministic: same team + same filters + same dataset ⇒ identical output.
  */
 import type {
-  Champion,
   ConfidenceInterval,
   Game,
   Insight,
@@ -12,20 +11,20 @@ import type {
   Side,
   Tournament,
 } from "@/domain/types";
-import { getChampion } from "@/fixtures/champions";
-import { FIXTURE_GAMES_INDEX, FIXTURE_SERIES_INDEX, teamSideIn } from "@/fixtures/dataset";
-import { TOURNAMENT_INDEX } from "@/fixtures/teams";
+import { CHAMPIONS, getChampion } from "@/fixtures/champions";
+import { FIXTURE_GAMES, FIXTURE_SERIES, FIXTURE_INFO } from "@/fixtures/dataset";
+import { TEAMS, TOURNAMENTS } from "@/fixtures/teams";
+import { selectedDataset, type SelectedDataset, type DatasetSeries } from "@/services/dataset";
+import { identityContext } from "@/lib/auth";
 import { ANALYSIS_VERSION, EvidenceLedger } from "@/domain/evidence/builder";
 import { evidenceStrength, rateStat, wilsonInterval, Z_95 } from "./stats";
 import {
-  averageDuration,
   baronControlRate,
   earlyKillPattern,
   firstDragonRate,
   firstTurretRate,
   heraldControlRate,
   intervalBreakdown,
-  type IntervalBucket,
 } from "./macro";
 
 export interface ScoutingFilters {
@@ -36,6 +35,66 @@ export interface ScoutingFilters {
   toDate?: string;
   gameNumber?: number;
   role?: Role | "all";
+}
+
+export function analyticsDataset(): SelectedDataset {
+  const identity = identityContext.getStore();
+  const dataset = identity ? selectedDataset() : undefined;
+  return (dataset?.provider !== "grid" || identity?.kind === "coach" ? dataset : undefined) ?? {
+    provider: "fixture", datasetId: FIXTURE_INFO.datasetId, label: FIXTURE_INFO.label,
+    games: FIXTURE_GAMES, series: FIXTURE_SERIES, historicalSeries: [],
+    warnings: ["Illustrative fixture data, not official GRID results."],
+  };
+}
+
+export function datasetTeams(dataset = analyticsDataset()) {
+  if (dataset.provider === "fixture") return TEAMS;
+  return [...new Map(dataset.historicalSeries.flatMap((s) => s.teams).map((t) => [t.id, {
+    id: `grid:${t.id}`, name: t.name, shortName: t.name, region: "unknown", roster: [],
+  }])).values()];
+}
+
+type DatasetTournament = Omit<Tournament, "tier" | "startDate" | "endDate" | "draftPolicy"> & {
+  tier: Tournament["tier"] | null;
+  startDate: string | null;
+  endDate: string | null;
+  draftPolicy: Tournament["draftPolicy"] | null;
+};
+
+export function datasetTournaments(dataset = analyticsDataset()): DatasetTournament[] {
+  if (dataset.provider === "fixture") return TOURNAMENTS;
+  return [...new Map(dataset.historicalSeries.map((s) => [s.tournament.id, {
+    id: `grid:${s.tournament.id}`, title: s.tournament.name, tier: null, region: "unknown",
+    startDate: null, endDate: null, draftPolicy: null,
+  }])).values()];
+}
+
+type DraftGame = Omit<Game, "draft" | "durationSec"> & {
+  durationSec: number | null;
+  draft: Omit<Game["draft"], "picks"> & {
+    picks: (Omit<Game["draft"]["picks"][number], "role"> & { role: Role | null })[];
+  };
+};
+
+function draftGames(dataset: SelectedDataset): DraftGame[] {
+  if (dataset.provider === "fixture") return dataset.games;
+  const canonical = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const names = new Map(CHAMPIONS.flatMap((c) => [c.id, c.canonicalName, c.displayName].map((n) => [canonical(n), c.id])));
+  return dataset.historicalSeries.flatMap((s) => s.games.map((g): DraftGame => {
+    const mapped = (p: { championName: string }) => names.get(canonical(p.championName));
+    const covered = [...g.picks, ...g.bans].every((p) => mapped(p));
+    return {
+      id: `grid:${s.seriesId}:${g.id}`, seriesId: `grid:${s.seriesId}`, gameNumber: g.gameNumber,
+      patch: s.patch ?? "unknown", startedAt: s.startedAt, durationSec: g.durationSec,
+      blueTeamId: `grid:${g.blueTeamId}`, redTeamId: `grid:${g.redTeamId}`,
+      winnerTeamId: `grid:${g.winnerTeamId}`, blueWin: g.winnerTeamId === g.blueTeamId,
+      draft: { firstPickSide: g.picks[0].side,
+        picks: covered ? g.picks.map((p) => ({ championId: mapped(p)!, teamId: `grid:${p.teamId}`, playerId: p.playerId ? `grid:${p.playerId}` : null, role: p.role, side: p.side, order: p.order })) : [],
+        bans: covered ? g.bans.map((p) => ({ championId: mapped(p)!, teamId: `grid:${p.teamId}`, side: p.side, order: p.order })) : [],
+      }, events: [], coverage: { draft: covered, objectives: false, players: g.picks.every((p) => p.playerId !== null && p.role !== null), macroIntervals: false },
+      sourceProvider: "grid", sourceDatasetId: s.datasetId,
+    };
+  }));
 }
 
 export interface ChampionUsage {
@@ -69,18 +128,18 @@ export interface OpponentSummary {
   coverage: { objectives: number; players: number; draft: number };
 }
 
-function inFilters(game: Game, teamId: string, f: ScoutingFilters): boolean {
+function inFilters(game: DraftGame, teamId: string, f: ScoutingFilters, seriesIndex: Map<string, DatasetSeries>): boolean {
   // The team must actually participate in the game — otherwise every denominator
   // would silently include games the team did not play.
   if (game.blueTeamId !== teamId && game.redTeamId !== teamId) return false;
-  const side = teamSideIn(game, teamId);
+  const side = game.blueTeamId === teamId ? "BLUE" : "RED";
   if (f.side && f.side !== "both" && side !== f.side) return false;
   if (f.patch && game.patch !== f.patch) return false;
   if (f.fromDate && game.startedAt < f.fromDate) return false;
   if (f.toDate && game.startedAt > `${f.toDate}T23:59:59Z`) return false;
   if (f.gameNumber && game.gameNumber !== f.gameNumber) return false;
   if (f.tournamentId) {
-    const series = FIXTURE_SERIES_INDEX.get(game.seriesId);
+    const series = seriesIndex.get(game.seriesId);
     if (!series || series.tournamentId !== f.tournamentId) return false;
   }
   return true;
@@ -95,33 +154,33 @@ export class ScoutingContext {
   readonly eligibleGames: Game[];
   readonly summary: OpponentSummary;
   readonly usage: Map<string, ChampionUsage>;
-  readonly tournamentsUsed: Tournament[];
+  readonly tournamentsUsed: ReturnType<typeof datasetTournaments>;
+  readonly dataset = analyticsDataset();
+  readonly workspaceId = identityContext.getStore()?.workspaceId ?? "ws-demo";
+  readonly seriesIndex = new Map(this.dataset.series.map((s) => [s.id, s]));
+  readonly draftGames: DraftGame[];
 
   constructor(teamId: string, filters: ScoutingFilters = {}, nowISO = new Date().toISOString()) {
     this.teamId = teamId;
     this.filters = filters;
     this.nowISO = nowISO;
-    this.games = FIXTURE_GAMES_INDEX.size
-      ? [...(function* () {
-          for (const g of FIXTURE_GAMES_INDEX.values()) yield g;
-        })()]
-      : [];
+    this.games = [...this.dataset.games];
     this.games.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
-    this.eligibleGames = this.games.filter((g) => inFilters(g, teamId, filters));
+    this.eligibleGames = this.games.filter((g) => inFilters(g, teamId, filters, this.seriesIndex));
+    this.draftGames = draftGames(this.dataset).filter((g) => inFilters(g, teamId, filters, this.seriesIndex));
     this.usage = this.computeUsage();
     this.summary = this.computeSummary();
-    this.tournamentsUsed = [...new Set(this.eligibleGames.map((g) => FIXTURE_SERIES_INDEX.get(g.seriesId)!.tournamentId))]
-      .map((id) => TOURNAMENT_INDEX.get(id)!)
-      .filter(Boolean);
+    const tournamentIds = new Set(this.draftGames.map((g) => this.seriesIndex.get(g.seriesId)?.tournamentId));
+    this.tournamentsUsed = datasetTournaments(this.dataset).filter((t) => tournamentIds.has(t.id));
   }
 
   /** Games in the dataset where the analysed team faced this opponent. */
   private computeUsage(): Map<string, ChampionUsage> {
     const map = new Map<string, ChampionUsage>();
-    const draftEligible = this.eligibleGames.filter((g) => g.coverage.draft);
+    const draftEligible = this.draftGames.filter((g) => g.coverage.draft);
     for (const game of draftEligible) {
-      const side = teamSideIn(game, this.teamId);
-      const picks = game.draft.picks.filter((p) => p.teamId === this.teamId);
+      const side = game.blueTeamId === this.teamId ? "BLUE" : "RED";
+      const picks = game.draft.picks.filter((p) => p.teamId === this.teamId && (!this.filters.role || this.filters.role === "all" || p.role === this.filters.role));
       const bans = game.draft.bans.filter((b) => b.teamId === this.teamId);
       const won = game.winnerTeamId === this.teamId;
 
@@ -157,7 +216,10 @@ export class ScoutingContext {
       }
       for (const ban of bans) {
         const u = map.get(ban.championId);
-        if (u) u.bans++;
+        if (u) {
+          u.bans++;
+          if (!u.gameIds.includes(game.id)) u.gameIds.push(game.id);
+        }
         else {
           const champ = getChampion(ban.championId);
           if (!champ) continue;
@@ -175,7 +237,7 @@ export class ScoutingContext {
             bySide: { BLUE: { picks: 0, games: 0 }, RED: { picks: 0, games: 0 } },
             firstRotationPicks: 0,
             avgPickOrder: null,
-            gameIds: [],
+            gameIds: [game.id],
             players: [],
           });
         }
@@ -200,11 +262,11 @@ export class ScoutingContext {
           denominator: u.picks,
         });
       }
-      const blueGames = this.eligibleGames.filter((g) => g.coverage.draft && g.blueTeamId === this.teamId).length;
-      const redGames = this.eligibleGames.filter((g) => g.coverage.draft && g.redTeamId === this.teamId).length;
+      const blueGames = draftEligible.filter((g) => g.blueTeamId === this.teamId).length;
+      const redGames = draftEligible.filter((g) => g.redTeamId === this.teamId).length;
       u.bySide.BLUE.games = blueGames;
       u.bySide.RED.games = redGames;
-      const orders = this.eligibleGames
+      const orders = draftEligible
         .flatMap((g) => g.draft.picks.filter((p) => p.teamId === this.teamId && p.championId === u.championId).map((p) => p.order));
       u.avgPickOrder = orders.length ? orders.reduce((s, v) => s + v, 0) / orders.length : null;
     }
@@ -212,13 +274,13 @@ export class ScoutingContext {
   }
 
   private computeSummary(): OpponentSummary {
-    const games = this.eligibleGames;
+    const games = this.draftGames;
     const seriesIds = new Set(games.map((g) => g.seriesId));
     let wins = 0;
     let losses = 0;
     const bySeries = new Map<string, { teamA: string; teamB: string; winner: string | null; games: number }>();
     for (const g of games) {
-      const s = FIXTURE_SERIES_INDEX.get(g.seriesId)!;
+      const s = this.seriesIndex.get(g.seriesId)!;
       bySeries.set(s.id, { teamA: s.teamAId, teamB: s.teamBId, winner: s.winnerTeamId, games: (bySeries.get(s.id)?.games ?? 0) + 1 });
       if (g.winnerTeamId === this.teamId) wins++;
       else if (g.winnerTeamId) losses++;
@@ -293,7 +355,7 @@ export class ScoutingContext {
   /** Repeated compositions: pick-sets used in >= 2 games of the filtered dataset. */
   repeatedCompositions(): { championIds: string[]; occurrences: number; gameIds: string[] }[] {
     const map = new Map<string, { championIds: string[]; occurrences: number; gameIds: string[] }>();
-    for (const g of this.eligibleGames) {
+    for (const g of this.draftGames.filter((g) => g.coverage.draft)) {
       const set = g.draft.picks
         .filter((p) => p.teamId === this.teamId)
         .map((p) => p.championId)
@@ -310,7 +372,7 @@ export class ScoutingContext {
   /** Pick-priority drift by game number (Fearless adaptation signal). */
   crossGameShift(): { gameNumber: number; games: number; topChampions: { championId: string; picks: number }[] }[] {
     const byGame = new Map<number, Map<string, number>>();
-    for (const g of this.eligibleGames) {
+    for (const g of this.draftGames.filter((g) => g.coverage.draft)) {
       const inner = byGame.get(g.gameNumber) ?? new Map<string, number>();
       for (const p of g.draft.picks.filter((p) => p.teamId === this.teamId)) {
         inner.set(p.championId, (inner.get(p.championId) ?? 0) + 1);
@@ -321,7 +383,7 @@ export class ScoutingContext {
       .sort((a, b) => a[0] - b[0])
       .map(([gameNumber, champs]) => ({
         gameNumber,
-        games: this.eligibleGames.filter((g) => g.gameNumber === gameNumber).length,
+        games: this.draftGames.filter((g) => g.coverage.draft && g.gameNumber === gameNumber).length,
         topChampions: [...champs.entries()]
           .map(([championId, picks]) => ({ championId, picks }))
           .sort((a, b) => b.picks - a.picks)
@@ -369,21 +431,25 @@ export class ScoutingContext {
   // ----- macro wrappers -----
   macro() {
     const games = this.eligibleGames;
+    const withDuration = this.draftGames.filter((g): g is DraftGame & { durationSec: number } => g.durationSec !== null && g.durationSec > 0);
     return {
       firstDragon: firstDragonRate(games, this.teamId),
       herald: heraldControlRate(games, this.teamId),
       baron: baronControlRate(games, this.teamId),
       firstTurret: firstTurretRate(games, this.teamId),
       earlyKills: earlyKillPattern(games, this.teamId),
-      duration: averageDuration(games),
+      duration: {
+        stat: rateStat({ definition: "average_game_duration (seconds)", numerator: withDuration.reduce((sum, g) => sum + g.durationSec, 0), denominator: withDuration.length, unit: "seconds" }),
+        gameIds: withDuration.map((g) => g.id),
+      },
       intervals: intervalBreakdown(games, this.teamId),
       objectiveCoverage: games.filter((g) => g.coverage.objectives).length,
-      excludedGames: games.length - games.filter((g) => g.coverage.objectives).length,
+      excludedGames: this.draftGames.length - games.filter((g) => g.coverage.objectives).length,
     };
   }
 
   gameTimeline(gameId: string): { game: Game; events: (GameEventShim)[] } | null {
-    const g = FIXTURE_GAMES_INDEX.get(gameId);
+    const g = this.games.find((g) => g.id === gameId);
     if (!g) return null;
     return { game: g, events: g.events };
   }
@@ -397,9 +463,9 @@ type GameEventShim = Game["events"][number];
  */
 export function buildInsights(ctx: ScoutingContext): Insight[] {
   const insights: Insight[] = [];
-  const wsId = "ws-demo";
-  const provenance = "fixture" as const;
-  const patches = [...new Set(ctx.eligibleGames.map((g) => g.patch))].sort().join(", ");
+  const wsId = ctx.workspaceId;
+  const provenance = ctx.dataset.provider;
+  const patches = [...new Set(ctx.draftGames.map((g) => g.patch))].sort().join(", ");
   const patchContext = patches || "n/a";
   let seq = 0;
   const mkInsight = (
@@ -410,7 +476,8 @@ export function buildInsights(ctx: ScoutingContext): Insight[] {
     const evidence = ctx.ledger.addStat({
       insightId: null,
       provider: provenance,
-      sourceId: `fixture:${ctx.teamId}`,
+      sourceId: `${provenance}:${ctx.workspaceId}:${ctx.dataset.datasetId}:${ctx.teamId}`,
+      extraLimitations: [ctx.dataset.label, ...ctx.dataset.warnings],
       gameIds: evidenceGameIds,
       tournamentId: ctx.filters.tournamentId ?? null,
       patch: ctx.filters.patch ?? null,
@@ -423,6 +490,11 @@ export function buildInsights(ctx: ScoutingContext): Insight[] {
         sampleSize: partial.metric.sampleSize,
       },
     });
+    if (provenance === "grid") {
+      evidence.datasetId = ctx.dataset.datasetId;
+      evidence.ingestedAt = ctx.dataset.historicalSeries.map((s) => s.fetchedAt).sort().at(-1)!;
+      evidence.limitations = [ctx.dataset.label, ...ctx.dataset.warnings];
+    }
     return {
       ...partial,
       id: `INS-${ctx.teamId}-${String(seq).padStart(2, "0")}`,
@@ -521,7 +593,7 @@ export function buildInsights(ctx: ScoutingContext): Insight[] {
           metric: rateStat({
             definition: "composition_repeat_count (games)",
             numerator: repeated.occurrences,
-            denominator: ctx.eligibleGames.filter((g) => g.coverage.draft).length,
+            denominator: ctx.draftGames.filter((g) => g.coverage.draft).length,
           }),
           side: "both",
           patchContext,

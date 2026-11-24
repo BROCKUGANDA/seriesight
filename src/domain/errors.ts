@@ -53,6 +53,7 @@ export type ErrorCode =
   | "NETWORK_DISCONNECTED"
   | "REQUEST_TIMEOUT"
   | "SESSION_EXPIRED"
+  | "ACCESS_DENIED"
   | "RATE_LIMITED"
   | "INTERNAL_ERROR";
 

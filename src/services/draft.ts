@@ -4,6 +4,8 @@
  * series restrictions → composition analysis → recommendation refresh → board.
  */
 import { db } from "@/lib/db";
+import { currentWorkspace } from "@/lib/auth";
+import { selectedDataset } from "@/services/dataset";
 import type { Prisma } from "@prisma/client";
 import type {
   DraftGameState,
@@ -132,7 +134,14 @@ export interface CreateSessionInput {
 export async function createSession(input: CreateSessionInput): Promise<DraftSession> {
   const ruleset = rulesetById(input.rulesetId);
   if (!ruleset) throw ERRORS.validation(`Unknown ruleset "${input.rulesetId}".`, { rulesetId: input.rulesetId });
-  if (!TEAM_INDEX.has(input.opponentTeamId)) throw ERRORS.unknownTeam(input.opponentTeamId);
+  const dataset = selectedDataset();
+  const allowedTeams = dataset?.provider === "grid"
+    ? new Set(dataset.historicalSeries.flatMap((series) => series.teams.map((team) => `grid:${team.id}`)))
+    : new Set(TEAM_INDEX.keys());
+  const ourTeamId = input.ourTeamId ?? OUR_TEAM_ID;
+  if (!allowedTeams.has(input.opponentTeamId)) throw ERRORS.unknownTeam(input.opponentTeamId);
+  if (!allowedTeams.has(ourTeamId)) throw ERRORS.unknownTeam(ourTeamId);
+  if (ourTeamId === input.opponentTeamId) throw ERRORS.validation("Choose two different teams.");
   const mode = input.modeOverride ?? ruleset.mode;
   const scope = input.scopeOverride ?? ruleset.restrictionsScope;
   const ourSide: Side = input.ourSide ?? "BLUE";
@@ -142,7 +151,7 @@ export async function createSession(input: CreateSessionInput): Promise<DraftSes
 
   const sessionDraft: DraftSession = {
     id: "",
-    workspaceId: WORKSPACE_ID,
+    workspaceId: currentWorkspace(),
     ourTeamId: input.ourTeamId ?? OUR_TEAM_ID,
     opponentTeamId: input.opponentTeamId,
     format: input.format,
@@ -154,7 +163,7 @@ export async function createSession(input: CreateSessionInput): Promise<DraftSes
     stateVersion: 1,
     games: [],
     tournamentId: input.tournamentId ?? null,
-    patch: input.patch ?? CURRENT_PATCH,
+    patch: input.patch ?? (dataset?.provider === "grid" ? "unknown" : CURRENT_PATCH),
     pool,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -195,7 +204,7 @@ export async function createSession(input: CreateSessionInput): Promise<DraftSes
 
 async function loadSession(sessionId: string): Promise<{ rec: SessionRecordLike; session: DraftSession }> {
   const rec = await db.draftSessionRecord.findUnique({ where: { id: sessionId } });
-  if (!rec) throw ERRORS.notFound(`Draft session ${sessionId}`);
+  if (!rec || rec.workspaceId !== currentWorkspace()) throw ERRORS.notFound(`Draft session ${sessionId}`);
   return { rec, session: toSession(rec) };
 }
 
@@ -210,7 +219,7 @@ async function persist(
   return db.$transaction(async (tx) => {
     if (action) await auditAction(tx, session.id, action.gameNumber, action.record);
     const updated = await tx.draftSessionRecord.updateMany({
-      where: { id: session.id, stateVersion: expectedStateVersion },
+      where: { id: session.id, workspaceId: currentWorkspace(), stateVersion: expectedStateVersion },
       data: {
         currentGame: session.currentGame,
         status: session.status,
@@ -442,7 +451,7 @@ export async function getSession(sessionId: string): Promise<DraftSession> {
 
 export async function listSessions(limit = 12): Promise<DraftSession[]> {
   const recs = await db.draftSessionRecord.findMany({
-    where: { workspaceId: WORKSPACE_ID },
+    where: { workspaceId: currentWorkspace() },
     orderBy: { createdAt: "desc" },
     take: limit,
   });

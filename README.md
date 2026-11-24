@@ -15,13 +15,15 @@ Explore the workflow from opponent scouting to a versioned draft and multi-game 
 
 ## Judges: open the demo
 
-Visit **https://seriesight.aiazimara.com/#/signin** and click **Enter fixture demo**. No registration, email, password, payment, or GRID account is required. This is a demo entry, not authentication; do not enter private coaching information. Start with the five-minute walkthrough below.
+Visit **https://seriesight.aiazimara.com/#/signin** and click **Enter fixture demo**. No registration, email, password, payment, or GRID account is required. The server issues an expiring cookie and a separate fixture sandbox for each visitor; it does not grant coach access. Start with the five-minute walkthrough below.
 
-The demo answers opponent tendency and later-game Fearless availability questions using clearly labelled deterministic fixtures. Recommendation scores are explainable heuristics, **not predicted win rates** or evidence of causal win-rate improvements. Official GRID access is optional and server-side; the fixture experience remains reproducible without a key.
+The demo answers opponent tendency and later-game Fearless availability questions using clearly labelled deterministic fixtures. Recommendation scores remain explainable heuristics, **not predicted win rates**. The separate win-probability model requires imported real outcomes, chronological training/calibration/test sets, and stage-specific quality checks; it abstains without sufficient validated data. See [model methodology](docs/WIN_PROBABILITY.md). Official GRID access is optional and server-side; the fixture experience remains reproducible without a key.
+
+**Coach accounts:** use **Have an invitation? Create account** with the operator's invitation code, email, and a password of at least 12 characters. Accounts own separate draft workspaces. Configure `AUTH_INVITE_CODE` privately on the server to enable registration; never publish it in this README. There is no email verification or password-recovery service yet. Judge access remains available without the invitation.
 
 Reproduce locally with Bun 1.x: `bun install --frozen-lockfile`, `bun run db:generate`, `bunx prisma db push`, then `bun run dev`. Open `http://localhost:3000/#/signin`. Run `bun run test`, `bun run typecheck`, `bun run lint`, and `bun run build` separately for cross-platform verification. See [the VPS runbook](docs/VPS_DEPLOY.md) for block-storage deployment and persistent PostgreSQL verification.
 
-Run `node scripts/judge-smoke.mjs https://seriesight.aiazimara.com` for read-only API checks. Append `--draft` to create one illustrative BO5 draft and verify legal actions, persistence, and stale-write rejection. This leaves the created fixture draft available for inspection; it does not modify existing drafts.
+Run `node scripts/judge-smoke.mjs https://seriesight.aiazimara.com` for API checks in a newly issued sandbox. Append `--draft` to create one illustrative BO5 draft and verify legal actions, persistence, and stale-write rejection. The script revokes its session afterwards; it never reads or modifies other workspaces.
 
 ## What is implemented
 
@@ -87,9 +89,9 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full runbook (managed dat
 
 ## Readiness and commercial deployment
 
-Seriesight is a hackathon/demo application, not a production-ready multi-tenant service. The current demo has no authentication, workspace authorization, session ownership checks, or HTTP rate limiting; draft version checks protect concurrent state updates but do not protect access. Experimental billing routes are also unauthenticated and must not be used with real funds or exposed to untrusted users. Integration webhook delivery can reach arbitrary HTTPS destinations and loopback addresses, so a public deployment also needs trusted endpoint administration and outbound network controls that block unapproved/private destinations.
+Seriesight now has invite-based coach authentication, salted password hashes, expiring/revocable server sessions, same-origin mutation checks, database-backed sign-in throttling, and draft workspace ownership checks. Experimental billing and integration APIs are disabled because their global stores are not tenant-isolated. Playbook, player notes, VOD and practice tools remain illustrative, memory-only tools that reset on account changes; only draft workflows are persisted privately.
 
-Before a public production deployment, add and verify identity and per-workspace access controls, request throttling, outbound egress restrictions, payment-flow authentication and ownership checks, an independent payment review, operational monitoring, and tested backup/restore procedures. Production use also requires separate authorization under the Business Source License and compliance with applicable GRID data terms; non-production use and redistribution are governed by the license itself. See [`docs/SECURITY.md`](docs/SECURITY.md) and [`LICENSE`](LICENSE).
+Before production use, complete an independent security review, broad API rate limiting, email verification/recovery, operational monitoring, and tested backup/restore procedures. Keep the disabled APIs disabled until ownership and egress controls are audited. Production use also requires separate authorization under the Business Source License and compliance with applicable GRID data terms; non-production use and redistribution are governed by the license itself. See [`docs/SECURITY.md`](docs/SECURITY.md) and [`LICENSE`](LICENSE).
 
 ## Branches & release automation
 

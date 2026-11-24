@@ -26,6 +26,7 @@ WORKDIR /app
 RUN addgroup -S seriesight && adduser -S seriesight -G seriesight
 
 COPY --from=build --chown=seriesight:seriesight /app/.next/standalone ./
+COPY --from=build --chown=seriesight:seriesight /app/node_modules/.prisma/client ./node_modules/.prisma/client
 
 USER seriesight
 EXPOSE 4180

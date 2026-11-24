@@ -24,6 +24,7 @@ node_modules
 dev.log
 server.log
 dev.out.log
+.output.txt
 
 # scratch / session artifacts (kept locally, not published)
 /tool-results/

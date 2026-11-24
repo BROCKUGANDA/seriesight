@@ -15,6 +15,30 @@ datasource db {
   url = "file:./db/seriesight.db"
 }
 
+model AuthUserRecord {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  workspaceId  String   @unique @default(uuid())
+  createdAt    DateTime @default(now())
+}
+
+model AuthSessionRecord {
+  tokenHash   String   @id
+  userId      String?
+  workspaceId String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model AuthThrottleRecord {
+  key      String @id
+  attempts Int    @default(1)
+}
+
 model DraftSessionRecord {
   id                 String   @id @default(uuid())
   workspaceId        String   @default("ws-demo")

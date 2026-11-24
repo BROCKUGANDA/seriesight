@@ -95,6 +95,11 @@ body {
   font-family: var(--font-geist-sans), sans-serif;
   font-feature-settings: "tnum" 1;
   min-height: 100vh;
+  /* Dynamic viewport avoids the mobile URL-bar jump; 100vh is the fallback. */
+  min-height: 100dvh;
+  /* Stop iOS/Android text inflation when a tablet rotates to landscape. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .editorial-title {
@@ -134,6 +139,32 @@ body {
   outline: 2px solid var(--accent-cyan);
   outline-offset: 2px;
   border-radius: 6px;
+}
+
+/* Touch input: remove the legacy 300ms tap delay and sticky hover states. */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  select,
+  summary {
+    touch-action: manipulation;
+  }
+  .press-fx {
+    min-height: 44px; /* WCAG 2.5.8 touch target */
+  }
+}
+
+/* Horizontal data tables stay scrollable on phones without page scroll chaining. */
+.scroll-x {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* Browsers without `inert` still keep the closed off-canvas nav out of tab order. */
+@supports not (inert) {
+  .nav-drawer[aria-hidden="true"] {
+    visibility: hidden;
+  }
 }
 
 /* --------------------------- Signal gradients ---------------------------- */
@@ -351,6 +382,7 @@ body {
     linear-gradient(rgba(88, 117, 11, 0.065) 1px, transparent 1px),
     linear-gradient(90deg, rgba(99, 80, 162, 0.035) 1px, transparent 1px);
   background-size: 44px 44px;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 78%);
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 78%);
 }
 .scanlines {
@@ -434,8 +466,12 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
   .tilt-3d {
+    transform: none !important;
+  }
+  .champ-tile:hover:not(:disabled) {
     transform: none !important;
   }
 }
@@ -454,9 +490,12 @@ body {
 .champ-tile {
   transition: transform 120ms ease-out, border-color 120ms ease-out, box-shadow 120ms ease-out;
 }
-.champ-tile:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: var(--border-active);
+/* Hover lift is mouse-only: touch devices keep the tap feedback below. */
+@media (hover: hover) and (pointer: fine) {
+  .champ-tile:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--border-active);
+  }
 }
 .champ-tile:active:not(:disabled) {
   transform: scale(0.97);

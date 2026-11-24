@@ -3,7 +3,7 @@
  * checks and provider adapter behaviour with mocked responses.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { NextRequest } from "next/server";
+import { AuthenticatedRequest as NextRequest } from "../helpers/auth";
 import { GET as healthGET } from "@/app/api/health/route";
 import { GET as dashboardGET } from "@/app/api/dashboard/route";
 import { POST as sessionsPOST } from "@/app/api/draft/sessions/route";

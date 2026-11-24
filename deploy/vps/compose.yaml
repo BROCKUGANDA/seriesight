@@ -54,6 +54,8 @@ services:
       HOSTNAME: 0.0.0.0
       PROD_DATABASE_URL: postgresql://seriesight:${POSTGRES_PASSWORD}@db:5432/seriesight
       GRID_API_KEY: ${GRID_API_KEY:-}
+      APP_ORIGIN: https://seriesight.aiazimara.com
+      AUTH_INVITE_CODE: ${AUTH_INVITE_CODE:-}
     depends_on:
       db:
         condition: service_healthy

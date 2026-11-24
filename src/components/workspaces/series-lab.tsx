@@ -282,7 +282,7 @@ export function SeriesLab() {
           {/* Series strategy map */}
           <Panel title="Series strategy map" subtitle="Game 1 choices → restrictions → next-game pool → adaptation">
             {restrictions && restrictions.restrictions.length > 0 ? (
-              <div className="overflow-x-auto pb-2">
+              <div className="scroll-x overflow-x-auto pb-2" role="region" aria-label="Series strategy map, scrollable horizontally" tabIndex={0}>
                 <svg viewBox="0 0 900 220" className="min-w-[720px]" role="img" aria-label="Series strategy map connecting picks to restrictions across games">
                   <defs>
                     <linearGradient id="map-line" x1="0" x2="1">
@@ -399,7 +399,7 @@ export function SeriesLab() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile label="Games drafted" value={`${session.games.filter((g) => g.status === "finalized").length}/${maxGames}`} detail="finalized draft boards" />
             <StatTile label="Fearless locks" value={restrictions?.restrictions.reduce((s, r) => s + Object.values(r.introducedByTeam).flat().length, 0) ?? 0} detail="champions removed from the pool" tone="violet" />
-            <StatTile label="Current pool" value={restrictions?.restrictions.at(-1)?.poolRemaining ?? 80} detail="champions available next" tone="accent" />
+            <StatTile label="Current pool" value={restrictions?.restrictions[restrictions.restrictions.length - 1]?.poolRemaining ?? 80} detail="champions available next" tone="accent" />
             <StatTile label="Session version" value={`v${session.stateVersion}`} detail="optimistic-concurrency stamp" />
           </div>
         </>

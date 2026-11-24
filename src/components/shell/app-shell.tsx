@@ -29,7 +29,8 @@ import {
   CompositionGlyph,
   SeamGlyph,
 } from "@/components/icons/seriesight-icons";
-import { FixtureBadge } from "@/components/common/primitives";
+import { subscribeToMediaQuery } from "@/lib/media-query";
+import { DataSourceNotice } from "@/components/common/data-source-notice";
 import { GlobalEvidenceDrawer } from "@/components/common/evidence-drawer";
 import {
   CommandDialog,
@@ -98,11 +99,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [toast, clearToast]);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
-    const update = () => setIsDesktop(media.matches);
+    const query = "(min-width: 1024px)";
+    const update = () => setIsDesktop(window.matchMedia(query).matches);
     update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
+    return subscribeToMediaQuery(query, update);
   }, []);
 
   // Keep keyboard focus in the mobile navigation drawer while it is open.
@@ -162,8 +162,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const runCommand = (cmd: string) => {
     switch (cmd) {
       case "signout":
-        signOut();
-        pushToast("Signed out — session cleared from this device.", "ok");
+        void signOut().then(() => pushToast("Signed out — server session revoked.", "ok")).catch(() => pushToast("Sign-out failed. Check your connection and retry.", "error"));
         break;
       case "pricing":
         go("pricing");
@@ -220,7 +219,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside
         ref={navRef}
         id="primary-navigation"
-        className={`fixed inset-y-0 left-0 z-50 flex w-[272px] max-w-[86vw] flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-void)]/95 backdrop-blur transition-transform lg:z-40 lg:translate-x-0 lg:bg-[var(--bg-void)]/90 ${
+        className={`nav-drawer fixed inset-y-0 left-0 z-50 flex w-[272px] max-w-[86vw] flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-void)]/95 backdrop-blur transition-transform lg:z-40 lg:translate-x-0 lg:bg-[var(--bg-void)]/90 ${
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-label="Primary navigation"
@@ -279,9 +278,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="space-y-2 border-t border-[var(--border-subtle)] px-4 py-3">
-          <FixtureBadge className="w-full justify-center" />
+          <span className="text-xs text-[var(--text-muted)]">{user?.kind === "coach" ? "Private coach workspace" : "Isolated fixture sandbox"}</span>
           <p className="text-[10px] leading-relaxed text-[var(--text-muted)]">
-            Illustrative fixture dataset. Not actual team performance and not an official GRID dataset.
+            Active data source and coverage limits are shown above each workspace. Auxiliary coaching tools use illustrative, session-only records.
           </p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-[11px]">
             <button type="button" onClick={() => go("pricing")} className="text-[var(--accent-cyan)] hover:underline">
@@ -318,7 +317,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{activeLabel}</p>
             <p className="hidden text-[11px] text-[var(--text-muted)] sm:block">
-              Seriesight Demo Workspace · Patch 16.10 · Cloud9 × JetBrains Sky&apos;s the Limit 2026 — Category 2 submission
+              Cloud9 × JetBrains Sky&apos;s the Limit 2026 — Category 2 submission
             </p>
           </div>
 
@@ -445,8 +444,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => {
-                    signOut();
-                    pushToast("Signed out — session cleared from this device.", "ok");
+                    runCommand("signout");
                   }}
                   className="press-fx mt-1 flex min-h-[40px] w-full items-center gap-2 rounded-lg px-3 text-[13px] text-[var(--accent-coral)] transition-colors hover:bg-[var(--accent-coral)]/10"
                 >
@@ -467,6 +465,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           aria-label="Workspace content"
           className="mx-auto w-full max-w-[1600px] flex-1 px-3 pb-28 pt-4 sm:px-4 sm:pt-6 lg:px-6 lg:pb-6"
         >
+          <DataSourceNotice key={route} />
           {children}
         </main>
 
@@ -494,7 +493,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Bottom tab bar (phones + tablets <lg) with iOS safe-area padding */}
       <nav
         aria-label="Primary workspace tabs"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border-subtle)] bg-[var(--bg-void)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border-subtle)] bg-[var(--bg-void)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:inset-x-auto md:left-1/2 md:w-[min(560px,92vw)] md:-translate-x-1/2 md:rounded-t-xl md:border-x md:shadow-2xl lg:hidden"
       >
         <div className="grid grid-cols-5">
           {TABS.map((tab) => {
