@@ -1,0 +1,21 @@
+# Seriesight edge — proxied by Cloudflare, protected by WAF/DDoS at the edge.
+# TLS: Cloudflare Origin CA wildcard cert (*.aiazimara.com) seeded into the
+# seriesight-edge-certs volume at /data/certs/ (see docs/VPS_DEPLOY.md).
+
+seriesight.aiazimara.com {
+	tls /data/certs/aiazimara.com.pem /data/certs/aiazimara.com.key
+	encode zstd gzip
+	header {
+		-Server
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Cache-Control "no-store"
+	}
+	reverse_proxy app:4180 {
+		header_up X-Forwarded-Host {host}
+		header_up X-Forwarded-Proto https
+		@cf header CF-Connecting-IP *
+		header_up @cf X-Forwarded-For {http.request.header.CF-Connecting-IP}
+	}
+}

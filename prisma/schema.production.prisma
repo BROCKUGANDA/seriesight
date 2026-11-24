@@ -1,0 +1,284 @@
+// Seriesight persistence — PRODUCTION (PostgreSQL via Prisma).
+// Same models as prisma/schema.prisma (SQLite dev/demo). A unit test
+// (tests/unit/schema-parity.test.ts) fails the build if the two schemas drift.
+//
+// Provision: docker compose up -d db        (local production-parity Postgres)
+//            PROD_DATABASE_URL=postgresql://... bun run db:push:pg
+// Migrations: for managed production databases prefer `bun run db:migrate:pg`
+// after generating an initial migration with `bun run db:migrate:init:pg`.
+
+generator client {
+  provider = "prisma-client-js"
+  // The build stage is Debian-based (oven/bun:1); the runner is Alpine (musl).
+  // Generate both engines so the standalone bundle can start on either.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PROD_DATABASE_URL")
+}
+
+model AuthUserRecord {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  workspaceId  String   @unique @default(uuid())
+  createdAt    DateTime @default(now())
+}
+
+model AuthSessionRecord {
+  tokenHash   String   @id
+  userId      String?
+  workspaceId String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model AuthThrottleRecord {
+  key      String @id
+  attempts Int    @default(1)
+}
+
+model RequestRateLimitRecord {
+  key       String   @id
+  attempts  Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+model DraftSessionRecord {
+  id                 String   @id @default(uuid())
+  workspaceId        String   @default("ws-demo")
+  ourTeamId          String
+  opponentTeamId     String
+  format             String
+  rulesetId          String
+  mode               String
+  restrictionsScope  String
+  tournamentId       String?
+  patch              String
+  ourSide            String   @default("BLUE")
+  poolJson           String   @default("[]")
+  currentGame        Int      @default(1)
+  status             String   @default("active")
+  stateVersion       Int      @default(1)
+  gamesJson          String   @default("[]")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  actions            DraftActionRecord[]
+
+  @@index([workspaceId, status])
+  @@index([opponentTeamId])
+}
+
+model DraftActionRecord {
+  id                String   @id @default(uuid())
+  sessionId         String
+  gameNumber        Int
+  order             Int
+  type              String
+  side              String
+  championId        String
+  playerId          String?
+  role              String?
+  phase             String
+  actor             String
+  priorStateVersion Int
+  createdAt         DateTime @default(now())
+
+  session           DraftSessionRecord @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, gameNumber, order])
+}
+
+model IngestionJobRecord {
+  id            String    @id @default(uuid())
+  provider      String
+  jobType       String
+  status        String
+  stage         String
+  attempts      Int       @default(0)
+  seriesCount   Int       @default(0)
+  gameCount     Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([status, createdAt])
+}
+
+model DataSourceConnectionRecord {
+  provider                 String    @id
+  status                   String
+  label                    String
+  lastVerifiedAt           DateTime?
+  lastSuccessfulRequestAt  DateTime?
+  lastImportAttemptAt      DateTime?
+  authorizedEndpointsJson  String    @default("[]")
+  rateLimitRemaining       Int?
+  parsedSeriesCount        Int       @default(0)
+  failedImportCount        Int       @default(0)
+  metadataJson             String    @default("{}")
+  updatedAt                DateTime  @updatedAt
+}
+
+// Commercial layer: trial & demo requests captured from the public site.
+model LeadRecord {
+  id          String   @id @default(uuid())
+  name        String
+  email       String
+  organization String
+  role        String
+  plan        String   @default("coach")
+  message     String?
+  source      String   @default("website-trial")
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Integration fabric ("seams"): the connective tissue between Seriesight
+// and internal/external systems. Every producer writes to the durable
+// outbox below; the dispatch worker fans out to consumers and sinks.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Durable outbox: one row per integration event. Written in the same
+// transactional path as the producing controller, then dispatched with
+// bounded retries and a dead-letter terminal state.
+model IntegrationEventRecord {
+  id            String    @id @default(uuid())
+  topic         String
+  source        String
+  direction     String    @default("internal") // internal | inbound | outbound
+  status        String    @default("pending") // pending | processing | delivered | dead
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5)
+  payloadJson   String    @default("{}")
+  correlationId String?
+  lastError     String?
+  nextAttemptAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  processedAt   DateTime?
+
+  deliveries IntegrationDeliveryRecord[]
+
+  @@index([status, nextAttemptAt])
+  @@index([topic, createdAt])
+}
+
+// Registered outbound subscriber endpoints — external systems that receive
+// signed webhook deliveries when events match their subscribed topics.
+model IntegrationEndpointRecord {
+  id             String    @id @default(uuid())
+  label          String
+  url            String
+  secret         String
+  topicsJson     String    @default("[]") // subscribed topics; ["*"] = all topics
+  status         String    @default("active") // active | paused
+  successCount   Int       @default(0)
+  failureCount   Int       @default(0)
+  lastDeliveryAt DateTime?
+  lastStatusCode Int?
+  createdAt      DateTime  @default(now())
+
+  deliveries IntegrationDeliveryRecord[]
+
+  @@index([status])
+}
+
+// Delivery ledger: one row per event × endpoint attempt, kept for auditing
+// and troubleshooting outbound webhook fan-out.
+model IntegrationDeliveryRecord {
+  id             String    @id @default(uuid())
+  eventId        String
+  endpointId     String
+  status         String    @default("pending") // pending | delivered | failed
+  attempts       Int       @default(0)
+  lastStatusCode Int?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  deliveredAt    DateTime?
+
+  event    IntegrationEventRecord    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  endpoint IntegrationEndpointRecord @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([endpointId])
+}
+
+// In-app notification feed written by the notification consumer, surfaced in
+// the Integration Hub and the shell notification centre.
+model IntegrationNotificationRecord {
+  id        String   @id @default(uuid())
+  topic     String
+  severity  String   @default("info") // info | success | warning | error
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// On-chain billing ledger. Prices are authored in AED; checkout converts to
+// USD (peg) and on-chain terms (ETH / SOL / USDC) through the fx engine and
+// locks the quote. Settlement is verified against chain RPC (Helius for
+// Solana, JSON-RPC for Ethereum). Reversals keep the original payment intact
+// and record the refund separately for accounting hygiene.
+// ─────────────────────────────────────────────────────────────────────────
+
+model BillingPaymentRecord {
+  id               String    @id @default(uuid())
+  workspaceId      String    @default("ws-demo")
+  planId           String // scout | coach | org
+  period           String // monthly | annual
+  chain            String // ethereum | solana
+  token            String // ETH | USDC-ETH | SOL | USDC-SOL
+  aedAmount        Float
+  usdAmount        Float
+  tokenAmount      Float
+  rateUsd          Float
+  rateSource       String
+  rateTimestamp    DateTime
+  treasuryAddress  String
+  status           String    @default("awaiting_payment") // awaiting_payment | confirming | settled | manual_review | failed | refunded
+  txRef            String?
+  verificationNote String?
+  demo             Boolean   @default(false)
+  confirmedAt      DateTime?
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  reversals BillingReversalRecord[]
+
+  @@index([status, createdAt])
+  @@index([workspaceId, createdAt])
+}
+
+model BillingReversalRecord {
+  id          String   @id @default(uuid())
+  paymentId   String
+  scope       String // full | partial
+  aedAmount   Float
+  tokenAmount Float
+  token       String
+  reason      String
+  status      String   @default("completed") // requested | completed | rejected
+  refundTxRef String?
+  createdAt   DateTime @default(now())
+
+  payment BillingPaymentRecord @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+}

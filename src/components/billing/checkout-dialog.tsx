@@ -9,7 +9,7 @@
  * A clearly-labelled demo-settlement path lets judges exercise the entire
  * lifecycle without moving funds; demo rows are flagged forever.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PLANS, TRIAL_DAYS } from "@/lib/commercial";
 import { billingApi, type BillingPayment, type QuoteResponse, type VerifyResponse } from "@/lib/billing/client";
@@ -70,15 +70,16 @@ export function CheckoutDialog({ open, onOpenChange, planId }: Props) {
     }
   }, [planId, period]);
 
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = useCallback((next: boolean) => {
+    if (next) {
       setStep("quote");
       setPayment(null);
       setVerifyResult(null);
       setTxRef("");
       void loadQuote();
     }
-  }, [open, loadQuote]);
+    onOpenChange(next);
+  }, [loadQuote, onOpenChange]);
 
   const openIntent = async () => {
     haptic("pick", hapticsEnabled);
@@ -132,7 +133,7 @@ export function CheckoutDialog({ open, onOpenChange, planId }: Props) {
   const stepIndex = STEPS.findIndex((s) => s.id === step);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[92dvh] overflow-y-auto border-[var(--border-subtle)] bg-[var(--bg-primary)] sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-lg text-[var(--text-primary)]">

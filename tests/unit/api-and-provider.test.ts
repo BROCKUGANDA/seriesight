@@ -3,18 +3,24 @@
  * checks and provider adapter behaviour with mocked responses.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { AuthenticatedRequest as NextRequest } from "../helpers/auth";
+import { GET as healthGET } from "@/app/api/health/route";
+import { GET as dashboardGET } from "@/app/api/dashboard/route";
+import { POST as sessionsPOST } from "@/app/api/draft/sessions/route";
 import { wilsonInterval } from "@/domain/analytics/stats";
 import { GridError, GRID_ALLOWED_HOSTS } from "@/lib/providers/grid/grid-types";
 import { gridRequest, circuitSnapshot, resetCircuitForTests, assertUrlAllowed, DEFAULT_GRID_CONFIG } from "@/lib/providers/grid/grid-client";
 import { mapGridSeriesState } from "@/lib/providers/grid/grid-mapper";
 import { toAppError } from "@/lib/providers/grid/grid-errors";
 import { buildEvidence, EvidenceLedger } from "@/domain/evidence/builder";
+import { getEvidence } from "@/services/evidence";
 import { counterfactual } from "@/services/draft";
 import type { DraftSession } from "@/domain/types";
 
 describe("API response envelope", () => {
   it("shapes success payloads exactly per contract", async () => {
-    const res = await fetch("http://localhost:3000/api/health");
+    const req = new NextRequest("http://localhost:3000/api/health");
+    const res = await healthGET(req);
     const json = await res.json();
     expect(res.status).toBe(200);
     expect(json).toMatchObject({ success: true, error: null });
@@ -24,11 +30,12 @@ describe("API response envelope", () => {
   });
 
   it("shapes error payloads for validation failures", async () => {
-    const res = await fetch("http://localhost:3000/api/draft/sessions", {
+    const req = new NextRequest("http://localhost:3000/api/draft/sessions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ format: "BO9" }),
     });
+    const res = await sessionsPOST(req);
     const json = await res.json();
     expect(res.status).toBe(400);
     expect(json.success).toBe(false);
@@ -37,6 +44,25 @@ describe("API response envelope", () => {
     expect(json.error.retryable).toBe(false);
     expect(json.error.recovery).toBeTruthy();
     expect(json.meta.requestId).toBeTruthy();
+  });
+});
+
+describe("dashboard metric evidence", () => {
+  it("returns resolvable fixture evidence ids for every displayed metric", async () => {
+    const response = await dashboardGET(new NextRequest("http://localhost:3000/api/dashboard"));
+    const json = await response.json();
+    const { dataset } = json.data;
+    const evidenceIds = Object.values(dataset.evidenceIds) as string[];
+
+    expect(response.status).toBe(200);
+    expect(evidenceIds).toHaveLength(5);
+    for (const evidenceId of evidenceIds) {
+      expect(getEvidence(evidenceId)).toMatchObject({
+        id: evidenceId,
+        provider: "fixture",
+        datasetId: dataset.datasetId,
+      });
+    }
   });
 });
 

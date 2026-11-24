@@ -378,7 +378,7 @@ export function IntegrationHub() {
             subtitle={`${data.bus.counts.pending} pending · ${data.bus.counts.processing} processing · ${data.bus.counts.delivered} delivered · ${data.bus.counts.dead} dead-lettered. ${data.bus.workerHint}`}
             actions={<Badge variant="outline" className="tnum">{data.events.length} recent</Badge>}
           >
-            <div className="overflow-x-auto">
+            <div className="scroll-x overflow-x-auto" role="region" aria-label="Event stream table, scrollable horizontally" tabIndex={0}>
               <table className="w-full min-w-[720px] text-left text-xs">
                 <thead>
                   <tr className="border-b border-[var(--border-subtle)] text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
@@ -584,7 +584,7 @@ export function IntegrationHub() {
 
           {/* Sink paths + topic catalogue */}
           <Panel title="Topic catalogue & sink paths" subtitle="The full contract surface: who produces each topic, who consumes it, and where terminal data lands.">
-            <div className="overflow-x-auto">
+            <div className="scroll-x overflow-x-auto" role="region" aria-label="Topic catalogue table, scrollable horizontally" tabIndex={0}>
               <table className="w-full min-w-[640px] text-left text-xs">
                 <thead>
                   <tr className="border-b border-[var(--border-subtle)] text-[10px] uppercase tracking-wider text-[var(--text-muted)]">

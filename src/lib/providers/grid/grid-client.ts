@@ -139,8 +139,9 @@ export async function gridRequest<T>(opts: GridRequestOptions, config: GridClien
         },
         body: JSON.stringify({ query: opts.query, variables: opts.variables ?? {} }),
         signal: controller.signal,
+        cache: "no-store",
+        redirect: "error",
       });
-      clearTimeout(timer);
 
       if (res.status === 401) throw new GridError("UNAUTHORIZED", "GRID rejected the credentials (401).");
       if (res.status === 403) throw new GridError("FORBIDDEN", "GRID denied access to this data product (403).");
@@ -151,7 +152,8 @@ export async function gridRequest<T>(opts: GridRequestOptions, config: GridClien
       if (!res.ok) throw new GridError("UNAVAILABLE", `GRID responded ${res.status}.`, { retryable: res.status >= 500 });
 
       const json = (await res.json()) as { data?: T; errors?: { message: string }[] };
-      if (json.errors?.length) throw new GridError("INVALID_QUERY", `GRID GraphQL errors: ${json.errors.map((e) => e.message).join("; ")}`);
+      clearTimeout(timer);
+      if (json.errors?.length) throw new GridError("INVALID_QUERY", "GRID rejected the GraphQL selection; check the account schema and entitlement.");
       if (json.data === undefined) throw new GridError("INVALID_SCHEMA", "GRID response did not contain a data object.");
       recordSuccess();
       return json.data;
@@ -170,7 +172,7 @@ export async function gridRequest<T>(opts: GridRequestOptions, config: GridClien
       } else if (err instanceof Error && err.name === "AbortError") {
         lastError = new GridError("TIMEOUT", `GRID request timed out after ${config.timeoutMs} ms.`, { retryable: true });
       } else {
-        lastError = new GridError("UNAVAILABLE", `GRID request failed: ${err instanceof Error ? err.message : "unknown"}`, { retryable: true });
+        lastError = new GridError("UNAVAILABLE", "GRID request failed or returned invalid JSON.", { retryable: true });
       }
       recordFailure();
     }

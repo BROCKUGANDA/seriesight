@@ -1,27 +1,36 @@
 /**
  * Data sources + ingestion service (PRD D8, K4, L).
- * GRID attempts are real HTTP probes when a key exists; the fixture provider is
- * always available and clearly labelled.
+ * GRID imports persist validated historical series in the coach workspace.
+ * Fixture fallback is always explicitly labelled and is never imported as GRID.
  */
 import { db } from "@/lib/db";
 import type { DataSourceConnection, IngestionJob } from "@/domain/types";
-import { DEFAULT_GRID_CONFIG, probeGrid, circuitSnapshot } from "@/lib/providers/grid/grid-client";
+import { probeGrid, circuitSnapshot } from "@/lib/providers/grid/grid-client";
+import { currentWorkspace, identityContext, requireCoach } from "@/lib/auth";
+import { fetchGridHistoricalSeries } from "@/lib/providers/grid/grid-history";
+import { GridError } from "@/lib/providers/grid/grid-types";
+import { getHistoricalSeries, gridConnectionKey, persistGridHistoricalSeries } from "./dataset";
 import { AUTHORIZED_ENDPOINTS } from "@/lib/providers/grid/grid-capabilities";
 import { resolveStaticData } from "@/lib/providers/data-dragon";
 import { FIXTURE_GAMES, FIXTURE_SERIES, FIXTURE_INFO } from "@/fixtures/dataset";
 
-const global_ = globalThis as unknown as { __seriesightJobs?: IngestionJob[] };
+const global_ = globalThis as unknown as { __seriesightWorkspaceJobs?: Map<string, IngestionJob[]> };
 
 function jobStore(): IngestionJob[] {
-  global_.__seriesightJobs ??= [];
-  return global_.__seriesightJobs;
+  const workspace = currentWorkspace();
+  global_.__seriesightWorkspaceJobs ??= new Map();
+  if (!global_.__seriesightWorkspaceJobs.has(workspace)) global_.__seriesightWorkspaceJobs.set(workspace, []);
+  return global_.__seriesightWorkspaceJobs.get(workspace)!;
 }
 
 async function connectionRecord(provider: string): Promise<DataSourceConnection | null> {
-  const rec = await db.dataSourceConnectionRecord.findUnique({ where: { provider } });
+  currentWorkspace();
+  if (provider === "grid" && identityContext.getStore()?.kind !== "coach") return null;
+  const key = provider === "grid" ? gridConnectionKey() : provider;
+  const rec = await db.dataSourceConnectionRecord.findUnique({ where: { provider: key } });
   if (!rec) return null;
   return {
-    provider: rec.provider as DataSourceConnection["provider"],
+    provider: provider as DataSourceConnection["provider"],
     status: rec.status as DataSourceConnection["status"],
     label: rec.label,
     lastVerifiedAt: rec.lastVerifiedAt?.toISOString() ?? null,
@@ -36,10 +45,11 @@ async function connectionRecord(provider: string): Promise<DataSourceConnection 
 }
 
 async function upsertConnection(conn: DataSourceConnection): Promise<void> {
+  const provider = conn.provider === "grid" ? (requireCoach(), gridConnectionKey()) : conn.provider;
   await db.dataSourceConnectionRecord.upsert({
-    where: { provider: conn.provider },
+    where: { provider },
     create: {
-      provider: conn.provider,
+      provider,
       status: conn.status,
       label: conn.label,
       lastVerifiedAt: conn.lastVerifiedAt ? new Date(conn.lastVerifiedAt) : null,
@@ -89,6 +99,7 @@ export async function ensureConnections(): Promise<void> {
       },
     });
   }
+  if (identityContext.getStore()?.kind !== "coach") return;
   const grid = await connectionRecord("grid");
   if (!grid) {
     await upsertConnection({
@@ -134,13 +145,12 @@ export async function dataSourcesOverview(): Promise<{
   };
 }
 
-const STAGES = ["connecting", "retrieving_metadata", "validating_payloads", "normalizing", "computing_insights", "verifying_results"] as const;
-
 /**
- * Run an import. With no GRID key this imports the labelled fixture dataset through
- * the real stage pipeline (named stages only — no fake percentages).
+ * Import an explicit official completed series. Missing access never falls through
+ * into fixture success. Reimport replaces the same workspace/series atomically.
  */
 export async function runImport(provider: "fixture" | "grid", targetSeriesId?: string): Promise<IngestionJob> {
+  requireCoach();
   await ensureConnections();
   const job: IngestionJob = {
     id: `job-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e5).toString(36)}`,
@@ -157,6 +167,7 @@ export async function runImport(provider: "fixture" | "grid", targetSeriesId?: s
   };
   const store = jobStore();
   store.unshift(job);
+  store.splice(100);
 
   const finish = (patch: Partial<IngestionJob>) => {
     Object.assign(job, patch, { completedAt: new Date().toISOString() });
@@ -164,48 +175,44 @@ export async function runImport(provider: "fixture" | "grid", targetSeriesId?: s
 
   try {
     if (provider === "grid") {
-      const probe = await probeGrid();
-      if (probe.status !== "connected") {
-        finish({ status: "failed", stage: "connecting", lastError: probe.detail });
-        const grid = await connectionRecord("grid");
-        if (grid) await upsertConnection({ ...grid, status: probe.status as DataSourceConnection["status"], lastImportAttemptAt: new Date().toISOString(), failedImportCount: grid.failedImportCount + 1 });
-        return job;
-      }
+      if (!targetSeriesId) throw new GridError("INVALID_QUERY", "Provide an explicit completed GRID seriesId; automatic discovery is not enabled.");
+      job.stage = "retrieving_metadata";
+      const history = await fetchGridHistoricalSeries(targetSeriesId);
+      job.stage = "normalizing";
+      await persistGridHistoricalSeries(history);
+      job.stage = "verifying_results";
+      const persisted = await getHistoricalSeries();
+      const conn = await connectionRecord("grid");
+      if (conn) await upsertConnection({ ...conn, status: "connected", parsedSeriesCount: persisted.length,
+        lastImportAttemptAt: job.createdAt, lastSuccessfulRequestAt: new Date().toISOString() });
+      finish({ status: "succeeded", seriesCount: 1, gameCount: history.games.length });
+      return job;
     }
-    for (let i = 0; i < STAGES.length; i++) {
-      job.stage = STAGES[i];
-      await new Promise((r) => setTimeout(r, 120));
-      if (i === 4) {
-        // Validate payload integrity at the "computing insights" stage.
-        const invalid = FIXTURE_GAMES.filter((g) => g.draft.picks.length !== 10 || g.draft.bans.length !== 10);
-        if (invalid.length > 0) {
-          finish({ status: "partial", stage: "validating_payloads", seriesCount: FIXTURE_INFO.seriesCount, gameCount: FIXTURE_GAMES.length, lastError: `${invalid.length} fixture games failed payload validation.` });
-          return job;
-        }
-      }
-    }
+    job.stage = "validating_payloads";
+    if (FIXTURE_GAMES.some((g) => g.draft.picks.length !== 10 || g.draft.bans.length !== 10)) throw new Error("Fixture draft validation failed.");
     const target = targetSeriesId ? FIXTURE_SERIES.filter((s) => s.id === targetSeriesId) : FIXTURE_SERIES.filter((s) => s.status === "completed");
+    if (!target.length) throw new Error("No fixture series matched the requested ID.");
     finish({
       status: "succeeded",
       stage: "verifying_results",
       seriesCount: target.length,
       gameCount: target.reduce((s, x) => s + x.gameIds.length, 0),
     });
-    if (provider === "fixture") {
-      const conn = await connectionRecord("fixture");
-      if (conn) await upsertConnection({ ...conn, lastImportAttemptAt: new Date().toISOString(), lastVerifiedAt: new Date().toISOString() });
-    } else {
-      const conn = await connectionRecord("grid");
-      if (conn) await upsertConnection({ ...conn, status: "connected", lastImportAttemptAt: new Date().toISOString(), lastSuccessfulRequestAt: new Date().toISOString() });
-    }
     return job;
   } catch (err) {
-    finish({ status: "failed", lastError: err instanceof Error ? err.message : "unknown import error" });
+    const code = err instanceof GridError ? err.code : "UNAVAILABLE";
+    finish({ status: "failed", lastError: provider === "grid" ? `GRID_${code}: Historical import failed; verify credentials, entitlement, series completeness and account schema.` : "Fixture import failed validation or no series matched." });
+    if (provider === "grid") {
+      const conn = await connectionRecord("grid");
+      const status = code === "CREDENTIAL_MISSING" ? "not_configured" : ["UNAUTHORIZED", "FORBIDDEN"].includes(code) ? "access_denied" : code === "RATE_LIMITED" ? "rate_limited" : ["INVALID_SCHEMA", "INVALID_QUERY", "PARTIAL_GAME_DATA"].includes(code) ? "schema_mismatch" : "temporarily_unavailable";
+      if (conn) await upsertConnection({ ...conn, status, lastImportAttemptAt: job.createdAt, failedImportCount: conn.failedImportCount + 1 });
+    }
     return job;
   }
 }
 
 export async function verifyGridConnection(): Promise<{ status: string; detail: string }> {
+  requireCoach();
   await ensureConnections();
   const probe = await probeGrid();
   const grid = await connectionRecord("grid");

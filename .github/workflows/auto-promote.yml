@@ -1,0 +1,45 @@
+name: Auto-promote
+
+# Green pushes chain the promotion pipeline:
+#   dev (push) → gates → merge into staging + tag vX.Y.Z-rc.N
+#   staging (push) → gates + build → merge into main + tag vX.Y.Z
+# Merging back into dev never triggers promotion (dev only integrates).
+
+on:
+  push:
+    branches: [dev, staging]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-promote-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Promote dev → staging
+        if: github.ref_name == 'dev'
+        run: node scripts/release.mjs promote --from dev --to staging
+
+      - name: Promote staging → main
+        if: github.ref_name == 'staging'
+        run: node scripts/release.mjs promote --from staging --to main

@@ -53,10 +53,13 @@ export function isMarketingRoute(route: WorkspaceRoute): boolean {
   return MARKETING_ROUTES.includes(route);
 }
 
-function currentRoute(): WorkspaceRoute {
-  const hash = window.location.hash.replace(/^#\/?/, "");
-  const base = hash.split("?")[0].split("/")[0];
+export function routeFromHash(hash: string): WorkspaceRoute {
+  const base = hash.replace(/^#\/?/, "").split(/[/?]/, 1)[0];
   return (ROUTES.includes(base as WorkspaceRoute) ? base : "home") as WorkspaceRoute;
+}
+
+function currentRoute(): WorkspaceRoute {
+  return routeFromHash(window.location.hash);
 }
 
 function subscribe(onChange: () => void): () => void {

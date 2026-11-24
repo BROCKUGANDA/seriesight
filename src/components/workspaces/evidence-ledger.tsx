@@ -71,7 +71,7 @@ export function EvidenceLedger() {
       ) : (
         <Panel title="Evidence records" subtitle="Deterministic ids — identical inputs always resolve to the same record">
           <p className="mb-3 text-xs text-[var(--text-muted)] sm:hidden">Swipe the table sideways to see all columns.</p>
-          <div className="overflow-x-auto rounded-lg border border-[var(--border-subtle)]">
+          <div className="scroll-x overflow-x-auto rounded-lg border border-[var(--border-subtle)]" role="region" aria-label="Evidence records, scrollable horizontally" tabIndex={0}>
             <table className="w-full min-w-[760px] text-left text-xs">
               <thead className="bg-[var(--surface-2)] text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 <tr>

@@ -53,7 +53,9 @@ export type ErrorCode =
   | "NETWORK_DISCONNECTED"
   | "REQUEST_TIMEOUT"
   | "SESSION_EXPIRED"
+  | "ACCESS_DENIED"
   | "RATE_LIMITED"
+  | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export interface AppErrorShape {

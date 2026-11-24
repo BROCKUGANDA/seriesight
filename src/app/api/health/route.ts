@@ -1,15 +1,37 @@
-import { NextResponse } from "next/server";
-import { ok, handler } from "@/lib/api/respond";
+import { handler, fail, ok } from "@/lib/api/respond";
+import { databaseHealth, fixtureDatasetHealth } from "@/lib/health";
 
 export const dynamic = "force-dynamic";
 
 export const GET = handler(async (req) => {
+  const [database, fixtureDataset] = await Promise.all([databaseHealth(), Promise.resolve(fixtureDatasetHealth())]);
+  const checks = {
+    api: { status: "pass", latencyMs: 0, detail: "reachable" },
+    database,
+    fixtureDataset,
+  };
+  const status = database.status === "pass" && fixtureDataset.status === "pass" ? "healthy" : "degraded";
+
+  if (status !== "healthy") {
+    return fail(
+      {
+        code: "SERVICE_UNAVAILABLE",
+        message: "The service is not ready.",
+        retryable: true,
+        recovery: "Retry shortly. If this persists, check the database connection and application logs.",
+        details: { checks },
+      },
+      req,
+      503,
+    );
+  }
+
   return ok(
     {
       service: "seriesight",
-      status: "healthy",
+      status,
       uptimeSec: Math.round(process.uptime()),
-      checks: { api: "pass", fixtureDataset: "pass", database: "pass" },
+      checks,
     },
     req,
   );

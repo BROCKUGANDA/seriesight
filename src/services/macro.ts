@@ -3,9 +3,7 @@
  * dimension never blocks the whole page; partial coverage is explicit.
  */
 import type { Game, MetricStat } from "@/domain/types";
-import { TEAM_INDEX } from "@/fixtures/teams";
-import { FIXTURE_GAMES_INDEX, FIXTURE_SERIES_INDEX, gamesForTeam } from "@/fixtures/dataset";
-import { ScoutingContext, type ScoutingFilters } from "@/domain/analytics/scouting-context";
+import { ScoutingContext, analyticsDataset, datasetTeams, type ScoutingFilters } from "@/domain/analytics/scouting-context";
 import { DEFAULT_INTERVALS } from "@/domain/analytics/macro";
 import { ERRORS } from "@/domain/errors";
 
@@ -22,6 +20,9 @@ export interface MacroModule {
 }
 
 export interface MacroAnalysis {
+  provider: "fixture" | "grid";
+  label: string;
+  warnings: string[];
   teamId: string;
   gamesAnalyzed: number;
   objectiveCoverage: number;
@@ -55,12 +56,12 @@ function toTimeline(games: Game[]): MacroAnalysis["timeline"] {
 }
 
 export async function getMacroAnalysis(teamId: string, filters: ScoutingFilters): Promise<MacroAnalysis> {
-  if (!TEAM_INDEX.has(teamId)) throw ERRORS.unknownTeam(teamId);
+  if (!datasetTeams().some((t) => t.id === teamId)) throw ERRORS.unknownTeam(teamId);
   const ctx = new ScoutingContext(teamId, filters);
   const m = ctx.macro();
   const games = ctx.eligibleGames;
   const patchDist = ctx.summary.patchDistribution;
-  const excluded = games.filter((g) => !g.coverage.objectives).map((g) => g.id);
+  const excluded = ctx.draftGames.filter((g) => !g.coverage.objectives).map((g) => g.id);
 
   const modules: MacroModule[] = [
     {
@@ -137,8 +138,11 @@ export async function getMacroAnalysis(teamId: string, filters: ScoutingFilters)
   ];
 
   return {
+    provider: ctx.dataset.provider,
+    label: ctx.dataset.label,
+    warnings: ctx.dataset.warnings,
     teamId,
-    gamesAnalyzed: games.length,
+    gamesAnalyzed: ctx.draftGames.length,
     objectiveCoverage: m.objectiveCoverage,
     excludedGames: excluded,
     modules,
@@ -149,15 +153,17 @@ export async function getMacroAnalysis(teamId: string, filters: ScoutingFilters)
 }
 
 export function gameDetail(gameId: string): Game | null {
-  return FIXTURE_GAMES_INDEX.get(gameId) ?? null;
+  return analyticsDataset().games.find((g) => g.id === gameId) ?? null;
 }
 
 export function seriesDetail(seriesId: string) {
-  return FIXTURE_SERIES_INDEX.get(seriesId) ?? null;
+  return analyticsDataset().series.find((s) => s.id === seriesId) ?? null;
 }
 
 export function defaultIntervals() {
   return DEFAULT_INTERVALS;
 }
 
-export { gamesForTeam };
+export function gamesForTeam(teamId: string) {
+  return analyticsDataset().games.filter((g) => g.blueTeamId === teamId || g.redTeamId === teamId);
+}

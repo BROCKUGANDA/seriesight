@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, handler, parseOptionalBody } from "@/lib/api/respond";
+import { ok, handler, parseBody } from "@/lib/api/respond";
 import { z } from "zod";
 import { finalizeCurrentGame } from "@/services/draft";
 import { emitDraftFinalized } from "@/lib/integration/controllers/draft-controller";
@@ -7,7 +7,7 @@ import { ensureBusBootstrapped } from "@/lib/integration/bootstrap";
 
 export const dynamic = "force-dynamic";
 
-const bodySchema = z.object({ expectedStateVersion: z.number().int().min(1).optional() });
+const bodySchema = z.object({ expectedStateVersion: z.number().int().min(1) });
 
 /**
  * Finalize the current game; triggers Fearless propagation to subsequent games.
@@ -16,8 +16,8 @@ const bodySchema = z.object({ expectedStateVersion: z.number().int().min(1).opti
  */
 export const POST = handler(async (req: NextRequest, { params }: { params: Promise<{ sessionId: string }> }) => {
   const { sessionId } = await params;
-  const body = await parseOptionalBody(req, bodySchema);
-  const result = await finalizeCurrentGame(sessionId, body?.expectedStateVersion);
+  const body = await parseBody(req, bodySchema);
+  const result = await finalizeCurrentGame(sessionId, body.expectedStateVersion);
 
   ensureBusBootstrapped();
   const { event } = await emitDraftFinalized({

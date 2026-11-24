@@ -5,7 +5,8 @@
  * reduced-motion behaviour and the provider data-retention policy.
  */
 import { useSyncExternalStore } from "react";
-import { Panel, FixtureBadge } from "@/components/common/primitives";
+import { Panel } from "@/components/common/primitives";
+import { useAuthStore } from "@/store/auth";
 import { ALL_ROLES } from "@/domain/types";
 import { ROLE_GLYPHS } from "@/components/icons/seriesight-icons";
 import { useWorkspaceStore } from "@/store/workspace";
@@ -13,8 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useHashRoute } from "@/hooks/use-hash-route";
+import { subscribeToMediaQuery } from "@/lib/media-query";
 
 export function Settings() {
+  const user = useAuthStore((s) => s.user);
   const hapticsEnabled = useWorkspaceStore((s) => s.hapticsEnabled);
   const setHapticsEnabled = useWorkspaceStore((s) => s.setHapticsEnabled);
   const pushToast = useWorkspaceStore((s) => s.pushToast);
@@ -22,11 +25,7 @@ export function Settings() {
   const [, navigate] = useHashRoute();
   const [cleanupOpen, setCleanupOpen] = useState(false);
   const reduceMotion = useSyncExternalStore(
-    (cb) => {
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      mq.addEventListener("change", cb);
-      return () => mq.removeEventListener("change", cb);
-    },
+    (cb) => subscribeToMediaQuery("(prefers-reduced-motion: reduce)", cb),
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     () => false,
   );
@@ -40,12 +39,11 @@ export function Settings() {
 
       <Panel title="Workspace identity">
         <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
-          <Field k="Workspace" v="Seriesight Demo Workspace" />
-          <Field k="Workspace ID" v="ws-demo" />
-          <Field k="Our squad" v="Signal Nine (SGT) — fictional" />
-          <Field k="Dataset" v="fx-demo-2026-w46 (fixture)" />
+          <Field k="Workspace" v={user?.kind === "coach" ? "Private coach workspace" : "Isolated fixture sandbox"} />
+          <Field k="Workspace ID" v={user?.workspaceId ?? "Loading…"} />
+          <Field k="Our squad" v="Choose in Draft Room" />
+          <Field k="Dataset" v="See active data source notice above" />
         </dl>
-        <div className="mt-3"><FixtureBadge /></div>
       </Panel>
 
       <Panel title="Draft role configuration" subtitle="Players map to roles from observed data; champion flex options stay selectable">

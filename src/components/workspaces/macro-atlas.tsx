@@ -205,7 +205,7 @@ export function MacroAtlas() {
               </label>
             }
           >
-            <div className="overflow-x-auto">
+            <div className="scroll-x overflow-x-auto" role="region" aria-label="Objective breakdown, scrollable horizontally" tabIndex={0}>
               <table className="w-full min-w-[560px] text-left text-xs">
                 <thead className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                   <tr>

@@ -4,6 +4,9 @@
  * series restrictions → composition analysis → recommendation refresh → board.
  */
 import { db } from "@/lib/db";
+import { currentWorkspace } from "@/lib/auth";
+import { selectedDataset } from "@/services/dataset";
+import type { Prisma } from "@prisma/client";
 import type {
   DraftGameState,
   DraftRuleset,
@@ -16,7 +19,6 @@ import type {
 } from "@/domain/types";
 import { ERRORS } from "@/domain/errors";
 import { CHAMPIONS } from "@/fixtures/champions";
-import { FIXTURE_GAMES_INDEX } from "@/fixtures/dataset";
 import { CURRENT_PATCH, OUR_TEAM_ID, TEAM_INDEX } from "@/fixtures/teams";
 import {
   applyAction,
@@ -132,7 +134,14 @@ export interface CreateSessionInput {
 export async function createSession(input: CreateSessionInput): Promise<DraftSession> {
   const ruleset = rulesetById(input.rulesetId);
   if (!ruleset) throw ERRORS.validation(`Unknown ruleset "${input.rulesetId}".`, { rulesetId: input.rulesetId });
-  if (!TEAM_INDEX.has(input.opponentTeamId)) throw ERRORS.unknownTeam(input.opponentTeamId);
+  const dataset = selectedDataset();
+  const allowedTeams = dataset?.provider === "grid"
+    ? new Set(dataset.historicalSeries.flatMap((series) => series.teams.map((team) => `grid:${team.id}`)))
+    : new Set(TEAM_INDEX.keys());
+  const ourTeamId = input.ourTeamId ?? OUR_TEAM_ID;
+  if (!allowedTeams.has(input.opponentTeamId)) throw ERRORS.unknownTeam(input.opponentTeamId);
+  if (!allowedTeams.has(ourTeamId)) throw ERRORS.unknownTeam(ourTeamId);
+  if (ourTeamId === input.opponentTeamId) throw ERRORS.validation("Choose two different teams.");
   const mode = input.modeOverride ?? ruleset.mode;
   const scope = input.scopeOverride ?? ruleset.restrictionsScope;
   const ourSide: Side = input.ourSide ?? "BLUE";
@@ -142,7 +151,7 @@ export async function createSession(input: CreateSessionInput): Promise<DraftSes
 
   const sessionDraft: DraftSession = {
     id: "",
-    workspaceId: WORKSPACE_ID,
+    workspaceId: currentWorkspace(),
     ourTeamId: input.ourTeamId ?? OUR_TEAM_ID,
     opponentTeamId: input.opponentTeamId,
     format: input.format,
@@ -154,7 +163,7 @@ export async function createSession(input: CreateSessionInput): Promise<DraftSes
     stateVersion: 1,
     games: [],
     tournamentId: input.tournamentId ?? null,
-    patch: input.patch ?? CURRENT_PATCH,
+    patch: input.patch ?? (dataset?.provider === "grid" ? "unknown" : CURRENT_PATCH),
     pool,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -195,26 +204,50 @@ export async function createSession(input: CreateSessionInput): Promise<DraftSes
 
 async function loadSession(sessionId: string): Promise<{ rec: SessionRecordLike; session: DraftSession }> {
   const rec = await db.draftSessionRecord.findUnique({ where: { id: sessionId } });
-  if (!rec) throw ERRORS.notFound(`Draft session ${sessionId}`);
+  if (!rec || rec.workspaceId !== currentWorkspace()) throw ERRORS.notFound(`Draft session ${sessionId}`);
   return { rec, session: toSession(rec) };
 }
 
-async function persist(session: DraftSession): Promise<DraftSession> {
-  const rec = await db.draftSessionRecord.update({
-    where: { id: session.id },
-    data: {
-      currentGame: session.currentGame,
-      status: session.status,
-      stateVersion: session.stateVersion,
-      gamesJson: JSON.stringify(session.games),
-      updatedAt: new Date(),
-    },
+async function persist(
+  session: DraftSession,
+  expectedStateVersion: number,
+  action?: {
+    gameNumber: number;
+    record: { id: string; order: number; type: string; side: string; championId: string; playerId: string | null; role: string | null; phase: string; actor: string; priorStateVersion: number };
+  },
+): Promise<DraftSession> {
+  return db.$transaction(async (tx) => {
+    if (action) await auditAction(tx, session.id, action.gameNumber, action.record);
+    const updated = await tx.draftSessionRecord.updateMany({
+      where: { id: session.id, workspaceId: currentWorkspace(), stateVersion: expectedStateVersion },
+      data: {
+        currentGame: session.currentGame,
+        status: session.status,
+        stateVersion: session.stateVersion,
+        gamesJson: JSON.stringify(session.games),
+        updatedAt: new Date(),
+      },
+    });
+    if (updated.count !== 1) {
+      const current = await tx.draftSessionRecord.findUnique({
+        where: { id: session.id },
+        select: { stateVersion: true },
+      });
+      if (!current) throw ERRORS.notFound(`Draft session ${session.id}`);
+      throw ERRORS.staleVersion(expectedStateVersion, current.stateVersion);
+    }
+    const rec = await tx.draftSessionRecord.findUniqueOrThrow({ where: { id: session.id } });
+    return toSession(rec);
   });
-  return toSession(rec);
 }
 
-async function auditAction(sessionId: string, gameNumber: number, action: { id: string; order: number; type: string; side: string; championId: string; playerId: string | null; role: string | null; phase: string; actor: string; priorStateVersion: number }): Promise<void> {
-  await db.draftActionRecord.create({
+async function auditAction(
+  tx: Prisma.TransactionClient,
+  sessionId: string,
+  gameNumber: number,
+  action: { id: string; order: number; type: string; side: string; championId: string; playerId: string | null; role: string | null; phase: string; actor: string; priorStateVersion: number },
+): Promise<void> {
+  await tx.draftActionRecord.create({
     data: {
       id: action.id,
       sessionId,
@@ -232,10 +265,9 @@ async function auditAction(sessionId: string, gameNumber: number, action: { id: 
   });
 }
 
-function guardVersion(session: DraftSession, expectedVersion: number | undefined): void {
-  if (expectedVersion === undefined) return;
+function guardVersion(session: DraftSession, expectedVersion: number): void {
   if (expectedVersion !== session.stateVersion) {
-    throw ERRORS.staleVersion(session.stateVersion, expectedVersion);
+    throw ERRORS.staleVersion(expectedVersion, session.stateVersion);
   }
 }
 
@@ -280,7 +312,7 @@ export interface ApplyActionResult {
 
 export async function applyDraftAction(
   sessionId: string,
-  input: { type: "ban" | "pick"; championId: string; playerId?: string | null; role?: Role | null; actor?: string; expectedStateVersion?: number },
+  input: { type: "ban" | "pick"; championId: string; playerId?: string | null; role?: Role | null; actor?: string; expectedStateVersion: number },
 ): Promise<ApplyActionResult> {
   const { session } = await loadSession(sessionId);
   guardVersion(session, input.expectedStateVersion);
@@ -296,12 +328,11 @@ export async function applyDraftAction(
   );
   const games = session.games.map((g) => (g.gameNumber === nextGame.gameNumber ? nextGame : g));
   const updated: DraftSession = { ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() };
-  await auditAction(session.id, nextGame.gameNumber, action);
-  const saved = await persist(updated);
+  const saved = await persist(updated, session.stateVersion, { gameNumber: nextGame.gameNumber, record: action });
   return { session: saved, availability: availabilityForSession(saved), progress: draftProgress(nextGame, ruleset) };
 }
 
-export async function undoLast(sessionId: string, expectedStateVersion?: number): Promise<ApplyActionResult> {
+export async function undoLast(sessionId: string, expectedStateVersion: number): Promise<ApplyActionResult> {
   const { session } = await loadSession(sessionId);
   guardVersion(session, expectedStateVersion);
   const ruleset = rulesetFor(session);
@@ -309,11 +340,11 @@ export async function undoLast(sessionId: string, expectedStateVersion?: number)
   const opts = engineOptionsFor(session, game, ruleset);
   const nextGame = undo(game, opts);
   const games = session.games.map((g) => (g.gameNumber === nextGame.gameNumber ? nextGame : g));
-  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() });
+  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() }, session.stateVersion);
   return { session: saved, availability: availabilityForSession(saved), progress: draftProgress(nextGame, ruleset) };
 }
 
-export async function redoLast(sessionId: string, expectedStateVersion?: number): Promise<ApplyActionResult> {
+export async function redoLast(sessionId: string, expectedStateVersion: number): Promise<ApplyActionResult> {
   const { session } = await loadSession(sessionId);
   guardVersion(session, expectedStateVersion);
   const ruleset = rulesetFor(session);
@@ -321,26 +352,25 @@ export async function redoLast(sessionId: string, expectedStateVersion?: number)
   const opts = engineOptionsFor(session, game, ruleset);
   const nextGame = redo(game, opts);
   const games = session.games.map((g) => (g.gameNumber === nextGame.gameNumber ? nextGame : g));
-  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() });
+  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() }, session.stateVersion);
   return { session: saved, availability: availabilityForSession(saved), progress: draftProgress(nextGame, ruleset) };
 }
 
 export async function assignPickRole(
   sessionId: string,
-  input: { side: Side; pickIndex: number; role: Role; playerId?: string | null; expectedStateVersion?: number },
+  input: { side: Side; pickIndex: number; role: Role; playerId?: string | null; expectedStateVersion: number },
 ): Promise<ApplyActionResult> {
   const { session } = await loadSession(sessionId);
   guardVersion(session, input.expectedStateVersion);
   const ruleset = rulesetFor(session);
   const game = currentGame(session);
-  const opts = engineOptionsFor(session, game, ruleset);
   const nextGame = assignRole(game, input.side, input.pickIndex, input.role, input.playerId ?? null);
   const games = session.games.map((g) => (g.gameNumber === nextGame.gameNumber ? nextGame : g));
-  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() });
+  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() }, session.stateVersion);
   return { session: saved, availability: availabilityForSession(saved), progress: draftProgress(nextGame, ruleset) };
 }
 
-export async function finalizeCurrentGame(sessionId: string, expectedStateVersion?: number): Promise<{ session: DraftSession; seriesComplete: boolean }> {
+export async function finalizeCurrentGame(sessionId: string, expectedStateVersion: number): Promise<{ session: DraftSession; seriesComplete: boolean }> {
   const { session } = await loadSession(sessionId);
   guardVersion(session, expectedStateVersion);
   const ruleset = rulesetFor(session);
@@ -353,11 +383,11 @@ export async function finalizeCurrentGame(sessionId: string, expectedStateVersio
   if (updated.games.length >= maxGames && updated.games.every((g) => g.status === "finalized")) {
     updated = { ...updated, status: "completed" };
   }
-  const saved = await persist(updated);
+  const saved = await persist(updated, session.stateVersion);
   return { session: saved, seriesComplete: saved.status === "completed" };
 }
 
-export async function startNextGame(sessionId: string, expectedStateVersion?: number): Promise<ApplyActionResult> {
+export async function startNextGame(sessionId: string, expectedStateVersion: number): Promise<ApplyActionResult> {
   const { session } = await loadSession(sessionId);
   guardVersion(session, expectedStateVersion);
   const ruleset = rulesetFor(session);
@@ -398,18 +428,19 @@ export async function startNextGame(sessionId: string, expectedStateVersion?: nu
     currentGame: nextNumber,
     stateVersion: session.stateVersion + 1,
     updatedAt: new Date().toISOString(),
-  });
+  }, session.stateVersion);
   return { session: saved, availability: availabilityForSession(saved), progress: draftProgress(nextGame, ruleset) };
 }
 
-export async function resetGame(sessionId: string, expectedStateVersion?: number): Promise<ApplyActionResult> {
+export async function resetGame(sessionId: string, expectedStateVersion: number): Promise<ApplyActionResult> {
   const { session } = await loadSession(sessionId);
   guardVersion(session, expectedStateVersion);
   const ruleset = rulesetFor(session);
   const game = currentGame(session);
+  if (game.status !== "drafting") throw ERRORS.sessionCompleted();
   const fresh = createGameState(engineOptionsFor(session, game, ruleset));
   const games = session.games.map((g) => (g.gameNumber === game.gameNumber ? fresh : g));
-  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() });
+  const saved = await persist({ ...session, games, stateVersion: session.stateVersion + 1, updatedAt: new Date().toISOString() }, session.stateVersion);
   return { session: saved, availability: availabilityForSession(saved), progress: draftProgress(fresh, ruleset) };
 }
 
@@ -420,7 +451,7 @@ export async function getSession(sessionId: string): Promise<DraftSession> {
 
 export async function listSessions(limit = 12): Promise<DraftSession[]> {
   const recs = await db.draftSessionRecord.findMany({
-    where: { workspaceId: WORKSPACE_ID },
+    where: { workspaceId: currentWorkspace() },
     orderBy: { createdAt: "desc" },
     take: limit,
   });
@@ -436,7 +467,6 @@ export function recommendationsForSession(session: DraftSession): DraftAnalytics
   const unavailable = new Set([...avail.entries()].filter(([, a]) => !a.available).map(([id]) => id));
   const ourTeam = session.ourTeamId;
   const ourSide: Side = game.blueTeamId === ourTeam ? "BLUE" : "RED";
-  const oppSide: Side = ourSide === "BLUE" ? "RED" : "BLUE";
   const ourPicks = (game.blueTeamId === ourTeam ? game.blue.picks : game.red.picks).map((p) => p.championId);
   const oppPicks = (game.blueTeamId === ourTeam ? game.red.picks : game.blue.picks).map((p) => p.championId);
   const ourBans = (game.blueTeamId === ourTeam ? game.blue.bans : game.red.bans).filter((b): b is string => b !== null);
