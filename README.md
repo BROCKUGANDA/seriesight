@@ -80,18 +80,17 @@ Production deployments use `prisma/schema.production.prisma` against PostgreSQL 
 ```bash
 bun run docker:db                               # postgres:16 on localhost:55432
 $env:PROD_DATABASE_URL="postgresql://seriesight:seriesight@localhost:55432/seriesight"
-bun run db:push:pg                              # first time / schema changes
-bun run db:migrate:init:pg                      # or create versioned migrations
-bun run db:migrate:pg                           # subsequent deploys: prisma migrate deploy
+bun run db:migrate:init:pg                      # first time only: create versioned migrations
+bun run db:migrate:pg                           # every deploy: prisma migrate deploy
 ```
 
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full runbook (managed databases, secrets, hardening checklist).
+`db:push:pg` remains available for local prototyping only; production must use versioned migrations. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full runbook (managed databases, secrets, backups, hardening checklist).
 
 ## Readiness and commercial deployment
 
-Seriesight now has invite-based coach authentication, salted password hashes, expiring/revocable server sessions, same-origin mutation checks, database-backed sign-in throttling, and draft workspace ownership checks. Experimental billing and integration APIs are disabled because their global stores are not tenant-isolated. Playbook, player notes, VOD and practice tools remain illustrative, memory-only tools that reset on account changes; only draft workflows are persisted privately.
+Seriesight has invite-based coach authentication, salted password hashes, expiring/revocable server sessions, same-origin mutation checks, database-backed sign-in throttling and API rate limiting, real database-aware health checks, versioned PostgreSQL migrations, structured JSON logs, and draft workspace ownership checks. The production Compose stack runs a non-root, capability-dropped app with an app health check, log rotation, a trusted-proxy-aware client key, and the global integration scheduler disabled. Experimental billing and integration APIs remain disabled because their stores are not tenant-isolated. Playbook, player notes, VOD and practice tools remain illustrative, memory-only tools that reset on account changes; only draft workflows are persisted privately.
 
-Before production use, complete an independent security review, broad API rate limiting, email verification/recovery, operational monitoring, and tested backup/restore procedures. Keep the disabled APIs disabled until ownership and egress controls are audited. Production use also requires separate authorization under the Business Source License and compliance with applicable GRID data terms; non-production use and redistribution are governed by the license itself. See [`docs/SECURITY.md`](docs/SECURITY.md) and [`LICENSE`](LICENSE).
+Before public launch, complete an independent security review, email verification/recovery, alerting wired to the structured logs, and a tested backup/restore drill. Keep the disabled APIs disabled until ownership and egress controls are audited. Production use also requires separate authorization under the Business Source License and compliance with applicable GRID data terms; non-production use and redistribution are governed by the license itself. See [`docs/SECURITY.md`](docs/SECURITY.md) and [`LICENSE`](LICENSE).
 
 ## Branches & release automation
 

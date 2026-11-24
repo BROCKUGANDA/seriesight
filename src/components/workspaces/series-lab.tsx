@@ -37,7 +37,7 @@ export function SeriesLab() {
   const [cfgOpponent, setCfgOpponent] = useState("NVX");
   const [cfgMode, setCfgMode] = useState<"hard" | "soft" | "none">("hard");
   const [cfgFormat, setCfgFormat] = useState<SeriesFormat>("BO5");
-  const [restrictions, setRestrictions] = useState<RestrictionsPayload | null>(null);
+  const [restrictionsState, setRestrictionsState] = useState<{ sessionId: string; payload: RestrictionsPayload } | null>(null);
   const [cf, setCf] = useState<CounterfactualPayload | null>(null);
   const [cfSource, setCfSource] = useState<{ gameNumber: number; remove: string } | null>(null);
   const [cfAdd, setCfAdd] = useState("ksante");
@@ -50,13 +50,18 @@ export function SeriesLab() {
     apiFetch<TeamRow[]>("/api/teams").then(setTeams).catch(() => setTeams([]));
   }, []);
 
-  const loadRestrictions = useCallback((sessionId: string) => {
-    apiFetch<RestrictionsPayload>(`/api/draft/sessions/${sessionId}/restrictions`).then(setRestrictions).catch(() => setRestrictions(null));
+  const loadRestrictions = useCallback(async (sessionId: string) => {
+    try {
+      const payload = await apiFetch<RestrictionsPayload>(`/api/draft/sessions/${sessionId}/restrictions`);
+      setRestrictionsState({ sessionId, payload });
+    } catch {
+      setRestrictionsState(null);
+    }
   }, []);
 
   useEffect(() => {
-    if (activeSession) loadRestrictions(activeSession.id);
-    else setRestrictions(null);
+    const sessionId = activeSession?.id;
+    if (sessionId) queueMicrotask(() => void loadRestrictions(sessionId));
   }, [activeSession, loadRestrictions]);
 
   const createSeries = async () => {
@@ -125,6 +130,7 @@ export function SeriesLab() {
   };
 
   const session = activeSession;
+  const restrictions = session && restrictionsState?.sessionId === session.id ? restrictionsState.payload : null;
   const maxGames = session ? (session.format === "BO1" ? 1 : session.format === "BO3" ? 3 : 5) : 5;
 
   return (

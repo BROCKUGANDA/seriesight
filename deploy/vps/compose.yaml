@@ -35,7 +35,7 @@ services:
       dockerfile: Dockerfile
       target: build
     container_name: seriesight-migrate
-    command: bunx prisma db push --schema prisma/schema.production.prisma
+    command: bunx prisma migrate deploy --schema prisma/schema.production.prisma
     environment:
       PROD_DATABASE_URL: postgresql://seriesight:${POSTGRES_PASSWORD}@db:5432/seriesight
     depends_on:
@@ -56,9 +56,28 @@ services:
       GRID_API_KEY: ${GRID_API_KEY:-}
       APP_ORIGIN: https://seriesight.aiazimara.com
       AUTH_INVITE_CODE: ${AUTH_INVITE_CODE:-}
+      TRUST_AUTH_PROXY: "true"
+      # Global integration stores are not workspace-isolated yet; keep the
+      # background dispatcher off until Phase 1 tenant isolation lands.
+      SERIESIGHT_DISPATCH_INTERVAL_MS: "0"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4180/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   edge:
     image: caddy:2-alpine

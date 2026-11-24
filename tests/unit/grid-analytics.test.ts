@@ -15,6 +15,7 @@ import { gameDetail, getMacroAnalysis, seriesDetail } from "@/services/macro";
 
 const records = vi.hoisted(() => new Map<string, { provider: string; metadataJson: string }>());
 const sessions = vi.hoisted(() => new Map<string, { userId: string; workspaceId: string; expiresAt: Date; createdAt: Date }>());
+const rateBuckets = vi.hoisted(() => new Map<string, number>());
 vi.mock("@/lib/db", () => ({ db: {
   authSessionRecord: { findUnique: vi.fn(async ({ where }: { where: { tokenHash: string } }) => sessions.get(where.tokenHash) ?? null) },
   authUserRecord: { findUnique: vi.fn(async ({ where }: { where: { id: string } }) => ({ id: where.id, workspaceId: where.id, name: "Test coach", email: "test@example.invalid" })) },
@@ -22,7 +23,16 @@ vi.mock("@/lib/db", () => ({ db: {
   dataSourceConnectionRecord: {
   upsert: vi.fn(async ({ create, update }: { create: { provider: string; metadataJson: string }; update: { metadataJson: string } }) => records.set(create.provider, { ...create, ...update })),
   findMany: vi.fn(async ({ where }: { where: { provider: { startsWith: string } } }) => [...records.values()].filter((r) => r.provider.startsWith(where.provider.startsWith))),
-} } }));
+},
+  requestRateLimitRecord: {
+    upsert: vi.fn(async ({ where, create }: { where: { key: string }; create: { key: string; attempts: number; expiresAt: Date } }) => {
+      const attempts = (rateBuckets.get(where.key) ?? 0) + 1;
+      rateBuckets.set(where.key, attempts);
+      return { ...create, attempts };
+    }),
+    deleteMany: vi.fn(async () => ({ count: 0 })),
+  },
+} }));
 
 const identity = (workspaceId: string, kind: Identity["kind"] = "coach"): Identity => ({
   workspaceId, kind, userId: kind === "coach" ? workspaceId : null,
@@ -51,7 +61,7 @@ async function seed(workspace = "analytics-a", unknownChampion = false) {
 }
 
 describe("workspace-selected GRID analytics", () => {
-  beforeEach(() => { records.clear(); sessions.clear(); });
+  beforeEach(() => { records.clear(); sessions.clear(); rateBuckets.clear(); });
 
   it("preserves no-auth fixture unit use", () => {
     expect(listTeams().some((t) => t.id === "NVX")).toBe(true);

@@ -43,6 +43,14 @@ model AuthThrottleRecord {
   attempts Int    @default(1)
 }
 
+model RequestRateLimitRecord {
+  key       String   @id
+  attempts  Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
 model DraftSessionRecord {
   id                 String   @id @default(uuid())
   workspaceId        String   @default("ws-demo")

@@ -88,6 +88,8 @@ docs/                   # this documentation set
 | `DraftActionRecord` | immutable audit trail: every applied action with `priorStateVersion` |
 | `IngestionJobRecord` | import jobs with named stages |
 | `DataSourceConnectionRecord` | provider status surfaces for the Data Sources page |
+| `AuthUserRecord` / `AuthSessionRecord` / `AuthThrottleRecord` | invite-based identity, hashed sessions, sign-in throttling |
+| `RequestRateLimitRecord` | shared fixed-window API throttling |
 
 Analytics are computed from the fixture dataset module (not stored rows) — the database owns mutable workflow state only. This keeps statistics reproducible and the demo honest: no licensed data retention is required.
 

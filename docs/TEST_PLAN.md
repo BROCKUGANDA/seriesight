@@ -3,9 +3,10 @@
 ## Commands
 
 ```bash
-bun run test        # Vitest unit + integration + contract suite (82 tests)
+bun run test        # Vitest unit + integration + contract suite (176 tests)
 bun run lint        # ESLint (0 problems)
 bun run typecheck   # TypeScript strict, whole repo (0 errors)
+bun audit           # dependency advisories (0 vulnerabilities)
 bun run db:push     # recreate SQLite schema
 ```
 
@@ -35,6 +36,13 @@ bun run db:push     # recreate SQLite schema
 - Evidence builder: deterministic ids, input sensitivity, limitation labelling, ledger dedupe.
 - Counterfactual: divergent restriction sets, removal validation.
 
+### Unit — production readiness (`tests/unit/production-readiness.test.ts`)
+- Database health probe executes a real query and schema-sensitive lookup; fixture health reports dataset counts.
+- `/api/health` returns `200 healthy` with check detail; dependency failure returns `503 SERVICE_UNAVAILABLE` through the uniform envelope.
+- Shared-store rate limiter allows up to the configured limit, then throws `RATE_LIMITED` with `Retry-After` metadata.
+- Forwarded client addresses are trusted only when `TRUST_AUTH_PROXY=true`.
+- PostgreSQL baseline migration is present and includes the operational and draft tables.
+
 ### End-to-end (manual + browser-verified)
 The Playwright journey set from PRD O3 is exercised in the delivery environment via the Agent Browser run recorded in the submission notes:
 
@@ -51,8 +59,9 @@ The Playwright journey set from PRD O3 is exercised in the delivery environment 
 |---|---|
 | Type checking (strict) | clean |
 | Lint | clean |
-| Unit + integration + contract tests | 82/82 passing |
-| Production build | dev-mode verified in sandbox (`next build` is disabled by the hosting harness); typecheck + lint + runtime compile cover the build path |
+| Unit + integration + contract tests | 176/176 passing |
+| Dependency audit | 0 vulnerabilities across 696 resolved packages |
+| Production build | `next build` + standalone assembly verified locally and in CI |
 | Demo dataset accessible | fixture workspace fully functional without credentials |
 | Browser journeys | all six verified (Agent Browser) |
 | Accessibility | keyboard navigation, visible focus, aria labels on interactive elements, non-colour state indicators, reduced-motion support, responsive 390→1600 px |

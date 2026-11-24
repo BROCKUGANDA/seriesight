@@ -51,39 +51,48 @@ export function DraftRoom() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiClientError | null>(null);
   const [recs, setRecs] = useState<RecommendationsPayload | null>(null);
-  const [recsLoading, setRecsLoading] = useState(false);
+
   const [recsError, setRecsError] = useState(false);
   const [expandedRec, setExpandedRec] = useState<string | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const loadCatalogue = useCallback(() => {
-    setCatalogue(null);
-    setCatalogueError(false);
-    apiFetch<ChampionCatalogue>("/api/champions").then(setCatalogue).catch(() => setCatalogueError(true));
+  const loadCatalogue = useCallback(async () => {
+    try {
+      const data = await apiFetch<ChampionCatalogue>("/api/champions");
+      setCatalogue(data);
+      setCatalogueError(false);
+    } catch {
+      setCatalogue(null);
+      setCatalogueError(true);
+    }
   }, []);
 
-  const loadTeams = useCallback(() => {
-    setTeamsError(false);
-    apiFetch<TeamRow[]>("/api/teams").then((rows) => {
+  const loadTeams = useCallback(async () => {
+    try {
+      const rows = await apiFetch<TeamRow[]>("/api/teams");
       const ourTeam = rows.find((team) => team.isOurTeam)?.id ?? rows[0]?.id ?? "";
       const opponents = rows.filter((team) => team.id !== ourTeam);
       setCfgOurTeam(ourTeam);
       setTeams(rows);
       setCfgOpponent((current) => opponents.some((team) => team.id === current) ? current : opponents[0]?.id ?? "");
-    }).catch(() => {
-        setTeams([]);
-        setTeamsError(true);
-      });
+      setTeamsError(false);
+    } catch {
+      setTeams([]);
+      setTeamsError(true);
+    }
   }, []);
 
   useEffect(() => {
-    loadCatalogue();
-    loadTeams();
+    queueMicrotask(() => {
+      void loadCatalogue();
+      void loadTeams();
+    });
   }, [loadCatalogue, loadTeams]);
 
   const session = activeSession;
   const game = session?.games.find((g) => g.gameNumber === session.currentGame) ?? null;
+  const recsLoading = Boolean(session && !recs && !recsError);
   const opponentTeams = teams.filter((team) => team.id !== cfgOurTeam);
   const missingRoleCount = game ? [...game.blue.picks, ...game.red.picks].filter((pick) => !pick.role).length : 0;
   const finalizeBlocker = game && game.actions.length < SEQUENCE_TYPE.length
@@ -92,21 +101,20 @@ export function DraftRoom() {
       ? `Assign roles to ${missingRoleCount} remaining pick${missingRoleCount === 1 ? "" : "s"}.`
       : null;
 
-  const refreshRecs = useCallback((sessionId: string) => {
-    setRecs(null);
-    setRecsLoading(true);
-    setRecsError(false);
-    apiPost<RecommendationsPayload>("/api/draft/recommendations", { sessionId })
-      .then(setRecs)
-      .catch(() => {
-        setRecs(null);
-        setRecsError(true);
-      })
-      .finally(() => setRecsLoading(false));
+  const refreshRecs = useCallback(async (sessionId: string) => {
+    try {
+      const payload = await apiPost<RecommendationsPayload>("/api/draft/recommendations", { sessionId });
+      setRecs(payload);
+      setRecsError(false);
+    } catch {
+      setRecs(null);
+      setRecsError(true);
+    }
   }, []);
 
   useEffect(() => {
-    if (session) refreshRecs(session.id);
+    const sessionId = session?.id;
+    if (sessionId) queueMicrotask(() => void refreshRecs(sessionId));
   }, [session, refreshRecs]);
 
   const createSession = async () => {
@@ -167,14 +175,14 @@ export function DraftRoom() {
       `${type === "ban" ? "Ban" : "Pick"} locked: ${getChampion(championId)?.displayName ?? championId}`,
     );
 
-  const currentTurn = useMemo(() => {
-    if (!game || !session) return null;
+  const currentTurn = (() => {
+    if (!game) return null;
     const idx = game.actions.length;
     if (game.status !== "drafting" || idx >= SEQUENCE_TYPE.length) return null;
     return { index: idx, type: SEQUENCE_TYPE[idx] as "ban" | "pick", side: (SEQUENCE_LABEL[idx] === "B" ? "BLUE" : "RED") as Side };
-  }, [game, session]);
+  })();
 
-  const availability = useMemo(() => {
+  const availability = (() => {
     // Client-side mirror for instant visual feedback; the server remains
     // authoritative on lock. Fearless restriction is turn-aware in soft/own mode.
     if (!game || !session || !catalogue) return null;
@@ -216,7 +224,7 @@ export function DraftRoom() {
       map[c.id] = { available: reasons.length === 0, reasons };
     }
     return map;
-  }, [game, session, catalogue]);
+  })();
 
   const filteredChampions = useMemo(() => {
     if (!catalogue) return [];
@@ -227,7 +235,7 @@ export function DraftRoom() {
   }, [catalogue, search, roleFilter]);
 
   // Composition analysis of our current picks (client-side trait aggregation).
-  const compProfile = useMemo(() => {
+  const compProfile = (() => {
     if (!game || !session) return null;
     const ourTeamId = session.ourTeamId;
     const ourPicks = game.blueTeamId === ourTeamId ? game.blue.picks : game.red.picks;
@@ -238,7 +246,7 @@ export function DraftRoom() {
       out[d] = vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 100) / 100 : null;
     }
     return out;
-  }, [game, session]);
+  })();
 
   const ourSideInGame: Side | null = game ? ((game.blueTeamId === session?.ourTeamId ? "BLUE" : "RED")) : null;
   const weAct = currentTurn && ourSideInGame === currentTurn.side;

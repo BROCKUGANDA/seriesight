@@ -7,6 +7,8 @@ import { randomUUID } from "crypto";
 import { ZodError, ZodType } from "zod";
 import { AppError, type ErrorCode } from "@/domain/errors";
 import { assertSameOrigin, authError, identityContext, resolveIdentity } from "@/lib/auth";
+import { consumeRateLimit, rateLimitPolicy, trustedClientAddress } from "@/lib/rate-limit";
+import { logError } from "@/lib/observability";
 import { withSelectedDataset } from "@/services/dataset";
 
 export interface ApiEnvelope<T> {
@@ -50,7 +52,16 @@ export function fail(
     meta: { requestId: requestIdFrom(req), generatedAt: new Date().toISOString(), ...meta },
     error,
   };
-  return NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
+  const retryAfter = typeof error.details?.retryAfterSec === "number"
+    ? String(Math.max(1, Math.ceil(error.details.retryAfterSec)))
+    : undefined;
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      "cache-control": "no-store",
+      ...(retryAfter ? { "retry-after": retryAfter } : {}),
+    },
+  });
 }
 
 const STATUS_BY_CODE: Partial<Record<ErrorCode, number>> = {
@@ -73,6 +84,7 @@ const STATUS_BY_CODE: Partial<Record<ErrorCode, number>> = {
   INTEGRATION_ENDPOINT_UNREACHABLE: 502,
   INTEGRATION_ENDPOINT_BLOCKED: 400,
   INTEGRATION_EVENT_NOT_REPLAYABLE: 409,
+  SERVICE_UNAVAILABLE: 503,
   INTERNAL_ERROR: 500,
 };
 
@@ -85,12 +97,24 @@ export function handler<A extends unknown[]>(
   fn: (req: NextRequest, ...rest: A) => Promise<NextResponse>,
 ): (req: NextRequest, ...rest: A) => Promise<NextResponse> {
   return async (req: NextRequest, ...rest: A) => {
+    const path = req.nextUrl.pathname;
     try {
       assertSameOrigin(req);
-      const path = req.nextUrl.pathname;
-      if (path === "/api/health" || path === "/api/leads" || path.startsWith("/api/auth/")) return await fn(req, ...rest);
-      const identity = await resolveIdentity(req);
-      if (!identity) throw authError();
+      // Health is exempt from throttling so orchestrators can always probe it.
+      if (path === "/api/health") return await fn(req, ...rest);
+
+      const isPublic = path === "/api/leads" || path.startsWith("/api/auth/");
+      const identity = isPublic ? null : await resolveIdentity(req);
+      if (!isPublic && !identity) throw authError();
+
+      const policy = rateLimitPolicy(path);
+      const limiterIdentity = identity
+        ? `${identity.kind}:${identity.workspaceId}:${trustedClientAddress(req)}`
+        : trustedClientAddress(req);
+      await consumeRateLimit({ scope: policy.scope, identity: limiterIdentity, limit: policy.limit });
+
+      if (!identity) return await fn(req, ...rest);
+
       // These experimental global stores have no workspace ownership model.
       if (path.startsWith("/api/billing/") || path.startsWith("/api/integration/")) {
         throw authError("Experimental billing and integrations are disabled until workspace isolation is implemented.", true);
@@ -127,7 +151,7 @@ export function handler<A extends unknown[]>(
         );
       }
       // Unknown error: log server-side, return a generic message.
-      console.error("[seriesight] unhandled route error:", err instanceof Error ? err.message : err);
+      logError(err, { requestId: requestIdFrom(req), path, method: req.method });
       return fail(
         {
           code: "INTERNAL_ERROR",

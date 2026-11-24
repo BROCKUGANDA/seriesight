@@ -22,8 +22,11 @@ fails the build if they drift.
 ```bash
 bun run docker:db                                      # postgres:16 on :55432
 $env:PROD_DATABASE_URL = "postgresql://seriesight:seriesight@localhost:55432/seriesight"
-bun run db:push:pg                                     # create/update tables — never touches the runtime client
+bun run db:migrate:init:pg                             # first time only: create versioned migrations
+bun run db:migrate:pg                                  # subsequent changes: prisma migrate deploy
 ```
+
+`db:push:pg` is reserved for throwaway local experiments. Shared databases must use `prisma migrate deploy` so schema history is reviewable and repeatable. The checked-in baseline is `prisma/migrations/20261125000000_init`; production databases created with `db push` must be baselined with `prisma migrate resolve --applied 20261125000000_init` before the first deploy.
 
 The production runtime client is generated from `prisma/schema.production.prisma`
 at **build time** via `bun run build:prod` — never during dev, so the SQLite dev
@@ -67,7 +70,12 @@ docker exec seriesight-db psql -U seriesight -d seriesight -c "\dt"
 |---|---|---|
 | `GRID_API_KEY` | demo: no, production: no | Server-side GRID access; without it the fixture workspace runs |
 | `PROD_DATABASE_URL` | yes for Postgres deployments | PostgreSQL connection string |
-| `SERIESIGHT_DISPATCH_INTERVAL_MS` | no | Set `0` when an external cron owns integration dispatch |
+| `SERIESIGHT_DISPATCH_INTERVAL_MS` | no | Set `0` while integration stores are not workspace-isolated |
+| `APP_ORIGIN` | yes in production | Exact origin accepted for same-origin mutations |
+| `TRUST_AUTH_PROXY` | yes behind Cloudflare/Caddy | Trust `CF-Connecting-IP`/`X-Forwarded-For` for throttling keys only |
+| `API_RATE_LIMIT_PER_MIN` | no | Authenticated API requests per client (default 600) |
+| `AUTH_RATE_LIMIT_PER_MIN` | no | Auth requests per client (default 60) |
+| `LEADS_RATE_LIMIT_PER_MIN` | no | Public lead submissions per client (default 20) |
 
 Copy `.env.example` → `.env` for machine-local overrides. `.env` is
 git-ignored and must never be committed.
@@ -83,7 +91,10 @@ bun run build           # next build → .next/standalone (+ static/public copie
 NODE_ENV=production bun .next/standalone/server.js
 ```
 
-- Health probe: `GET /api/health`.
+- Health/readiness probe: `GET /api/health` returns `200` only when the database
+  and fixture checks pass; otherwise it returns `503 SERVICE_UNAVAILABLE`.
+- Logs are newline-delimited JSON on stdout. Attach your log shipper to the
+  container stream; no request body, cookie, token or secret is logged.
 - The server binds `PORT` (default 3000).
 - Docker-compatible: any container image with Node/Bun and the build output
   works; mount nothing except optional secrets.
@@ -99,7 +110,10 @@ not.
 
 ## 5. Post-deploy verification checklist
 
-- [ ] `GET /api/health` returns success with a request id.
+- [ ] `GET /api/health` returns `200` with `checks.database.status=pass` and a request id.
+- [ ] `GET /api/health` returns `503` when the database is unavailable (tested in staging).
+- [ ] `bun audit` reports zero vulnerabilities in CI.
+- [ ] `prisma migrate status` reports all migrations applied.
 - [ ] Draft Room: create a BO5 session, make legal picks, finalize, confirm
       the persisted session survives a server restart.
 - [ ] Concurrent write check: replaying an action with a stale
@@ -108,3 +122,22 @@ not.
       `GRID_CREDENTIAL_MISSING` state and the workspace keeps working.
 - [ ] Security headers present on `/` and `/api/*`.
 - [ ] Fixture badge visible; no unlabelled synthetic data anywhere.
+
+## 6. Backup and restore
+
+Back up PostgreSQL before every schema change and on a daily schedule. The
+VPS deployment stores data in the `seriesight_seriesight-pgdata` volume on
+block storage; never recreate that volume during redeployment.
+
+```bash
+docker compose -f deploy/vps/compose.yaml exec -T db \
+  pg_dump -U seriesight -d seriesight -Fc > seriesight-backup.dump
+
+# Restore drill — always rehearse against a disposable database first.
+docker compose -f deploy/vps/compose.yaml exec -T db \
+  pg_restore --clean --if-exists -U seriesight -d seriesight_restore < seriesight-backup.dump
+```
+
+A backup is not verified until it has been restored into a disposable database
+and the restored instance passes `bun run db:migrate:pg` plus `GET /api/health`.
+Record the drill date and result in the deployment log.

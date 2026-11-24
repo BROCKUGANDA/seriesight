@@ -55,6 +55,7 @@ export type ErrorCode =
   | "SESSION_EXPIRED"
   | "ACCESS_DENIED"
   | "RATE_LIMITED"
+  | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export interface AppErrorShape {

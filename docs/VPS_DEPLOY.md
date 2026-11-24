@@ -31,12 +31,13 @@ For subsequent deployments, copy the reviewed source (excluding `.env`, `.git`, 
 ```bash
 cd /mnt/data/apps/seriesight
 docker compose --env-file .env -f deploy/vps/compose.yaml build app
+docker compose --env-file .env -f deploy/vps/compose.yaml run --rm migrate
 docker compose --env-file .env -f deploy/vps/compose.yaml up -d --no-deps app
-curl --fail https://seriesight.aiazimara.com/api/health
+curl --fail https://seriesight.aiazimara.com/api/health | grep '"status":"healthy"'
 node scripts/judge-smoke.mjs https://seriesight.aiazimara.com --draft
 ```
 
-The Dockerfile explicitly includes the generated Prisma client and Alpine query engine; a successful health response alone does not prove database-backed routes work. Always check Data Sources and a persisted draft session as well. Back up PostgreSQL before schema changes; apply schema changes separately, never using a destructive reset.
+The Dockerfile explicitly includes the generated Prisma client and Alpine query engine. `GET /api/health` now queries the database and returns `503` when it is unreachable, but still check Data Sources and a persisted draft session. Back up PostgreSQL before schema changes; apply schema changes with `prisma migrate deploy`, never a destructive reset. If the existing volume was created with `db push`, baseline it once with `bunx prisma migrate resolve --applied 20261125000000_init --schema prisma/schema.production.prisma` before the first migration deploy.
 
 ### Authentication upgrade
 
@@ -85,13 +86,18 @@ curl -sI https://seriesight.aiazimara.com/                                  # vi
 cd /mnt/data/apps/seriesight
 # Update the reviewed source here, preserving the private .env and database volume.
 docker compose --env-file .env -f deploy/vps/compose.yaml up -d --build
-docker compose --env-file .env -f deploy/vps/compose.yaml --profile migrate run --rm migrate   # review first; only when the schema changed
+docker compose --env-file .env -f deploy/vps/compose.yaml run --rm migrate   # review first; only when the schema changed
 ```
 
 ## Production notes
 
 - The app builds with `prisma/schema.production.prisma` (PostgreSQL) — the
   dev/demo SQLite client never ships to the VPS.
+- Schema changes deploy through versioned migrations in `prisma/migrations`;
+  `db push` is never used on the live database.
+- The app container runs as a non-root user with all Linux capabilities dropped,
+  an `/api/health` health check, and rotated JSON logs. The integration
+  scheduler is disabled until tenant isolation is implemented.
 - `PROD_DATABASE_URL` and `GRID_API_KEY` live only in the VPS `.env` — never in Git.
 - GRID runs in read-only Open Access mode; probe: `GET /api/data-sources` shows the live connection.
 - Fixture data is fully functional without `GRID_API_KEY`.
