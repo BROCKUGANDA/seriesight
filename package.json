@@ -1,6 +1,6 @@
 {
   "name": "seriesight",
-  "version": "0.3.0-rc.5",
+  "version": "0.3.0",
   "private": true,
   "license": "BSL-1.1",
   "description": "Interactive League of Legends pre-match coaching demo with Fearless Draft planning.",
