@@ -17,11 +17,16 @@ datasource db {
 
 model AuthUserRecord {
   id           String   @id @default(uuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  workspaceId  String   @unique @default(uuid())
-  createdAt    DateTime @default(now())
+  email          String    @unique
+  name           String
+  passwordHash   String
+  workspaceId    String    @unique @default(uuid())
+  emailVerifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  organizations OrganizationRecord[]          @relation("OrganizationOwner")
+  memberships   OrganizationMemberRecord[]    @relation("MemberUser")
+  invitations   OrganizationInvitationRecord[] @relation("InvitationSender")
 }
 
 model AuthSessionRecord {
@@ -45,6 +50,76 @@ model RequestRateLimitRecord {
   expiresAt DateTime
 
   @@index([expiresAt])
+}
+
+model OrganizationRecord {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  ownerUserId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       AuthUserRecord               @relation("OrganizationOwner", fields: [ownerUserId], references: [id])
+  members     OrganizationMemberRecord[]
+  invitations OrganizationInvitationRecord[]
+  workspaces  WorkspaceRecord[]
+}
+
+model OrganizationMemberRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String   @default("coach")
+  joinedAt       DateTime @default(now())
+
+  organization OrganizationRecord @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         AuthUserRecord     @relation("MemberUser", fields: [userId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model OrganizationInvitationRecord {
+  id              String    @id @default(uuid())
+  organizationId  String
+  email           String
+  role            String    @default("coach")
+  tokenHash       String    @unique
+  invitedByUserId String
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  organization OrganizationRecord @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    AuthUserRecord     @relation("InvitationSender", fields: [invitedByUserId], references: [id])
+
+  @@index([organizationId, email])
+}
+
+model AuthVerificationRecord {
+  id        String    @id @default(uuid())
+  userId    String
+  purpose   String
+  tokenHash String    @unique
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, purpose])
+}
+
+model WorkspaceRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  kind           String   @default("team")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization OrganizationRecord @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 model DraftSessionRecord {
@@ -152,6 +227,7 @@ model LeadRecord {
 // bounded retries and a dead-letter terminal state.
 model IntegrationEventRecord {
   id            String    @id @default(uuid())
+  workspaceId   String    @default("global")
   topic         String
   source        String
   direction     String    @default("internal") // internal | inbound | outbound
@@ -169,12 +245,14 @@ model IntegrationEventRecord {
 
   @@index([status, nextAttemptAt])
   @@index([topic, createdAt])
+  @@index([workspaceId, status, nextAttemptAt])
 }
 
 // Registered outbound subscriber endpoints — external systems that receive
 // signed webhook deliveries when events match their subscribed topics.
 model IntegrationEndpointRecord {
   id             String    @id @default(uuid())
+  workspaceId    String    @default("global")
   label          String
   url            String
   secret         String
@@ -189,6 +267,7 @@ model IntegrationEndpointRecord {
   deliveries IntegrationDeliveryRecord[]
 
   @@index([status])
+  @@index([workspaceId, status])
 }
 
 // Delivery ledger: one row per event × endpoint attempt, kept for auditing
@@ -214,8 +293,9 @@ model IntegrationDeliveryRecord {
 // In-app notification feed written by the notification consumer, surfaced in
 // the Integration Hub and the shell notification centre.
 model IntegrationNotificationRecord {
-  id        String   @id @default(uuid())
-  topic     String
+  id          String   @id @default(uuid())
+  workspaceId String   @default("global")
+  topic       String
   severity  String   @default("info") // info | success | warning | error
   title     String
   body      String
@@ -223,6 +303,7 @@ model IntegrationNotificationRecord {
   createdAt DateTime @default(now())
 
   @@index([read, createdAt])
+  @@index([workspaceId, read, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

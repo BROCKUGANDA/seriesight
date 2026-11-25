@@ -5,10 +5,15 @@ import { HISTORICAL_STATE_SELECTION, inspectGridSchema } from "@/lib/providers/g
 import { getHistoricalSeries, gridHistoryToDataset, loadSelectedDataset, persistGridHistoricalSeries, selectedDataset, withSelectedDataset } from "@/services/dataset";
 
 const records = vi.hoisted(() => new Map<string, { provider: string; metadataJson: string }>());
-vi.mock("@/lib/db", () => ({ db: { dataSourceConnectionRecord: {
-  upsert: vi.fn(async ({ create }: { create: { provider: string; metadataJson: string } }) => records.set(create.provider, create)),
-  findMany: vi.fn(async ({ where }: { where: { provider: { startsWith: string } } }) => [...records.values()].filter((r) => r.provider.startsWith(where.provider.startsWith))),
-} } }));
+vi.mock("@/lib/db", () => ({ db: {
+  dataSourceConnectionRecord: {
+    upsert: vi.fn(async ({ create }: { create: { provider: string; metadataJson: string } }) => records.set(create.provider, create)),
+    findMany: vi.fn(async ({ where }: { where: { provider: { startsWith: string } } }) => [...records.values()].filter((r) => r.provider.startsWith(where.provider.startsWith))),
+  },
+  organizationMemberRecord: {
+    findFirst: vi.fn(async ({ where }: { where: { userId: string } }) => ({ role: "owner", organizationId: `org-${where.userId}` })),
+  },
+} }));
 
 const identity = (workspaceId: string, kind: Identity["kind"] = "coach"): Identity => ({ workspaceId, kind, userId: kind === "coach" ? workspaceId : null, name: "Test", email: "test@example.invalid", role: "test", signedInAt: "2026-01-01T00:00:00Z" });
 // Deliberately synthetic provider payload; never presented as actual GRID data.

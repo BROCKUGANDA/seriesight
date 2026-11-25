@@ -67,6 +67,7 @@ interface AuthStore {
   signInJudge: () => Promise<void>;
   signInCoach: (input: { action: "login" | "register"; email: string; password: string; name?: string; inviteCode?: string }) => Promise<void>;
   signOut: () => Promise<void>;
+  switchWorkspace: (workspaceId: string) => Promise<void>;
   refresh: () => Promise<void>;
   markHydrated: () => void;
 }
@@ -102,6 +103,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     useWorkspaceStore.setState({ activeSession: null, evidenceDrawer: { open: false, evidenceId: null }, toast: null });
     useCoachStore.setState(useCoachStore.getInitialState());
     set({ user: null });
+  },
+  switchWorkspace: async (workspaceId) => {
+    const response = await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/switch`, {
+      method: "POST", cache: "no-store",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error?.message || "Unable to switch workspace.");
+    await get().refresh();
   },
   markHydrated: () => set({ hydrated: true }),
 }));

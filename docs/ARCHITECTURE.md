@@ -90,6 +90,8 @@ docs/                   # this documentation set
 | `DataSourceConnectionRecord` | provider status surfaces for the Data Sources page |
 | `AuthUserRecord` / `AuthSessionRecord` / `AuthThrottleRecord` | invite-based identity, hashed sessions, sign-in throttling |
 | `RequestRateLimitRecord` | shared fixed-window API throttling |
+| `OrganizationRecord` / `OrganizationMemberRecord` | tenant ownership, memberships and role assignments |
+| `OrganizationInvitationRecord` / `WorkspaceRecord` | time-limited invitations and switchable personal/team workspaces |
 
 Analytics are computed from the fixture dataset module (not stored rows) — the database owns mutable workflow state only. This keeps statistics reproducible and the demo honest: no licensed data retention is required.
 

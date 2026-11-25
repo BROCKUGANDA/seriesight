@@ -57,8 +57,16 @@ services:
       APP_ORIGIN: https://seriesight.aiazimara.com
       AUTH_INVITE_CODE: ${AUTH_INVITE_CODE:-}
       TRUST_AUTH_PROXY: "true"
-      # Global integration stores are not workspace-isolated yet; keep the
-      # background dispatcher off until Phase 1 tenant isolation lands.
+      REQUIRE_EMAIL_VERIFICATION: "true"
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
+      CLOUDFLARE_EMAIL_API_TOKEN: ${CLOUDFLARE_EMAIL_API_TOKEN:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      ALERT_WEBHOOK_SECRET: ${ALERT_WEBHOOK_SECRET:-}
+      # Integration management APIs remain opt-in until webhook egress and
+      # inbound adapter authorization are reviewed for the deployment.
+      INTEGRATION_APIS_ENABLED: "false"
       SERIESIGHT_DISPATCH_INTERVAL_MS: "0"
     depends_on:
       db:

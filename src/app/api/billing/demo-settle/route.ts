@@ -9,6 +9,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { ok, handler, parseBody } from "@/lib/api/respond";
 import { demoSettle } from "@/lib/billing/ledger";
+import { requireWorkspaceRole } from "@/services/organizations";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ const DemoSchema = z.object({
 });
 
 export const POST = handler(async (req: NextRequest) => {
+  await requireWorkspaceRole("owner");
   const body = await parseBody(req, DemoSchema);
   const outcome = await demoSettle(body.paymentId);
   return ok(outcome, req);

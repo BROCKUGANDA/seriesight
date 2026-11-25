@@ -8,6 +8,7 @@
 import { NextRequest } from "next/server";
 import { ok, handler } from "@/lib/api/respond";
 import { db } from "@/lib/db";
+import { identityContext } from "@/lib/auth";
 import { ensureBusBootstrapped, integrationMetrics } from "@/lib/integration/bootstrap";
 import { SEAMS, TOPIC_CATALOGUE } from "@/lib/integration/registry";
 import { INBOUND_TOPICS, TOPIC_LABELS, INTEGRATION_TOPICS } from "@/lib/integration/types";
@@ -22,12 +23,18 @@ export const dynamic = "force-dynamic";
 export const GET = handler(async (req: NextRequest) => {
   ensureBusBootstrapped();
 
+  const workspaceId = identityContext.getStore()?.workspaceId ?? "global";
   const [statusCounts, recent, endpoints, notifications, deliveries] = await Promise.all([
-    db.integrationEventRecord.groupBy({ by: ["status"], _count: { _all: true } }),
-    db.integrationEventRecord.findMany({ orderBy: { createdAt: "desc" }, take: 30 }),
-    db.integrationEndpointRecord.findMany({ orderBy: { createdAt: "desc" } }),
-    db.integrationNotificationRecord.findMany({ orderBy: { createdAt: "desc" }, take: 12 }),
-    db.integrationDeliveryRecord.findMany({ orderBy: { createdAt: "desc" }, take: 15, include: { endpoint: { select: { label: true } } } }),
+    db.integrationEventRecord.groupBy({ by: ["status"], where: { workspaceId }, _count: { _all: true } }),
+    db.integrationEventRecord.findMany({ where: { workspaceId }, orderBy: { createdAt: "desc" }, take: 30 }),
+    db.integrationEndpointRecord.findMany({ where: { workspaceId }, orderBy: { createdAt: "desc" } }),
+    db.integrationNotificationRecord.findMany({ where: { workspaceId }, orderBy: { createdAt: "desc" }, take: 12 }),
+    db.integrationDeliveryRecord.findMany({
+      where: { event: { workspaceId } },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+      include: { endpoint: { select: { label: true } } },
+    }),
   ]);
 
   const counts = { pending: 0, processing: 0, delivered: 0, dead: 0 };

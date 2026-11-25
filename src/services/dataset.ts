@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { db } from "@/lib/db";
-import { currentWorkspace, identityContext, requireCoach } from "@/lib/auth";
+import { currentWorkspace, identityContext } from "@/lib/auth";
+import { requireWorkspaceRole } from "@/services/organizations";
 import type { Game, Series } from "@/domain/types";
 import { FIXTURE_GAMES, FIXTURE_INFO, FIXTURE_SERIES } from "@/fixtures/dataset";
 import { CHAMPIONS } from "@/fixtures/champions";
@@ -63,7 +64,7 @@ export function gridHistoryToDataset(history: GridHistoricalSeries[]): SelectedD
 
 /** Durable normalized data only. Call only when the operator's licence permits retention. */
 export async function persistGridHistoricalSeries(input: GridHistoricalSeries): Promise<void> {
-  requireCoach();
+  await requireWorkspaceRole("coach");
   const history = historicalSeriesSchema.parse(input);
   const provider = `${historyPrefix()}${encodeURIComponent(history.seriesId)}`;
   const metadataJson = JSON.stringify(history);

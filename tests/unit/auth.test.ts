@@ -19,6 +19,8 @@ afterAll(async () => {
   await db.draftSessionRecord.deleteMany({ where: { workspaceId: { in: workspaces } } });
   await db.authSessionRecord.deleteMany({ where: { tokenHash: { in: cookies.map((cookie) => tokenDigest(cookie.split("=")[1])) } } });
   await db.authSessionRecord.deleteMany({ where: { userId: { in: users } } });
+  const organizations = await db.organizationRecord.findMany({ where: { ownerUserId: { in: users } }, select: { id: true } });
+  await db.organizationRecord.deleteMany({ where: { id: { in: organizations.map((o) => o.id) } } });
   await db.authUserRecord.deleteMany({ where: { id: { in: users } } });
 });
 async function guest() {

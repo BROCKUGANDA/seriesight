@@ -26,7 +26,7 @@ bun run db:migrate:init:pg                             # first time only: create
 bun run db:migrate:pg                                  # subsequent changes: prisma migrate deploy
 ```
 
-`db:push:pg` is reserved for throwaway local experiments. Shared databases must use `prisma migrate deploy` so schema history is reviewable and repeatable. The checked-in baseline is `prisma/migrations/20261125000000_init`; production databases created with `db push` must be baselined with `prisma migrate resolve --applied 20261125000000_init` before the first deploy.
+`db:push:pg` is reserved for throwaway local experiments. Shared databases must use `prisma migrate deploy` so schema history is reviewable and repeatable. The checked-in baseline is `prisma/migrations/20261125000000_init`; production databases created with `db push` must be baselined with `prisma migrate resolve --applied 20261125000000_init` before the first deploy. The follow-up `20261125010000_tenant_foundation` migration is idempotent: it creates the organization tables when missing and backfills one personal organization/workspace per existing coach.
 
 The production runtime client is generated from `prisma/schema.production.prisma`
 at **build time** via `bun run build:prod` — never during dev, so the SQLite dev
@@ -76,6 +76,14 @@ docker exec seriesight-db psql -U seriesight -d seriesight -c "\dt"
 | `API_RATE_LIMIT_PER_MIN` | no | Authenticated API requests per client (default 600) |
 | `AUTH_RATE_LIMIT_PER_MIN` | no | Auth requests per client (default 60) |
 | `LEADS_RATE_LIMIT_PER_MIN` | no | Public lead submissions per client (default 20) |
+| `CLOUDFLARE_ACCOUNT_ID` | yes for recovery | Cloudflare account for transactional email |
+| `CLOUDFLARE_EMAIL_API_TOKEN` | yes for recovery | API token with Email Sending permission |
+| `EMAIL_FROM_ADDRESS` | yes for recovery | Verified sender domain address |
+| `EMAIL_REPLY_TO` | no | Reply-to address for recovery emails |
+| `REQUIRE_EMAIL_VERIFICATION` | recommended | Block workspace access until coach email is verified |
+| `ALERT_WEBHOOK_URL` | no | HTTPS alert endpoint (allowlisted hosts only) |
+| `ALERT_WEBHOOK_SECRET` | no | HMAC secret for alert payload signatures |
+| `INTEGRATION_APIS_ENABLED` | no | Opt-in flag for integration management routes |
 
 Copy `.env.example` → `.env` for machine-local overrides. `.env` is
 git-ignored and must never be committed.
@@ -133,11 +141,12 @@ block storage; never recreate that volume during redeployment.
 docker compose -f deploy/vps/compose.yaml exec -T db \
   pg_dump -U seriesight -d seriesight -Fc > seriesight-backup.dump
 
-# Restore drill — always rehearse against a disposable database first.
-docker compose -f deploy/vps/compose.yaml exec -T db \
-  pg_restore --clean --if-exists -U seriesight -d seriesight_restore < seriesight-backup.dump
+# Restore drill — creates and drops only a disposable database.
+node scripts/backup-restore-drill.mjs
 ```
 
-A backup is not verified until it has been restored into a disposable database
+The drill dumps the live database to a temporary file, restores it into
+`seriesight_restore_drill`, verifies user and draft counts, then drops the
+disposable database. The live database is never modified. A backup is not verified until it has been restored into a disposable database
 and the restored instance passes `bun run db:migrate:pg` plus `GET /api/health`.
 Record the drill date and result in the deployment log.

@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 export type NotificationSeverity = "info" | "success" | "warning" | "error";
 
 export async function createNotification(input: {
+  workspaceId: string;
   topic: string;
   severity: NotificationSeverity;
   title: string;
@@ -15,6 +16,7 @@ export async function createNotification(input: {
 }): Promise<void> {
   await db.integrationNotificationRecord.create({
     data: {
+      workspaceId: input.workspaceId,
       topic: input.topic,
       severity: input.severity,
       title: input.title,
@@ -24,10 +26,11 @@ export async function createNotification(input: {
 }
 
 /** Keep the feed bounded — retain the most recent 200 rows. */
-export async function pruneNotifications(keep = 200): Promise<void> {
-  const overflow = await db.integrationNotificationRecord.count();
+export async function pruneNotifications(workspaceId: string, keep = 200): Promise<void> {
+  const overflow = await db.integrationNotificationRecord.count({ where: { workspaceId } });
   if (overflow <= keep) return;
   const stale = await db.integrationNotificationRecord.findMany({
+    where: { workspaceId },
     orderBy: { createdAt: "desc" },
     skip: keep,
     take: overflow - keep,

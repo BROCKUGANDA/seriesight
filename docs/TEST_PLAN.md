@@ -3,7 +3,7 @@
 ## Commands
 
 ```bash
-bun run test        # Vitest unit + integration + contract suite (176 tests)
+bun run test        # Vitest unit + integration + contract suite (180 tests)
 bun run lint        # ESLint (0 problems)
 bun run typecheck   # TypeScript strict, whole repo (0 errors)
 bun audit           # dependency advisories (0 vulnerabilities)
@@ -43,6 +43,17 @@ bun run db:push     # recreate SQLite schema
 - Forwarded client addresses are trusted only when `TRUST_AUTH_PROXY=true`.
 - PostgreSQL baseline migration is present and includes the operational and draft tables.
 
+### Integration — tenant foundation (`tests/unit/organizations.test.ts`)
+- New coaches receive a personal organization with an owner membership and matching workspace.
+- An owner can create a team organization and invite a coach; the invitee accepts with a one-time token.
+- Switching sessions into the team workspace changes `currentWorkspace()` only after membership verification.
+- Draft sessions created in the owner's personal workspace remain invisible (404) to the team member.
+
+### Integration — SaaS operations
+- `tests/unit/account-recovery.test.ts`: verification email token, email confirmation, password-reset request, single-use token, session revocation, and login with the new password.
+- `tests/unit/billing-tenant.test.ts`: payment intents, verification and payment history are invisible across workspaces.
+- `scripts/backup-restore-drill.mjs`: operator-run restore verification against a disposable PostgreSQL database.
+
 ### End-to-end (manual + browser-verified)
 The Playwright journey set from PRD O3 is exercised in the delivery environment via the Agent Browser run recorded in the submission notes:
 
@@ -59,7 +70,7 @@ The Playwright journey set from PRD O3 is exercised in the delivery environment 
 |---|---|
 | Type checking (strict) | clean |
 | Lint | clean |
-| Unit + integration + contract tests | 176/176 passing |
+| Unit + integration + contract tests | 180/180 passing |
 | Dependency audit | 0 vulnerabilities across 696 resolved packages |
 | Production build | `next build` + standalone assembly verified locally and in CI |
 | Demo dataset accessible | fixture workspace fully functional without credentials |

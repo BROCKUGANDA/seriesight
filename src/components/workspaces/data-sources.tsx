@@ -12,6 +12,7 @@ import { ImportGlyph, IntegrityGlyph, RiskGlyph, HardFearlessGlyph } from "@/com
 import { useWorkspaceStore } from "@/store/workspace";
 import type { DataSourceConnection, IngestionJob } from "@/domain/types";
 import { useAuthStore } from "@/store/auth";
+import { canMutateTenant, useTenantRole } from "@/hooks/use-tenant-role";
 
 interface Overview {
   connections: DataSourceConnection[];
@@ -40,6 +41,9 @@ export function DataSources() {
   const [busy, setBusy] = useState<string | null>(null);
   const pushToast = useWorkspaceStore((s) => s.pushToast);
   const isCoach = useAuthStore((s) => s.user?.kind === "coach");
+  const workspaceId = useAuthStore((s) => s.user?.workspaceId);
+  const tenantRole = useTenantRole(workspaceId);
+  const canImport = isCoach && canMutateTenant(tenantRole);
   const [seriesId, setSeriesId] = useState("");
   const [training, setTraining] = useState<{ status: string; reason?: string; metrics?: unknown } | null>(null);
 
@@ -128,8 +132,8 @@ export function DataSources() {
               return (
                 <Panel key={conn.provider} title="GRID Central Data" subtitle="Provider adapter — server-side only" actions={
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => act("verify", "grid")} disabled={busy !== null || !isCoach} className="ctrl-btn">Verify connection</button>
-                    <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null || !isCoach || !seriesId.trim()} className="ctrl-btn">Run import</button>
+                    <button type="button" onClick={() => act("verify", "grid")} disabled={busy !== null || !canImport} className="ctrl-btn">Verify connection</button>
+                    <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null || !canImport || !seriesId.trim()} className="ctrl-btn">Run import</button>
                   </div>
                 }>
                   <div className="flex flex-wrap items-center gap-2">
@@ -256,7 +260,7 @@ export function DataSources() {
               <span className="mx-1 rounded bg-[var(--surface-3)] px-1.5 py-0.5 font-mono text-[10px]">GRID_CREDENTIAL_MISSING</span>
               error and the circuit breaker reports its state — while the fixture workspace above stays fully functional. Nothing silently mixes real and synthetic records.
             </p>
-            <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null || !isCoach || !seriesId.trim()} className="ctrl-btn mt-3">
+            <button type="button" onClick={() => act("import", "grid")} disabled={busy !== null || !canImport || !seriesId.trim()} className="ctrl-btn mt-3">
               Trigger GRID import (expected failure in demo mode)
             </button>
           </Panel>

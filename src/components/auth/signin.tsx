@@ -25,6 +25,8 @@ export function SignInScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [register, setRegister] = useState(false);
+  const [recovery, setRecovery] = useState<"none" | "verify" | "request" | "confirm">("none");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
   const signInCoach = useAuthStore((s) => s.signInCoach);
 
   const enterWorkspace = (message: string) => {
@@ -53,6 +55,39 @@ export function SignInScreen() {
       enterWorkspace("Signed into your private coach workspace.");
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to sign in."); }
     finally { setBusy(false); }
+  };
+
+  const onRecovery = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    setRecoveryMessage("");
+    setError("");
+    try {
+      const body = recovery === "request"
+        ? { email: String(form.get("email")) }
+        : recovery === "confirm"
+          ? { token: String(form.get("token")), password: String(form.get("password")) }
+          : { token: String(form.get("token")) };
+      const path = recovery === "request"
+        ? "/api/auth/password-reset/request"
+        : recovery === "confirm"
+          ? "/api/auth/password-reset/confirm"
+          : "/api/auth/verify-email";
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Recovery request failed.");
+      setRecoveryMessage(recovery === "verify" ? "Email verified. You can sign in now." : recovery === "confirm" ? "Password updated. The old sessions were revoked — sign in with the new password." : "If the account exists, a reset link has been sent.");
+      if (recovery !== "request") setRecovery("none");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Recovery request failed.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -119,6 +154,28 @@ export function SignInScreen() {
             <button type="submit" disabled={busy} className="signal-gradient min-h-11 w-full rounded-xl px-4 font-bold text-[#0e1405] disabled:opacity-50">{busy ? "Please wait…" : register ? "Create private workspace" : "Sign in"}</button>
           </form>
           <button type="button" disabled={busy} onClick={() => setRegister(!register)} className="my-3 text-sm text-[var(--accent-cyan)] hover:underline">{register ? "Already have an account? Sign in" : "Have an invitation? Create account"}</button>
+
+          <div className="my-3 border-t border-[var(--border-subtle)] pt-3">
+            <p className="text-xs text-[var(--text-secondary)]">Account recovery</p>
+            <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
+              <button type="button" onClick={() => { setRecovery("verify"); setRecoveryMessage(""); }} className="text-[var(--accent-cyan)] hover:underline">Verify email</button>
+              <button type="button" onClick={() => { setRecovery("request"); setRecoveryMessage(""); }} className="text-[var(--accent-cyan)] hover:underline">Forgot password</button>
+              <button type="button" onClick={() => { setRecovery("confirm"); setRecoveryMessage(""); }} className="text-[var(--accent-cyan)] hover:underline">Have a reset link</button>
+            </div>
+            {recovery !== "none" && (
+              <form onSubmit={onRecovery} className="mt-3 space-y-2">
+                {recovery === "request" ? (
+                  <label className="block text-xs">Email<input name="email" type="email" required className="mt-1 w-full rounded border p-2" /></label>
+                ) : (
+                  <label className="block text-xs">Token from your email<input name="token" required pattern="[a-f0-9]{64}" className="mt-1 w-full rounded border p-2 font-mono text-[11px]" /></label>
+                )}
+                {recovery === "confirm" && <label className="block text-xs">New password<input name="password" type="password" required minLength={12} className="mt-1 w-full rounded border p-2" /></label>}
+                <button type="submit" disabled={busy} className="ctrl-btn">Send request</button>
+              </form>
+            )}
+            {recoveryMessage && <p role="status" className="mt-2 text-xs text-[var(--accent-green)]">{recoveryMessage}</p>}
+          </div>
+
           {error && <p role="alert" className="my-3 text-sm text-red-400">{error}</p>}
           <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
             Or explore independently authored sample data without registering. Each demo gets a separate sandbox, not access to coach workspaces.

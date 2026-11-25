@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import type { DataSourceConnection, IngestionJob } from "@/domain/types";
 import { probeGrid, circuitSnapshot } from "@/lib/providers/grid/grid-client";
 import { currentWorkspace, identityContext, requireCoach } from "@/lib/auth";
+import { requireWorkspaceRole } from "@/services/organizations";
 import { fetchGridHistoricalSeries } from "@/lib/providers/grid/grid-history";
 import { GridError } from "@/lib/providers/grid/grid-types";
 import { getHistoricalSeries, gridConnectionKey, persistGridHistoricalSeries } from "./dataset";
@@ -150,7 +151,7 @@ export async function dataSourcesOverview(): Promise<{
  * into fixture success. Reimport replaces the same workspace/series atomically.
  */
 export async function runImport(provider: "fixture" | "grid", targetSeriesId?: string): Promise<IngestionJob> {
-  requireCoach();
+  await requireWorkspaceRole("coach");
   await ensureConnections();
   const job: IngestionJob = {
     id: `job-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e5).toString(36)}`,
@@ -212,7 +213,7 @@ export async function runImport(provider: "fixture" | "grid", targetSeriesId?: s
 }
 
 export async function verifyGridConnection(): Promise<{ status: string; detail: string }> {
-  requireCoach();
+  await requireWorkspaceRole("coach");
   await ensureConnections();
   const probe = await probeGrid();
   const grid = await connectionRecord("grid");

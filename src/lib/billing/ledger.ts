@@ -13,6 +13,7 @@
  */
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { currentWorkspace } from "@/lib/auth";
 import { ERRORS } from "@/domain/errors";
 import { PLANS } from "@/lib/commercial";
 import { tokenByKey, TREASURY, type ChainId, type TokenKey } from "./chains";
@@ -125,6 +126,7 @@ export async function createIntent(rawToken: TokenKey, planId: "coach" | "org", 
   const quote = quoteToken(aed, token.key, rates);
   const row = await db.billingPaymentRecord.create({
     data: {
+      workspaceId: currentWorkspace(),
       planId,
       period,
       chain: token.chain,
@@ -157,7 +159,7 @@ export type VerifyOutcome =
  */
 export async function verifyIntent(paymentId: string, txRefRaw: string): Promise<VerifyOutcome> {
   const txRef = txRefRaw.trim();
-  const row = await db.billingPaymentRecord.findUnique({ where: { id: paymentId }, include: { reversals: true } });
+  const row = await db.billingPaymentRecord.findFirst({ where: { id: paymentId, workspaceId: currentWorkspace() }, include: { reversals: true } });
   if (!row) throw ERRORS.notFound("Payment intent");
   if (row.status === "settled") {
     return { verdict: "settled", payment: toDTO(row as PaymentRow), detail: "This payment is already settled." };
@@ -191,7 +193,7 @@ export async function verifyIntent(paymentId: string, txRefRaw: string): Promise
 
 /** Demo settlement — clearly-labelled simulated confirmation for judges/evaluators. */
 export async function demoSettle(paymentId: string): Promise<VerifyOutcome> {
-  const row = await db.billingPaymentRecord.findUnique({ where: { id: paymentId }, include: { reversals: true } });
+  const row = await db.billingPaymentRecord.findFirst({ where: { id: paymentId, workspaceId: currentWorkspace() }, include: { reversals: true } });
   if (!row) throw ERRORS.notFound("Payment intent");
   if (row.status === "settled") return { verdict: "settled", payment: toDTO(row as PaymentRow), detail: "Already settled." };
   return settle(paymentId, "Demo settlement — simulated on-chain confirmation for evaluation. No funds moved.", true);
@@ -220,7 +222,7 @@ async function markFailed(paymentId: string, note: string): Promise<VerifyOutcom
 }
 
 async function reload(paymentId: string): Promise<PaymentDTO> {
-  const row = await db.billingPaymentRecord.findUniqueOrThrow({ where: { id: paymentId }, include: { reversals: true } });
+  const row = await db.billingPaymentRecord.findFirstOrThrow({ where: { id: paymentId, workspaceId: currentWorkspace() }, include: { reversals: true } });
   return toDTO(row as PaymentRow);
 }
 
@@ -241,7 +243,7 @@ export type ReversalOutcome = { payment: PaymentDTO; reversal: ReversalDTO; enti
  * applies it); partial reversals (goodwill credits) never touch entitlement.
  */
 export async function reversePayment(raw: z.infer<typeof ReversalSchema>): Promise<ReversalOutcome> {
-  const row = await db.billingPaymentRecord.findUnique({ where: { id: raw.paymentId }, include: { reversals: true } });
+  const row = await db.billingPaymentRecord.findFirst({ where: { id: raw.paymentId, workspaceId: currentWorkspace() }, include: { reversals: true } });
   if (!row) throw ERRORS.notFound("Payment intent");
   if (row.status !== "settled" && row.status !== "manual_review") {
     throw ERRORS.validation("Only settled payments can be reversed.", { status: row.status });
@@ -306,6 +308,7 @@ export async function reversePayment(raw: z.infer<typeof ReversalSchema>): Promi
 
 export async function listPayments(limit = 50): Promise<PaymentDTO[]> {
   const rows = await db.billingPaymentRecord.findMany({
+    where: { workspaceId: currentWorkspace() },
     orderBy: { createdAt: "desc" },
     take: limit,
     include: { reversals: { orderBy: { createdAt: "desc" } } },

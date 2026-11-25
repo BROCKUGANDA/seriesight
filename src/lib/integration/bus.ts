@@ -13,6 +13,7 @@
  */
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
+import { identityContext } from "@/lib/auth";
 import { INTEGRATION_TOPICS, OUTBOX_MAX_ATTEMPTS, backoffDelayMs, type ConsumerHandler, type DispatchOutcome, type IntegrationEvent, type IntegrationTopic } from "./types";
 import { fanOutWebhooks } from "./sinks/webhook-sink";
 
@@ -79,8 +80,10 @@ export async function publish(input: {
   if (!isTopicKnown(input.topic)) {
     throw new Error(`Unknown integration topic: ${input.topic}`);
   }
+  const workspaceId = identityContext.getStore()?.workspaceId ?? "global";
   const row = await db.integrationEventRecord.create({
     data: {
+      workspaceId,
       topic: input.topic,
       source: input.source,
       direction: input.direction ?? "internal",
@@ -100,6 +103,7 @@ type EventRow = Awaited<ReturnType<typeof db.integrationEventRecord.findUniqueOr
 export function rowToEvent(row: NonNullable<EventRow>, payload: Record<string, unknown>): IntegrationEvent {
   return {
     id: row.id,
+    workspaceId: row.workspaceId,
     topic: row.topic as IntegrationTopic,
     source: row.source,
     direction: row.direction as IntegrationEvent["direction"],

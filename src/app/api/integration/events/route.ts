@@ -8,6 +8,7 @@ import { NextRequest } from "next/server";
 import { ok, handler, parseBody, parseQuery, fail } from "@/lib/api/respond";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { identityContext } from "@/lib/auth";
 import { publish, isTopicKnown } from "@/lib/integration/bus";
 import { ensureBusBootstrapped } from "@/lib/integration/bootstrap";
 import { INTEGRATION_TOPICS, type IntegrationTopic } from "@/lib/integration/types";
@@ -25,6 +26,7 @@ export const GET = handler(async (req: NextRequest) => {
   const query = parseQuery(req, querySchema);
   const rows = await db.integrationEventRecord.findMany({
     where: {
+      workspaceId: identityContext.getStore()?.workspaceId ?? "global",
       ...(query.status ? { status: query.status } : {}),
       ...(query.topic ? { topic: query.topic } : {}),
     },

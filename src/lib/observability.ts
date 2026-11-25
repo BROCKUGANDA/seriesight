@@ -6,6 +6,8 @@
  * cookies, tokens and secrets are never accepted as fields.
  */
 
+import { sendAlert } from "./alerting";
+
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 const SENSITIVE_KEYS = new Set([
@@ -48,5 +50,13 @@ export function logError(error: unknown, fields: Record<string, unknown> = {}): 
   const detail = error instanceof Error
     ? { name: error.name, message: error.message, stack: error.stack }
     : { message: String(error) };
-  logEvent("error", "unhandled_error", { ...fields, ...detail });
+  const safeFields = { ...fields, ...detail };
+  logEvent("error", "unhandled_error", safeFields);
+  void sendAlert("unhandled_error", "critical", {
+    requestId: fields.requestId ?? null,
+    path: fields.path ?? null,
+    method: fields.method ?? null,
+    name: detail.name ?? null,
+    message: detail.message ?? null,
+  });
 }

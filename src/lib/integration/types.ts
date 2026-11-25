@@ -60,6 +60,7 @@ export type EventStatus = "pending" | "processing" | "delivered" | "dead";
 /** Uniform event envelope persisted in the outbox. */
 export interface IntegrationEvent<T = Record<string, unknown>> {
   id: string;
+  workspaceId: string;
   topic: IntegrationTopic;
   source: string;
   direction: IntegrationDirection;

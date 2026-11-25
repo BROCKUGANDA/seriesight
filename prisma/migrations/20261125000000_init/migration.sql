@@ -8,6 +8,7 @@ CREATE TABLE "AuthUserRecord" (
     "name" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
+    "emailVerifiedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AuthUserRecord_pkey" PRIMARY KEY ("id")
@@ -39,6 +40,69 @@ CREATE TABLE "RequestRateLimitRecord" (
     "expiresAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "RequestRateLimitRecord_pkey" PRIMARY KEY ("key")
+);
+
+-- CreateTable
+CREATE TABLE "OrganizationRecord" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "ownerUserId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OrganizationRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrganizationMemberRecord" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'coach',
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "OrganizationMemberRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrganizationInvitationRecord" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'coach',
+    "tokenHash" TEXT NOT NULL,
+    "invitedByUserId" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "acceptedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "OrganizationInvitationRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuthVerificationRecord" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "purpose" TEXT NOT NULL,
+    "tokenHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "consumedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuthVerificationRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkspaceRecord" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "kind" TEXT NOT NULL DEFAULT 'team',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WorkspaceRecord_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -138,6 +202,7 @@ CREATE TABLE "LeadRecord" (
 -- CreateTable
 CREATE TABLE "IntegrationEventRecord" (
     "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL DEFAULT 'global',
     "topic" TEXT NOT NULL,
     "source" TEXT NOT NULL,
     "direction" TEXT NOT NULL DEFAULT 'internal',
@@ -157,6 +222,7 @@ CREATE TABLE "IntegrationEventRecord" (
 -- CreateTable
 CREATE TABLE "IntegrationEndpointRecord" (
     "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL DEFAULT 'global',
     "label" TEXT NOT NULL,
     "url" TEXT NOT NULL,
     "secret" TEXT NOT NULL,
@@ -189,6 +255,7 @@ CREATE TABLE "IntegrationDeliveryRecord" (
 -- CreateTable
 CREATE TABLE "IntegrationNotificationRecord" (
     "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL DEFAULT 'global',
     "topic" TEXT NOT NULL,
     "severity" TEXT NOT NULL DEFAULT 'info',
     "title" TEXT NOT NULL,
@@ -255,6 +322,30 @@ CREATE INDEX "AuthSessionRecord_expiresAt_idx" ON "AuthSessionRecord"("expiresAt
 CREATE INDEX "RequestRateLimitRecord_expiresAt_idx" ON "RequestRateLimitRecord"("expiresAt");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "OrganizationRecord_slug_key" ON "OrganizationRecord"("slug");
+
+-- CreateIndex
+CREATE INDEX "OrganizationMemberRecord_userId_idx" ON "OrganizationMemberRecord"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OrganizationMemberRecord_organizationId_userId_key" ON "OrganizationMemberRecord"("organizationId", "userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OrganizationInvitationRecord_tokenHash_key" ON "OrganizationInvitationRecord"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "OrganizationInvitationRecord_organizationId_email_idx" ON "OrganizationInvitationRecord"("organizationId", "email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuthVerificationRecord_tokenHash_key" ON "AuthVerificationRecord"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "AuthVerificationRecord_userId_purpose_idx" ON "AuthVerificationRecord"("userId", "purpose");
+
+-- CreateIndex
+CREATE INDEX "WorkspaceRecord_organizationId_idx" ON "WorkspaceRecord"("organizationId");
+
+-- CreateIndex
 CREATE INDEX "DraftSessionRecord_workspaceId_status_idx" ON "DraftSessionRecord"("workspaceId", "status");
 
 -- CreateIndex
@@ -279,7 +370,13 @@ CREATE INDEX "IntegrationEventRecord_status_nextAttemptAt_idx" ON "IntegrationEv
 CREATE INDEX "IntegrationEventRecord_topic_createdAt_idx" ON "IntegrationEventRecord"("topic", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "IntegrationEventRecord_workspaceId_status_nextAttemptAt_idx" ON "IntegrationEventRecord"("workspaceId", "status", "nextAttemptAt");
+
+-- CreateIndex
 CREATE INDEX "IntegrationEndpointRecord_status_idx" ON "IntegrationEndpointRecord"("status");
+
+-- CreateIndex
+CREATE INDEX "IntegrationEndpointRecord_workspaceId_status_idx" ON "IntegrationEndpointRecord"("workspaceId", "status");
 
 -- CreateIndex
 CREATE INDEX "IntegrationDeliveryRecord_status_createdAt_idx" ON "IntegrationDeliveryRecord"("status", "createdAt");
@@ -291,6 +388,9 @@ CREATE INDEX "IntegrationDeliveryRecord_endpointId_idx" ON "IntegrationDeliveryR
 CREATE INDEX "IntegrationNotificationRecord_read_createdAt_idx" ON "IntegrationNotificationRecord"("read", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "IntegrationNotificationRecord_workspaceId_read_createdAt_idx" ON "IntegrationNotificationRecord"("workspaceId", "read", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "BillingPaymentRecord_status_createdAt_idx" ON "BillingPaymentRecord"("status", "createdAt");
 
 -- CreateIndex
@@ -298,6 +398,24 @@ CREATE INDEX "BillingPaymentRecord_workspaceId_createdAt_idx" ON "BillingPayment
 
 -- CreateIndex
 CREATE INDEX "BillingReversalRecord_paymentId_idx" ON "BillingReversalRecord"("paymentId");
+
+-- AddForeignKey
+ALTER TABLE "OrganizationRecord" ADD CONSTRAINT "OrganizationRecord_ownerUserId_fkey" FOREIGN KEY ("ownerUserId") REFERENCES "AuthUserRecord"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrganizationMemberRecord" ADD CONSTRAINT "OrganizationMemberRecord_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "OrganizationRecord"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrganizationMemberRecord" ADD CONSTRAINT "OrganizationMemberRecord_userId_fkey" FOREIGN KEY ("userId") REFERENCES "AuthUserRecord"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrganizationInvitationRecord" ADD CONSTRAINT "OrganizationInvitationRecord_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "OrganizationRecord"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrganizationInvitationRecord" ADD CONSTRAINT "OrganizationInvitationRecord_invitedByUserId_fkey" FOREIGN KEY ("invitedByUserId") REFERENCES "AuthUserRecord"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkspaceRecord" ADD CONSTRAINT "WorkspaceRecord_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "OrganizationRecord"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DraftActionRecord" ADD CONSTRAINT "DraftActionRecord_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "DraftSessionRecord"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -7,6 +7,7 @@
  * are reached through consumers or the bus itself, never directly by routes.
  */
 import { db } from "@/lib/db";
+import { identityContext } from "@/lib/auth";
 import type { ConsumerResult, IntegrationEvent } from "../types";
 import { TOPIC_LABELS } from "../types";
 import { appendAuditLine, appendWarehouseLine } from "../sinks/warehouse-sink";
@@ -80,12 +81,13 @@ export const notificationConsumer: Handler = async (event) => {
   if (!rule) return ok;
   try {
     await createNotification({
+      workspaceId: event.workspaceId,
       topic: event.topic,
       severity: rule.severity,
       title: rule.title(event.payload),
       body: rule.body(event.payload),
     });
-    await pruneNotifications();
+    await pruneNotifications(event.workspaceId);
     return ok;
   } catch (err) {
     return { ok: false, error: `notification sink unavailable: ${err instanceof Error ? err.message : "unknown"}`, retryable: true };
@@ -113,5 +115,6 @@ export const evidenceRefreshConsumer: Handler = async (event) => {
 
 /** Unread notification count for the shell badge. */
 export async function unreadNotificationCount(): Promise<number> {
-  return db.integrationNotificationRecord.count({ where: { read: false } });
+  const workspaceId = identityContext.getStore()?.workspaceId ?? "global";
+  return db.integrationNotificationRecord.count({ where: { read: false, workspaceId } });
 }

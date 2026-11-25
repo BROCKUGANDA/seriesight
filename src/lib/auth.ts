@@ -16,6 +16,7 @@ export interface Identity {
   kind: "judge" | "coach";
   role: string;
   signedInAt: string;
+  emailVerified?: boolean;
 }
 export const identityContext = new AsyncLocalStorage<Identity>();
 export function authError(message = "Sign in to continue.", forbidden = false): AppError {
@@ -72,6 +73,7 @@ export async function resolveIdentity(req: NextRequest): Promise<Identity | null
     name: user?.name ?? "Fixture Demo Guest", email: user?.email ?? "demo@local.invalid",
     kind: user ? "coach" : "judge", role: user ? "Private coach workspace" : "Isolated fixture sandbox",
     signedInAt: session.createdAt.toISOString(),
+    emailVerified: user ? user.emailVerifiedAt !== null : undefined,
   };
 }
 export async function issueSession(req: NextRequest, response: NextResponse, user?: { id: string; workspaceId: string }): Promise<void> {

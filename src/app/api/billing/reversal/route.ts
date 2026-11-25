@@ -7,10 +7,12 @@
 import { NextRequest } from "next/server";
 import { ok, handler, parseBody } from "@/lib/api/respond";
 import { BillingSchemas, reversePayment } from "@/lib/billing/ledger";
+import { requireWorkspaceRole } from "@/services/organizations";
 
 export const dynamic = "force-dynamic";
 
 export const POST = handler(async (req: NextRequest) => {
+  await requireWorkspaceRole("owner");
   const body = await parseBody(req, BillingSchemas.ReversalSchema);
   const outcome = await reversePayment(body);
   return ok(outcome, req);

@@ -2,7 +2,9 @@ import { handler, ok, parseBody } from "@/lib/api/respond";
 import { authError, hashPassword, issueSession, resolveIdentity, revokeSession, throttleAuth, verifyPassword } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { timingSafeEqual, createHash } from "node:crypto";
+import { timingSafeEqual, createHash, randomUUID } from "node:crypto";
+import { createPersonalOrganization } from "@/services/organizations";
+import { issueEmailVerification } from "@/lib/account-recovery";
 
 export const dynamic = "force-dynamic";
 const schema = z.discriminatedUnion("action", [
@@ -37,7 +39,15 @@ export const POST = handler(async (req) => {
     if (!invite || !timingSafeEqual(digest(invite), digest(body.inviteCode))) throw authError("Registration requires a valid coach invitation.", true);
     const existing = await db.authUserRecord.findUnique({ where: { email } });
     if (existing) throw authError("Unable to register. Try signing in instead.", true);
-    const user = await db.authUserRecord.create({ data: { email, name: body.name, passwordHash: await hashPassword(body.password) } });
+    const passwordHash = await hashPassword(body.password);
+    const user = await db.$transaction(async (tx) => {
+      const created = await tx.authUserRecord.create({
+        data: { email, name: body.name, passwordHash, workspaceId: randomUUID() },
+      });
+      await createPersonalOrganization(created, tx);
+      return created;
+    });
+    await issueEmailVerification(user.id, user.email);
     await issueSession(req, response, user);
     return response;
   }

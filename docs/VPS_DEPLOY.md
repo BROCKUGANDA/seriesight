@@ -37,13 +37,17 @@ curl --fail https://seriesight.aiazimara.com/api/health | grep '"status":"health
 node scripts/judge-smoke.mjs https://seriesight.aiazimara.com --draft
 ```
 
-The Dockerfile explicitly includes the generated Prisma client and Alpine query engine. `GET /api/health` now queries the database and returns `503` when it is unreachable, but still check Data Sources and a persisted draft session. Back up PostgreSQL before schema changes; apply schema changes with `prisma migrate deploy`, never a destructive reset. If the existing volume was created with `db push`, baseline it once with `bunx prisma migrate resolve --applied 20261125000000_init --schema prisma/schema.production.prisma` before the first migration deploy.
+The Dockerfile explicitly includes the generated Prisma client and Alpine query engine. `GET /api/health` now queries the database and returns `503` when it is unreachable, but still check Data Sources and a persisted draft session. Back up PostgreSQL before schema changes; apply schema changes with `prisma migrate deploy`, never a destructive reset. If the existing volume was created with `db push`, baseline it once with `bunx prisma migrate resolve --applied 20261125000000_init --schema prisma/schema.production.prisma` before the first migration deploy; the subsequent `20261125010000_tenant_foundation` migration then creates the tenant tables and backfills existing coaches.
 
 ### Authentication upgrade
 
 Back up PostgreSQL before adding the additive `AuthUserRecord`, `AuthSessionRecord`, and `AuthThrottleRecord` tables. Build the new image, run the migration profile against the existing volume, then recreate the app. No existing draft is assigned to a new account: old shared `ws-demo` drafts intentionally remain inaccessible through private accounts.
 
 Run `node scripts/ensure-auth-env.mjs` in the private deployment directory (or with the Node container) to create a random `AUTH_INVITE_CODE` without printing it. The script preserves existing invitations and locks `.env` to mode 600. Retrieve that code via your secure server administration channel, then use **Have an invitation? Create account** at `/#/signin`. Do not put the invitation in judge instructions or commit it. The compose configuration sets the exact external `APP_ORIGIN` for same-origin mutation checks.
+
+Transactional email requires `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`, `EMAIL_FROM_ADDRESS` and optionally `EMAIL_REPLY_TO` in the private `.env`; onboard the sending domain first (`npx wrangler email sending enable aiazimara.com`). `REQUIRE_EMAIL_VERIFICATION=true` blocks workspace access until a coach confirms their email. Configure `ALERT_WEBHOOK_URL` and `ALERT_WEBHOOK_SECRET` for critical alerts; `INTEGRATION_APIS_ENABLED` stays false until webhook egress is reviewed.
+
+Run `node scripts/backup-restore-drill.mjs` on the VPS after every schema change and at least monthly. It restores into a disposable database and never modifies the live one.
 
 `GRID_API_KEY` still requires an authorized GRID account with completed LoL series access and schema introspection. Set it privately in `.env`, recreate the app, sign in as a coach, and import official completed series IDs in Data Sources. Train the model there after importing enough real history; fixture data cannot activate probabilities. See `GRID_INTEGRATION.md` and `WIN_PROBABILITY.md` for access and validation boundaries.
 

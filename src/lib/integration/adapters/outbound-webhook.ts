@@ -5,6 +5,7 @@
  * used by the Integration Hub endpoints API.
  */
 import { db } from "@/lib/db";
+import { identityContext } from "@/lib/auth";
 import { generateEndpointSecret, maskSecret } from "../hmac";
 import { assertOutboundUrlAllowed } from "../sinks/webhook-sink";
 import { INTEGRATION_TOPICS } from "../types";
@@ -52,8 +53,15 @@ function toView(row: {
   };
 }
 
+function tenantId(): string {
+  return identityContext.getStore()?.workspaceId ?? "global";
+}
+
 export async function listEndpoints(): Promise<EndpointView[]> {
-  const rows = await db.integrationEndpointRecord.findMany({ orderBy: { createdAt: "desc" } });
+  const rows = await db.integrationEndpointRecord.findMany({
+    where: { workspaceId: tenantId() },
+    orderBy: { createdAt: "desc" },
+  });
   return rows.map(toView);
 }
 
@@ -67,6 +75,7 @@ export async function createEndpoint(input: { label: string; url: string; topics
   const secret = input.secret?.trim() || generateEndpointSecret();
   const row = await db.integrationEndpointRecord.create({
     data: {
+      workspaceId: tenantId(),
       label: input.label,
       url: input.url,
       secret,
@@ -79,7 +88,7 @@ export async function createEndpoint(input: { label: string; url: string; topics
 }
 
 export async function updateEndpoint(id: string, patch: { label?: string; status?: "active" | "paused"; topics?: string[] }): Promise<EndpointView> {
-  const row = await db.integrationEndpointRecord.findUnique({ where: { id } });
+  const row = await db.integrationEndpointRecord.findFirst({ where: { id, workspaceId: tenantId() } });
   if (!row) throw ERRORS.notFound("Integration endpoint");
   if (patch.topics) {
     const unknown = patch.topics.filter((t) => t !== "*" && !(INTEGRATION_TOPICS as readonly string[]).includes(t));
@@ -98,7 +107,7 @@ export async function updateEndpoint(id: string, patch: { label?: string; status
 }
 
 export async function deleteEndpoint(id: string): Promise<void> {
-  const row = await db.integrationEndpointRecord.findUnique({ where: { id }, select: { id: true } });
+  const row = await db.integrationEndpointRecord.findFirst({ where: { id, workspaceId: tenantId() }, select: { id: true } });
   if (!row) throw ERRORS.notFound("Integration endpoint");
   await db.integrationEndpointRecord.delete({ where: { id } });
 }

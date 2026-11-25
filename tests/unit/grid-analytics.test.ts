@@ -20,6 +20,7 @@ vi.mock("@/lib/db", () => ({ db: {
   authSessionRecord: { findUnique: vi.fn(async ({ where }: { where: { tokenHash: string } }) => sessions.get(where.tokenHash) ?? null) },
   authUserRecord: { findUnique: vi.fn(async ({ where }: { where: { id: string } }) => ({ id: where.id, workspaceId: where.id, name: "Test coach", email: "test@example.invalid" })) },
   draftSessionRecord: { findMany: vi.fn(async () => []) },
+  organizationMemberRecord: { findFirst: vi.fn(async ({ where }: { where: { userId: string } }) => ({ role: "owner", organizationId: `org-${where.userId}` })) },
   dataSourceConnectionRecord: {
   upsert: vi.fn(async ({ create, update }: { create: { provider: string; metadataJson: string }; update: { metadataJson: string } }) => records.set(create.provider, { ...create, ...update })),
   findMany: vi.fn(async ({ where }: { where: { provider: { startsWith: string } } }) => [...records.values()].filter((r) => r.provider.startsWith(where.provider.startsWith))),

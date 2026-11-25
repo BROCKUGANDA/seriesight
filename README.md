@@ -88,9 +88,11 @@ bun run db:migrate:pg                           # every deploy: prisma migrate d
 
 ## Readiness and commercial deployment
 
-Seriesight has invite-based coach authentication, salted password hashes, expiring/revocable server sessions, same-origin mutation checks, database-backed sign-in throttling and API rate limiting, real database-aware health checks, versioned PostgreSQL migrations, structured JSON logs, and draft workspace ownership checks. The production Compose stack runs a non-root, capability-dropped app with an app health check, log rotation, a trusted-proxy-aware client key, and the global integration scheduler disabled. Experimental billing and integration APIs remain disabled because their stores are not tenant-isolated. Playbook, player notes, VOD and practice tools remain illustrative, memory-only tools that reset on account changes; only draft workflows are persisted privately.
+Seriesight has invite-based coach authentication, salted password hashes, expiring/revocable server sessions, same-origin mutation checks, database-backed sign-in throttling and API rate limiting, real database-aware health checks, versioned PostgreSQL migrations, structured JSON logs, draft workspace ownership checks, and a multi-team foundation with organizations, memberships, roles, invitations and workspace switching. The production Compose stack runs a non-root, capability-dropped app with an app health check, log rotation, a trusted-proxy-aware client key, and the background integration scheduler disabled. Integration events, endpoints and notifications now carry a tenant id; the management APIs stay disabled until their full authorization surface is reviewed. Playbook, player notes, VOD and practice tools remain illustrative, memory-only tools that reset on account changes; only draft workflows are persisted privately.
 
-Before public launch, complete an independent security review, email verification/recovery, alerting wired to the structured logs, and a tested backup/restore drill. Keep the disabled APIs disabled until ownership and egress controls are audited. Production use also requires separate authorization under the Business Source License and compliance with applicable GRID data terms; non-production use and redistribution are governed by the license itself. See [`docs/SECURITY.md`](docs/SECURITY.md) and [`LICENSE`](LICENSE).
+Phase 2 adds email verification and password recovery through Cloudflare Email Service, owner/coach enforcement on billing mutations, tenant-scoped payment history, signed operational alerting, role-aware UI gating for import and invitation actions, and an executable backup-restore drill script. Billing APIs are now available to authorized workspace owners; integration management APIs remain opt-in until webhook egress and inbound adapter authorization are reviewed.
+
+Before public launch, complete an independent security review, configure transactional email and alerting secrets, perform the backup-restore drill on the production volume, and enable integration APIs only after egress review. Production use also requires separate authorization under the Business Source License and compliance with applicable GRID data terms; non-production use and redistribution are governed by the license itself. See [`docs/SECURITY.md`](docs/SECURITY.md) and [`LICENSE`](LICENSE).
 
 ## Branches & release automation
 
@@ -125,6 +127,11 @@ POST /api/draft/sessions/:id/finalize  POST /api/draft/sessions/:id/next-game
 POST /api/draft/sessions/:id/reset   POST /api/draft/sessions/:id/roles
 GET  /api/draft/sessions/:id/restrictions
 POST /api/series-lab/counterfactual
+GET  /api/workspace                     GET  /api/organizations       POST /api/organizations
+GET  /api/organizations/:id/members     POST /api/organizations/:id/members
+POST /api/organizations/invitations     GET  /api/workspaces         POST /api/workspaces/:id/switch
+POST /api/auth/verify-email             POST /api/auth/password-reset/request
+POST /api/auth/password-reset/confirm   GET  /api/billing/payments
 ```
 
 Experimental payment endpoints are omitted from this user-facing API list. They are unauthenticated, unsupported for real payments, and documented in [`docs/SECURITY.md`](docs/SECURITY.md).

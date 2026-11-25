@@ -115,9 +115,18 @@ export function handler<A extends unknown[]>(
 
       if (!identity) return await fn(req, ...rest);
 
-      // These experimental global stores have no workspace ownership model.
-      if (path.startsWith("/api/billing/") || path.startsWith("/api/integration/")) {
-        throw authError("Experimental billing and integrations are disabled until workspace isolation is implemented.", true);
+      if (
+        identity.kind === "coach" &&
+        process.env.REQUIRE_EMAIL_VERIFICATION === "true" &&
+        identity.emailVerified === false
+      ) {
+        throw authError("Verify your email before using the workspace.", true);
+      }
+
+      // Integration management APIs remain opt-in until webhook egress and
+      // inbound adapter authorization have been reviewed in the target deployment.
+      if (path.startsWith("/api/integration/") && process.env.INTEGRATION_APIS_ENABLED !== "true") {
+        throw authError("Integration management APIs are not enabled on this deployment.", true);
       }
       if (identity.kind !== "coach" && ((path === "/api/data-sources" && req.method !== "GET") || path.startsWith("/api/ingestion/"))) {
         throw authError("Only authenticated coaches can import provider data.", true);

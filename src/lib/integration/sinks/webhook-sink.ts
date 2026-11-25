@@ -58,7 +58,9 @@ export async function fanOutWebhooks(event: IntegrationEvent): Promise<FanOutSum
     // Echo guard: this event originated from a receiver chain — stop the loop.
     return { endpointsMatched: 0, delivered: 0, failed: 0 };
   }
-  const endpoints = await db.integrationEndpointRecord.findMany({ where: { status: "active" } });
+  const endpoints = await db.integrationEndpointRecord.findMany({
+    where: { status: "active", workspaceId: event.workspaceId },
+  });
   const matched = endpoints.filter((e) => topicMatches(JSON.parse(e.topicsJson) as string[], event.topic));
   const summary: FanOutSummary = { endpointsMatched: matched.length, delivered: 0, failed: 0 };
 
