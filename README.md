@@ -153,6 +153,7 @@ Experimental payment endpoints are omitted from this user-facing API list. They 
 - [`docs/GRID_INTEGRATION.md`](docs/GRID_INTEGRATION.md) — adapter, security, licensing boundaries
 - [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) — what is tested and how to run it
 - [`docs/SECURITY.md`](docs/SECURITY.md) — secrets, allowlist, retention policy
+- [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) — launch security review and residual risks
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — production runbook, database provisioning
 - [`docs/AI_WORKFLOW_STORY.md`](docs/AI_WORKFLOW_STORY.md) — tooling and AI-assisted workflow evidence
 - [`NOTICE.md`](NOTICE.md) — third-party components and their licenses

@@ -15,6 +15,9 @@ RUN bun install --frozen-lockfile
 
 # Source + Prisma client generated for PostgreSQL (runtime is Postgres)
 COPY . .
+# Keep migration history explicit so build-cache changes cannot omit a newly
+# added migration from the deploy/migrate image.
+COPY prisma/migrations ./prisma/migrations
 RUN bunx prisma generate --schema prisma/schema.production.prisma \
  && bun run build
 # `bun run build` assembles .next/standalone via scripts/postbuild.mjs

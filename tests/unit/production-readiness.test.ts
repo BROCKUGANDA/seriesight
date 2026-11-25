@@ -52,5 +52,8 @@ describe("production readiness", () => {
     expect(sql).toContain('CREATE TABLE "RequestRateLimitRecord"');
     expect(sql).toContain('CREATE TABLE "DraftSessionRecord"');
     expect(sql).toContain('ALTER TABLE "DraftActionRecord" ADD CONSTRAINT');
+    const tenantMigrationPath = resolve(process.cwd(), "prisma/migrations/20261125010000_tenant_foundation/migration.sql");
+    expect(existsSync(tenantMigrationPath)).toBe(true);
+    expect(readFileSync(tenantMigrationPath, "utf8")).toContain('CREATE TABLE IF NOT EXISTS "OrganizationRecord"');
   });
 });
