@@ -41,6 +41,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - ../../prisma/migrations:/app/prisma/migrations:ro
 
   app:
     build:
