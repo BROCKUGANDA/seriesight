@@ -19,9 +19,15 @@ RUN bunx prisma generate --schema prisma/schema.production.prisma \
  && bun run build
 # `bun run build` assembles .next/standalone via scripts/postbuild.mjs
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
+
+# Patch base-image packages and remove the bundled npm tree. The standalone
+# server only needs Node; npm's transitive CLI packages are not runtime code.
+RUN apk upgrade --no-cache && apk del --no-cache npm \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 
 RUN addgroup -S seriesight && adduser -S seriesight -G seriesight
 

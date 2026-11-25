@@ -45,7 +45,7 @@ Back up PostgreSQL before adding the additive `AuthUserRecord`, `AuthSessionReco
 
 Run `node scripts/ensure-auth-env.mjs` in the private deployment directory (or with the Node container) to create a random `AUTH_INVITE_CODE` without printing it. The script preserves existing invitations and locks `.env` to mode 600. Retrieve that code via your secure server administration channel, then use **Have an invitation? Create account** at `/#/signin`. Do not put the invitation in judge instructions or commit it. The compose configuration sets the exact external `APP_ORIGIN` for same-origin mutation checks.
 
-Transactional email requires `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`, `EMAIL_FROM_ADDRESS` and optionally `EMAIL_REPLY_TO` in the private `.env`; onboard the sending domain first (`npx wrangler email sending enable aiazimara.com`). `REQUIRE_EMAIL_VERIFICATION=true` blocks workspace access until a coach confirms their email. Configure `ALERT_WEBHOOK_URL` and `ALERT_WEBHOOK_SECRET` for critical alerts; `INTEGRATION_APIS_ENABLED` stays false until webhook egress is reviewed.
+Transactional email requires `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` and optionally `EMAIL_REPLY_TO` in the private `.env`; the sender domain must be verified in Resend (`aiazimara.com` is already verified). `REQUIRE_EMAIL_VERIFICATION=true` blocks workspace access until a coach confirms their email. Configure `ALERT_WEBHOOK_URL` and `ALERT_WEBHOOK_SECRET` for critical alerts; `INTEGRATION_APIS_ENABLED` stays false until webhook egress is reviewed.
 
 Run `node scripts/backup-restore-drill.mjs` on the VPS after every schema change and at least monthly. It restores into a disposable database and never modifies the live one.
 

@@ -76,8 +76,8 @@ docker exec seriesight-db psql -U seriesight -d seriesight -c "\dt"
 | `API_RATE_LIMIT_PER_MIN` | no | Authenticated API requests per client (default 600) |
 | `AUTH_RATE_LIMIT_PER_MIN` | no | Auth requests per client (default 60) |
 | `LEADS_RATE_LIMIT_PER_MIN` | no | Public lead submissions per client (default 20) |
-| `CLOUDFLARE_ACCOUNT_ID` | yes for recovery | Cloudflare account for transactional email |
-| `CLOUDFLARE_EMAIL_API_TOKEN` | yes for recovery | API token with Email Sending permission |
+| `RESEND_API_KEY` | yes for recovery | Resend API key with sending access |
+| `EMAIL_FROM_ADDRESS` | yes for recovery | Verified Resend sender address |
 | `EMAIL_FROM_ADDRESS` | yes for recovery | Verified sender domain address |
 | `EMAIL_REPLY_TO` | no | Reply-to address for recovery emails |
 | `REQUIRE_EMAIL_VERIFICATION` | recommended | Block workspace access until coach email is verified |
