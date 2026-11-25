@@ -44,5 +44,5 @@ The first container scan found 29 critical/high issues in the Node 20 base image
 
 - No independent human penetration test has been performed; this review combines automated scans with a code-level control review.
 - `ALERT_WEBHOOK_URL` / `ALERT_WEBHOOK_SECRET` are not configured on the VPS. Structured logs are available, but external alert delivery is not active.
-- The backup-restore drill must be recorded after each schema change; the executable script is `scripts/backup-restore-drill.mjs`.
+- Backup/restore drill passed on 2026-11-25 against the VPS volume: 0 users and 17 draft sessions restored into a disposable database. Re-run `scripts/backup-restore-drill.mjs` after each schema change.
 - Commercial production use still requires the appropriate business authorization and GRID data terms.

@@ -16,7 +16,7 @@ const drillDb = "seriesight_restore_drill";
 const backupPath = join(tmpdir(), `seriesight-restore-${randomUUID()}.dump`);
 
 function run(args, options = {}) {
-  const result = spawnSync("docker", ["compose", "-f", composeFile, ...args], {
+  const result = spawnSync("docker", ["compose", "--env-file", ".env", "-f", composeFile, ...args], {
     stdio: ["ignore", "pipe", "inherit"],
     encoding: "utf8",
     ...options,
@@ -26,7 +26,7 @@ function run(args, options = {}) {
 }
 
 function psql(sql, database = "postgres") {
-  return run(["exec", "-T", "db", "psql", "-v", "ON_ERROR_STOP=1", "-U", "seriesight", "-d", database, "-c", sql]);
+  return run(["exec", "-T", "db", "psql", "-v", "ON_ERROR_STOP=1", "-U", "seriesight", "-d", database, "-tAc", sql]);
 }
 
 function cleanup() {
@@ -48,7 +48,7 @@ try {
   let verified = false;
   try {
     psql(`CREATE DATABASE ${drillDb};`);
-    const dump = spawnSync("docker", ["compose", "-f", composeFile, "exec", "-T", "db", "pg_restore", "--clean", "--if-exists", "-U", "seriesight", "-d", drillDb], {
+    const dump = spawnSync("docker", ["compose", "--env-file", ".env", "-f", composeFile, "exec", "-T", "db", "pg_restore", "--clean", "--if-exists", "-U", "seriesight", "-d", drillDb], {
       input: readFileSync(backupPath),
       stdio: ["pipe", "ignore", "inherit"],
     });
